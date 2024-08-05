@@ -19,6 +19,6 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@openzeppelin/contracts": "^4.9.6",
     "@openzeppelin/hardhat-upgrades": "^3.2.0",
-    "hardhat": "^2.22.6"
+    "hardhat": "^2.22.7"
   }
 }
