@@ -38,9 +38,9 @@ contract StakeLBTC is ERC20Upgradeable, AccessControlUpgradeable, ReentrancyGuar
         version = _version;
     }
 
-    function charge(uint256 amount) public onlyOwner {
+    function charge(uint256 amount) public payable {
+        require(msg.value == amount, "Amount argument must be equal to attached native value");
         require(amount > 0, "Amount must be greater than 0");
-        require(totalStaked > 0, "No staked funds available");
 
         uint256 contractBalance = address(this).balance;
         require(contractBalance >= amount, "Insufficient contract balance");

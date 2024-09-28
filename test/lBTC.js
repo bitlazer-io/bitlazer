@@ -30,7 +30,7 @@ describe('lBTC Contract', function () {
     await lBTC.setWBTCAddress(WBTC.address)
 
     expect(await WBTC.balanceOf(addr1)).to.equal('1000000000000000000')
-    expect(await lBTC.getWBTCAddress()).to.equal(WBTC.address)
+    expect(await lBTC.getWBTCAddress(WBTC.address)).to.equal(WBTC.address)
   })
 
   it('Should allow the holder to mint & burn lBTC', async function () {
@@ -41,20 +41,23 @@ describe('lBTC Contract', function () {
     // Set the allowance for the contract to spend the WBTC
     await WBTC.connect(addr1Signer).approve(lBTC.address, mintAmount)
 
-    expect(await lBTC.connect(addr1Signer).mint(mintAmount))
-      .to.emit(lBTC, 'Transfer')
-      .withArgs(ethers.constants.AddressZero, owner, mintAmount)
+    expect(await lBTC.connect(addr1Signer).mint(mintAmount, WBTC.address))
+        .to.emit(lBTC, 'Transfer')
+        .withArgs(ethers.constants.AddressZero, owner, mintAmount)
 
     expect(await lBTC.balanceOf(addr1)).to.equal('500000000000000000')
+    expect(await lBTC.getHolderBalance(addr1, WBTC.address)).to.equal('500000000000000000')
     expect(await WBTC.balanceOf(addr1)).to.equal('500000000000000000')
 
     // Try to burn the lBTC and expect the same amount of WBTC back in the wallet
     const burnAmount = ethers.utils.parseUnits('0.25', 18)
     await lBTC.connect(addr1Signer).approve(lBTC.address, burnAmount)
-    expect(await lBTC.connect(addr1Signer).burn(burnAmount))
-      .to.emit(lBTC, 'Transfer')
-      .withArgs(owner, ethers.constants.AddressZero, burnAmount)
+    expect(await lBTC.connect(addr1Signer).burn(burnAmount, WBTC.address))
+        .to.emit(lBTC, 'Transfer')
+        .withArgs(owner, ethers.constants.AddressZero, burnAmount)
 
+    expect(await lBTC.balanceOf(addr1)).to.equal('250000000000000000')
+    expect(await lBTC.getHolderBalance(addr1, WBTC.address)).to.equal('250000000000000000')
     expect(await lBTC.balanceOf(addr1)).to.equal('250000000000000000')
     expect(await WBTC.balanceOf(addr1)).to.equal('750000000000000000')
   })
