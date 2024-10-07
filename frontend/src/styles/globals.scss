@@ -1,0 +1,257 @@
+@import './abstracts/_fonts';
+@import './abstracts/_variables';
+
+html {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+
+  font-size: 0.941175vw;
+
+  scrollbar-color: #3d8938 rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 1299.98px) {
+    font-size: 1.5vw;
+  }
+  @media (max-width: 991.98px) {
+    font-size: 2.5vw;
+  }
+  @media (orientation: landscape) and (max-width: 991.98px) {
+    font-size: 2vw;
+  }
+  @media (orientation: landscape) and (max-width: 699.98px) {
+    font-size: 2.5vw;
+  }
+
+  @media (max-width: 575.98px) {
+    font-size: 3.75vw;
+  }
+
+  @media (min-height: 1000px) and (min-width: 2000px) {
+    font-size: 0.95vw;
+  }
+  @media (min-width: 3000px) {
+    font-size: 0.65vw;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+
+  &.lock {
+    overflow: hidden;
+  }
+
+  .os-theme-dark {
+    --os-handle-bg: #3d8938;
+    --os-handle-bg-hover: #3d8938;
+    --os-handle-bg-active: #3f2ddf;
+  }
+
+  .os-scrollbar {
+    border-radius: 0.1153rem;
+    border: 0.1875rem solid #3d8938;
+    background: #255322;
+    width: 2.2809rem;
+
+    padding-bottom: 0.4375rem;
+
+    margin: -0.1875rem 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+
+    .os-scrollbar-handle {
+      border-radius: 0.1153rem;
+      box-shadow: 0.1153rem 0.1153rem 0.1153rem 0rem rgba(0, 0, 0, 0.91) inset;
+
+      margin: 0.125rem;
+      width: calc(100% - 0.25rem) !important;
+    }
+  }
+}
+
+input,
+textarea {
+  &:not([type='checkbox']) {
+    outline: none;
+    appearance: none;
+
+    border: none;
+    background-image: none;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  &::placeholder {
+    transition: 0.3s;
+  }
+  &:focus {
+    &::placeholder {
+      opacity: 0;
+    }
+  }
+}
+
+button {
+  background-color: transparent;
+  border-width: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  cursor: pointer;
+  transition: 0.3s;
+  outline: none;
+  appearance: none;
+}
+
+b {
+  font-weight: bold;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: 0.3s;
+
+  &:hover {
+    // color: var(--color-major);
+  }
+}
+
+select {
+  appearance: none;
+}
+
+ul,
+ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+main {
+  flex: 1 1 auto;
+}
+
+footer {
+  flex-shrink: 0;
+}
+
+/* Global styles */
+
+.iresponsive {
+  position: relative;
+
+  img,
+  video {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+    z-index: 1;
+  }
+
+  iframe {
+    border: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  svg {
+    width: 100%;
+    height: 100%;
+    transition: 0.3s;
+    fill: inherit;
+  }
+}
+
+.container {
+  max-width: 106.25rem;
+  width: 100%;
+  padding: 0 1.25rem;
+  margin: 0 auto;
+}
+@keyframes randomRotate {
+  0% {
+    transform: rotate(calc(var(--initial-rotate, 0deg)));
+  }
+  50% {
+    transform: rotate(calc(var(--initial-rotate, 0deg) + var(--random-offset, 2deg)));
+  }
+  100% {
+    transform: rotate(calc(var(--initial-rotate, 0deg)));
+  }
+}
+
+.rotate-line {
+  animation: randomRotate 3s ease-in-out infinite;
+
+  div {
+    animation: widthLine 1.5s;
+  }
+}
+
+@keyframes widthLine {
+  from {
+    width: 0;
+  }
+  to {
+    width: 110vw;
+  }
+}
+
+.scroller {
+  scrollbar-color: #3d8938 rgba(0, 0, 0, 0.1);
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.react-draggable {
+  @media (min-width: 992px) {
+    top: 50% !important;
+    left: 0 !important;
+    transform: translateX(-50%);
+    right: initial !important;
+    bottom: initial !important;
+    width: 100%;
+  }
+}
+.modal-header {
+  cursor: move;
+}

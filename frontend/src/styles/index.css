@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* :root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+} */
+
+html,
+body {
+  background: #000;
+  color: #fff;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  @font-face {
+    font-family: 'OCR-X TTF';
+    src: url('./fonts/OCR-XTTF-Regular.eot');
+    src:
+      url('./fonts/OCR-XTTF-Regular.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/OCR-XTTF-Regular.woff2') format('woff2'),
+      url('./fonts/OCR-XTTF-Regular.woff') format('woff'),
+      url('./fonts/OCR-XTTF-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Maison Neue Mono';
+    src: url('./fonts/MaisonNeueMono-Regular.eot');
+    src:
+      url('./fonts/MaisonNeueMono-Regular.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/MaisonNeueMono-Regular.woff2') format('woff2'),
+      url('./fonts/MaisonNeueMono-Regular.woff') format('woff'),
+      url('./fonts/MaisonNeueMono-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-Bold.eot');
+    src:
+      url('./fonts/Inter-Bold.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-Bold.woff2') format('woff2'),
+      url('./fonts/Inter-Bold.woff') format('woff'),
+      url('./fonts/Inter-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-Black.eot');
+    src:
+      url('./fonts/Inter-Black.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-Black.woff2') format('woff2'),
+      url('./fonts/Inter-Black.woff') format('woff'),
+      url('./fonts/Inter-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-BoldItalic.eot');
+    src:
+      url('./fonts/Inter-BoldItalic.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-BoldItalic.woff2') format('woff2'),
+      url('./fonts/Inter-BoldItalic.woff') format('woff'),
+      url('./fonts/Inter-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-Italic.eot');
+    src:
+      url('./fonts/Inter-Italic.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-Italic.woff2') format('woff2'),
+      url('./fonts/Inter-Italic.woff') format('woff'),
+      url('./fonts/Inter-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-Medium.eot');
+    src:
+      url('./fonts/Inter-Medium.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-Medium.woff2') format('woff2'),
+      url('./fonts/Inter-Medium.woff') format('woff'),
+      url('./fonts/Inter-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: url('./fonts/Inter-Regular.eot');
+    src:
+      url('./fonts/Inter-Regular.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-Regular.woff2') format('woff2'),
+      url('./fonts/Inter-Regular.woff') format('woff'),
+      url('./fonts/Inter-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter Semi';
+    src: url('./fonts/Inter-SemiBold.eot');
+    src:
+      url('./fonts/Inter-SemiBold.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/Inter-SemiBold.woff2') format('woff2'),
+      url('./fonts/Inter-SemiBold.woff') format('woff'),
+      url('./fonts/Inter-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@api/*": ["./src/api/*"],
+      "@images/*": ["./src/assets/images/*"],
+      "@svgs": ["./src/assets/svg/index"],
+      "@constants/*": ["./src/constants/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@locales/*": ["./src/locales/*"],
+      "@providers/*": ["./src/providers/*"],
+      "@store/*": ["./src/store/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@enums": ["./src/typescript/enums"],
+      "@interfaces": ["./src/typescript/interfaces"],
+      "@requests": ["./src/typescript/requests"],
+      "@responses": ["./src/typescript/responses"],
+      "@types": ["./src/typescript/types"],
+      "@layout_providers/*": ["./src/UI/layout_providers/*"],
+      "@layout_providers": ["./src/UI/layout_providers"],
+      "@utils/*": ["./src/utils/*"],
+      "@layouts/*": ["./src/UI/layouts/*"],
+      "@layouts": ["./src/UI/layouts/index"],
+      "@components/*": ["./src/UI/components/*"],
+      "@components": ["./src/UI/components/index"],
+      "@pages/*": ["./src/UI/pages/*"],
+      "@sections/*": ["./src/UI/sections/*"],
+      "@sections": ["./src/UI/sections/index"]
+    }
+  }
+}

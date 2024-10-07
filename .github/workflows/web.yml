@@ -2,8 +2,6 @@ name: Deploy web
 
 on:
   push:
-    branches:
-      - main
 
 jobs:
   deploy-main:
@@ -18,22 +16,29 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
+      
+    - name: Build
+      working-directory: ./frontend
+      run: |
+        yarn
+        yarn build
+        mv dist/* ../web/landing
 
     - name: "Deploy to AWS S3"
       run: aws s3 sync ./web/landing s3://us-east-1.bitlazer.io --acl public-read --delete --cache-control max-age=604800
 
-  deploy-app:
-    name: Web App
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
+  # deploy-app:
+  #   name: Web App
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+  #   - name: Configure AWS Credentials
+  #     uses: aws-actions/configure-aws-credentials@v1
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: us-east-1
 
-    - name: "Deploy to AWS S3"
-      run: aws s3 sync ./web/app s3://app.bitlazer.io --acl public-read --delete --cache-control max-age=604800
+  #   - name: "Deploy to AWS S3"
+ #     run: aws s3 sync ./web/app s3://app.bitlazer.io --acl public-read --delete --cache-control max-age=604800

@@ -1,0 +1,127 @@
+.field {
+  width: 100%;
+
+  display: flex;
+  height: 3.375rem;
+  padding: 0.6rem 2.5rem;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 2.125rem;
+  letter-spacing: 0.075rem;
+  text-transform: uppercase;
+
+  border-radius: 1.25rem;
+  border: 0.0625rem solid #0d0d0d;
+  opacity: 0.34;
+  box-shadow: 0 1.5rem 2.125rem 0 rgba(150, 49, 212, 0.22);
+
+  transition: 0.3s;
+
+  resize: none;
+
+  &:focus {
+    opacity: 0.8;
+  }
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  small {
+    align-self: flex-end;
+    display: inline-flex;
+    color: var(--color-red);
+    text-align: right;
+    font-size: 0.9375rem;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 121.4%;
+
+    margin-top: 0.5rem;
+  }
+
+  &.error {
+    input {
+      border-color: var(--color-red) !important;
+    }
+  }
+
+  .label {
+    display: inline-block;
+
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 148.9%;
+
+    margin-bottom: 0.5rem;
+  }
+
+  .textarea {
+    width: 100%;
+
+    display: flex;
+    height: 6.125rem;
+    padding: 0.9375rem 1.875rem;
+    align-items: center;
+
+    border-radius: 0.625rem;
+    border: 0.0625rem solid rgba(255, 255, 255, 0.2) !important;
+
+    color: var(--color-white);
+
+    overflow-y: auto;
+    resize: none;
+
+    font-family: inherit;
+    font-size: 0.9375rem;
+
+    font-style: normal;
+    font-weight: 500;
+    line-height: 148.9%;
+
+    transition: 0.3s;
+
+    @media (max-width: 899.98px) {
+      padding: 0.9rem 1.4011rem;
+      border-radius: 0.4671rem;
+      font-size: 0.8125rem;
+    }
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:focus {
+      border-color: var(--color-white) !important;
+    }
+
+    &.large {
+      .label {
+        font-size: 1.125rem;
+        font-style: normal;
+        font-weight: 700;
+        line-height: 148.9%;
+
+        margin-bottom: 0.625rem;
+
+        @media (max-width: 899.98px) {
+          font-size: 0.9375rem;
+          margin-bottom: 0.35rem;
+        }
+      }
+
+      textarea {
+        @media (min-width: 900px) {
+          height: 4.1875rem;
+          font-size: 1.125rem;
+        }
+      }
+    }
+  }
+}
