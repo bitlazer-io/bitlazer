@@ -39,10 +39,9 @@ const Features: FC<IFeatures> = () => {
               <div className="flex-1 flex flex-col gap-4">
                 <div className="uppercase text-xl">Native BTC Yield</div>
                 <div className="text-base tracking-[-0.06em] leading-[1.313rem] font-maison-neue-trial">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
             </div>
@@ -55,10 +54,9 @@ const Features: FC<IFeatures> = () => {
               <div className="flex-1 flex flex-col gap-4">
                 <div className="uppercase text-xl">Seamless Bridging</div>
                 <div className="text-base tracking-[-0.06em] leading-[1.313rem] font-maison-neue-trial">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
             </div>
@@ -71,10 +69,9 @@ const Features: FC<IFeatures> = () => {
               <div className="flex-1 flex flex-col gap-4">
                 <div className="uppercase text-xl">Fast Settlements</div>
                 <div className="text-base tracking-[-0.06em] leading-[1.313rem] font-maison-neue-trial">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
             </div>
@@ -87,10 +84,9 @@ const Features: FC<IFeatures> = () => {
               <div className="flex-1 flex flex-col gap-4">
                 <div className="uppercase text-xl">low fees</div>
                 <div className="text-base tracking-[-0.06em] leading-[1.313rem] font-maison-neue-trial">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
             </div>

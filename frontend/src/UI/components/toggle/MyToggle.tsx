@@ -8,13 +8,7 @@ interface MyToggleProps extends InputHTMLAttributes<any> {
   register?: any
 }
 
-const MyToggle: React.FC<MyToggleProps> = ({
-  label,
-  error,
-  register,
-  className,
-  ...inputProps
-}) => {
+const MyToggle: React.FC<MyToggleProps> = ({ label, error, register, className, ...inputProps }) => {
   return (
     <>
       <label className={clsx('inline-flex items-center cursor-pointer', className)}>

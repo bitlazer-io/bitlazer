@@ -19,12 +19,7 @@ interface IMyTable {
 const MyTable: FC<IMyTable> = ({ columns, data, className, classNameTable }) => {
   return (
     <div className={clsx('relative overflow-x-auto', className, s.table)}>
-      <table
-        className={clsx(
-          'w-full text-left text-zinc-300 custom-table text-sm font-light',
-          classNameTable,
-        )}
-      >
+      <table className={clsx('w-full text-left text-zinc-300 custom-table text-sm font-light', classNameTable)}>
         <thead className="">
           <tr>
             {columns.map((column, index) => (

@@ -13,10 +13,7 @@ export default function obfuscatorPlugin(options: any) {
         return null
       }
 
-      const obfuscatedCode = JavaScriptObfuscator.obfuscate(
-        code,
-        options.obfuscatorOptions,
-      ).getObfuscatedCode()
+      const obfuscatedCode = JavaScriptObfuscator.obfuscate(code, options.obfuscatorOptions).getObfuscatedCode()
       return {
         code: obfuscatedCode,
         map: null,

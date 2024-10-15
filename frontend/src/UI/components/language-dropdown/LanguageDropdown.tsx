@@ -74,10 +74,7 @@ const LanguageDropdown: FC<ILanguageDropdown> = () => {
         </div>
         {/* <div className="text-white text-sm font-semibold uppercase">{selectedLanguage}</div> */}
         <div
-          className={clsx(
-            'w-4 h-4 relative icon fill-white transition-all duration-200',
-            showDropdown && 'rotate-180',
-          )}
+          className={clsx('w-4 h-4 relative icon fill-white transition-all duration-200', showDropdown && 'rotate-180')}
         >
           <ChevronDownIcon />
         </div>
@@ -95,12 +92,7 @@ const LanguageDropdown: FC<ILanguageDropdown> = () => {
               }}
             >
               <div className="w-4 h-4 relative rounded-full shrink-0 overflow-hidden">
-                <img
-                  key={option.flag}
-                  className="w-full h-full object-cover"
-                  src={option.flag}
-                  alt=""
-                />
+                <img key={option.flag} className="w-full h-full object-cover" src={option.flag} alt="" />
               </div>
               <div className="text-white text-xs font-normal">{option.label}</div>
             </button>

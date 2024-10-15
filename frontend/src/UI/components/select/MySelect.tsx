@@ -103,12 +103,7 @@ const MySelect: React.FC<MySelectProps> = ({
         isDisabled={disabled}
         instanceId={`my-select-${name || Math.random().toFixed(3)}`}
         styles={customStyles}
-        className={clsx(
-          s.select,
-          className,
-          disabled && s.disabled,
-          variant === 'secondary' && s.secondary,
-        )}
+        className={clsx(s.select, className, disabled && s.disabled, variant === 'secondary' && s.secondary)}
         classNamePrefix="my-select"
         options={options}
         value={selectedValue}
@@ -118,11 +113,7 @@ const MySelect: React.FC<MySelectProps> = ({
           <div className={clsx(s.option, 'justify-center text-center')}>
             {option.image && (
               <div className={'w-4 h-4 icon'}>
-                <img
-                  className="w-full h-full object-contain"
-                  src={option.image}
-                  alt={option.label}
-                />
+                <img className="w-full h-full object-contain" src={option.image} alt={option.label} />
               </div>
             )}
             {option.icon && option.icon}

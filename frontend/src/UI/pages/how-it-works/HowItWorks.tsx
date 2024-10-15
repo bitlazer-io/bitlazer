@@ -31,29 +31,23 @@ const HowItWorks: FC<IHowItWorks> = () => {
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-4">
                   <span>[ Stage 1 ] </span>
-                  <span className="text-fuchsia uppercase">
-                    Users wrap their WBTC to receive LBTC
-                  </span>
+                  <span className="text-fuchsia uppercase">Users wrap their WBTC to receive LBTC</span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-4">
                   <span>[ Stage 2 ] </span>
-                  <span className="text-fuchsia uppercase">
-                    Users bridge their LBTC to Bitlazer’s Arbitrum L3
-                  </span>
+                  <span className="text-fuchsia uppercase">Users bridge their LBTC to Bitlazer’s Arbitrum L3</span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
               <div className="flex flex-col gap-4">
@@ -64,10 +58,9 @@ const HowItWorks: FC<IHowItWorks> = () => {
                   </span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio
-                  vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien
-                  eget magna dapibus tincidunt. Pellentesque habitant morbi tristique senectus et
-                  netus et malesuada fames ac turpis egestas.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum
+                  vestibulum. Cras venenatis euismod malesuada. Sed sit amet sapien eget magna dapibus tincidunt.
+                  Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
                 </div>
               </div>
             </div>

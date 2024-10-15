@@ -46,11 +46,11 @@ const Footer: FC<IFooter> = () => {
                   ROADMAP
                 </button>
               </li>
-              <li>
+              {/* <li>
                 <Link className="text-gray-100 hover:text-white" to="/faq">
                   FAQ
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </nav>
           <ul className="flex items-center gap-5 tracking-[-0.02em]">

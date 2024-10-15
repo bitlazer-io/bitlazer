@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { ToastContainer } from 'react-toastify'
 import { RouterProvider } from 'react-router-dom'

@@ -4,11 +4,11 @@ import React, { FC, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useAccount } from 'wagmi'
 
-interface IBridgeConnect { }
+interface IBridgeConnect {}
 
 const BridgeConnect: FC<IBridgeConnect> = () => {
   const { isConnected } = useAccount()
-  const [openConnectWalletModal, setOpenConnectWalletModal] = useState(false);
+  const [openConnectWalletModal, setOpenConnectWalletModal] = useState(false)
 
   const {
     handleSubmit,

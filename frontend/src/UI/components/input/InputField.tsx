@@ -57,9 +57,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
     }
 
     return (
-      <div
-        className={clsx('flex flex-col w-full', className, error && 'error', isLarge && 'large')}
-      >
+      <div className={clsx('flex flex-col w-full', className, error && 'error', isLarge && 'large')}>
         {label && (
           <div className="mb-[0.687rem] flex items-center justify-between gap-1">
             {label && <span className="tracking-[-0.06em] leading-[1.25rem]">{label}</span>}

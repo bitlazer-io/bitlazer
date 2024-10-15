@@ -6,9 +6,11 @@ import { useWriteContract, useBalance, useAccount } from 'wagmi'
 import { stakeLBTC_abi } from 'src/assets/abi/stakeLBTC'
 import { arbitrum, sepolia } from 'wagmi/chains'
 
-interface IBridgeStake { }
+interface IBridgeStake {
+  enabled: boolean
+}
 
-const BridgeStake: FC<IBridgeStake> = () => {
+const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
   const {
     handleSubmit: handleStakeSubmit,
     control: stakeControl,
@@ -37,9 +39,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       abi: stakeLBTC_abi,
       address: '0xD9A158f561E0DfD1842DF7A5c1549cD3D065d319',
       functionName: 'stake',
-      args: [
-        BigInt(data.stakeAmount * 10 ** 18),
-      ],
+      args: [BigInt(data.stakeAmount * 10 ** 18)],
       value: BigInt(data.stakeAmount * 10 ** 18),
     })
   }
@@ -50,9 +50,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       abi: stakeLBTC_abi,
       address: '0xD9A158f561E0DfD1842DF7A5c1549cD3D065d319',
       functionName: 'unstake',
-      args: [
-        BigInt(data.unstakeAmount * 10 ** 18),
-      ]
+      args: [BigInt(data.unstakeAmount * 10 ** 18)],
     })
   }
 
@@ -61,6 +59,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
   return (
     <div className="flex flex-col gap-7">
+      <div className="text-2xl font-bold text-red-500 text-center mb-4">Staking is not available yet</div>
+
       <form onSubmit={handleStakeSubmit(onStakeSubmit)} className="flex flex-col gap-7">
         <div className="flex flex-col gap-[0.687rem] max-w-full">
           <div className="relative tracking-[-0.06em] leading-[1.25rem] mb-1">## STAKE</div>
@@ -78,14 +78,16 @@ const BridgeStake: FC<IBridgeStake> = () => {
                 type="number"
                 {...field}
                 error={stakeErrors.stakeAmount ? stakeErrors.stakeAmount.message : null}
+                disabled={!enabled} // Disable input if not enabled
               />
             )}
           />
           <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance: 2,321.99 WBTC
-            </div>
-            <button className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none">
+            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">Balance: 0 LBTC</div>
+            <button
+              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
+              disabled={!enabled}
+            >
               <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
                 MAX
               </span>
@@ -94,9 +96,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
         </div>
         <div className="flex flex-col gap-[0.687rem]">
           <div className="flex flex-row items-center justify-between gap-[1.25rem]">
-            <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">
-              APY 2.8%
-            </div>
+            <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">APY TBD%</div>
           </div>
           <Button type="submit" disabled={!isStakeValid}>
             STAKE
@@ -123,14 +123,16 @@ const BridgeStake: FC<IBridgeStake> = () => {
                 type="number"
                 {...field}
                 error={unstakeErrors.unstakeAmount ? unstakeErrors.unstakeAmount.message : null}
+                disabled={!enabled}
               />
             )}
           />
           <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance: 2,321.99 WBTC
-            </div>
-            <button className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none">
+            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">Balance: 0 LBTC</div>
+            <button
+              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
+              disabled={!enabled}
+            >
               <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
                 MAX
               </span>
@@ -138,12 +140,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
           </div>
         </div>
         <div className="flex flex-col gap-[0.687rem]">
-          <div className="flex flex-row items-center justify-between gap-[1.25rem]">
-            <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">
-              APY 2.8%
-            </div>
-          </div>
-          <Button type="submit" disabled={!isUnstakeValid}>
+          <Button type="submit" disabled={!isUnstakeValid && !enabled}>
             UNSTAKE
           </Button>
         </div>

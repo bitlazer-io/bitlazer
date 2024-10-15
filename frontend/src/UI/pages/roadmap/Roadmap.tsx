@@ -35,27 +35,21 @@ const Roadmap: FC<IRoadmap> = () => {
                   <span> ] </span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
-                  <p className="m-0">
-                    / Bitlazer launch, enabling the bridging of WBTC to Arbitrum L3.
-                  </p>
+                  <p className="m-0">/ Bitlazer launch, enabling the bridging of WBTC to Arbitrum L3.</p>
                   <p className="m-0">/ Staking and yield enabled.</p>
                 </div>
               </div>
               <div className="flex flex-col gap-4">
                 <div>
                   <span>[ Stage 2 | </span>
-                  <span className="text-fuchsia uppercase">
-                    Ecosystem Bootstrap with LZR Airdrop
-                  </span>
+                  <span className="text-fuchsia uppercase">Ecosystem Bootstrap with LZR Airdrop</span>
                   <span> ] </span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
+                  <p className="m-0">/ Conduct an airdrop of 20% of LZR tokens to early community builders.</p>
                   <p className="m-0">
-                    / Conduct an airdrop of 20% of LZR tokens to early community builders.
-                  </p>
-                  <p className="m-0">
-                    / Encourage the creation of decentralized applications (dApps) and innovative
-                    projects on the platform.
+                    / Encourage the creation of decentralized applications (dApps) and innovative projects on the
+                    platform.
                   </p>
                 </div>
               </div>
@@ -67,12 +61,10 @@ const Roadmap: FC<IRoadmap> = () => {
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
                   <p className="m-0">
-                    / Implement a native BTC bridge using a light client with Stylus smart contracts
-                    on Arbitrum.
+                    / Implement a native BTC bridge using a light client with Stylus smart contracts on Arbitrum.
                   </p>
                   <p className="m-0">
-                    / Facilitate seamless transfers and interactions with native BTC within the
-                    Bitlazer ecosystem.
+                    / Facilitate seamless transfers and interactions with native BTC within the Bitlazer ecosystem.
                   </p>
                 </div>
               </div>
@@ -83,12 +75,10 @@ const Roadmap: FC<IRoadmap> = () => {
                   <span> ] </span>
                 </div>
                 <div className="tracking-[-0.06em] leading-[1.313rem] max-w-[29.5rem]">
+                  <p className="m-0">/ Optimize transaction sequencing and withdrawal processing.</p>
                   <p className="m-0">
-                    / Optimize transaction sequencing and withdrawal processing.
-                  </p>
-                  <p className="m-0">
-                    / Enable native sequencing of L3 roll-up payloads and withdrawals, ensuring
-                    secure handling of native BTC requests.
+                    / Enable native sequencing of L3 roll-up payloads and withdrawals, ensuring secure handling of
+                    native BTC requests.
                   </p>
                 </div>
               </div>

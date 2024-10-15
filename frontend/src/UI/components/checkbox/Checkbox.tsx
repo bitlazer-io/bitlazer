@@ -13,9 +13,7 @@ const Checkbox: React.FC<CheckboxProps> = ({ label, error, register, ...inputPro
     <>
       <label className={clsx(s.checkbox, error && s.error, inputProps.disabled && s.disabled)}>
         <input className="hidden" type="checkbox" {...inputProps} {...register} />
-        <span className="text-zinc-500 text-sm font-light pl-9 select-none relative inline-block">
-          {label}
-        </span>
+        <span className="text-zinc-500 text-sm font-light pl-9 select-none relative inline-block">{label}</span>
       </label>
       {error && <p className={'m-0 text-xs font-light text-red-500'}>{error}</p>}
     </>

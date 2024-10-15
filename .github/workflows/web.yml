@@ -22,10 +22,10 @@ jobs:
       run: |
         yarn
         yarn build
-        mv dist/* ../web/landing
 
     - name: "Deploy to AWS S3"
-      run: aws s3 sync ./web/landing s3://us-east-1.bitlazer.io --acl public-read --delete --cache-control max-age=604800
+      working-directory: ./frontend
+      run: aws s3 sync ./dist s3://us-east-1.bitlazer.io --acl public-read --delete --cache-control max-age=604800
 
   # deploy-app:
   #   name: Web App
