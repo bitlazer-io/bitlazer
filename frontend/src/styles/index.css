@@ -20,6 +20,10 @@ body {
   color: rgb(var(--foreground-rgb));
 } */
 
+.Toastify__toast {
+  color: #3d8938;
+}
+
 html,
 body {
   background: #000;

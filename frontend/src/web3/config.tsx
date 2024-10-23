@@ -1,5 +1,5 @@
 import { arbitrum, arbitrumSepolia, sepolia } from 'viem/chains'
-import { devnet, mainnet, testnet } from './chains'
+import { devnet, mainnet } from './chains'
 import { createConfig, CreateConnectorFn, http } from 'wagmi'
 import { walletConnect } from 'wagmi/connectors'
 
@@ -14,14 +14,14 @@ const metadata = {
   icons: [],
 }
 
-const chains = [mainnet, arbitrumSepolia, arbitrum] as const
+const chains = [devnet, arbitrumSepolia, arbitrum] as const
 const connectors: CreateConnectorFn[] = []
 connectors.push(walletConnect({ projectId, metadata, showQrModal: true }))
 
 export const config = createConfig({
   chains,
   transports: {
-    [mainnet.id]: http(),
+    [devnet.id]: http(),
     [arbitrumSepolia.id]: http(),
     [arbitrum.id]: http(),
     // [devnet.id]: http(),

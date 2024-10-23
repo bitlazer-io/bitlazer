@@ -11,11 +11,8 @@ import Features from '@pages/features/Features'
 import clsx from 'clsx'
 import { useAccount } from 'wagmi'
 import { Account } from '@pages/connect-wallet/Account'
-import { devnet } from 'src/web3/chains'
-import { config } from 'src/web3/config'
-import { switchChain } from '@wagmi/core'
 
-interface IHeader {}
+interface IHeader { }
 
 const Header: FC<IHeader> = () => {
   const [isActive, setIsActive] = useState(false)
@@ -49,15 +46,6 @@ const Header: FC<IHeader> = () => {
     }
   }, [isConnected])
 
-  useEffect(() => {
-    const _switchChain = async () => {
-      await switchChain(config, { chainId: devnet.id })
-    }
-    if (chainId && chainId !== devnet.id) {
-      _switchChain()
-    }
-  }, [chainId])
-
   return (
     <>
       <header className="w-full fixed md:absolute top-0 left-0 z-50 bg-black md:bg-transparent md:pointer-events-auto md:[&_*]:pointer-events-auto">
@@ -74,9 +62,8 @@ const Header: FC<IHeader> = () => {
               <img className="w-full h-full object-contain" src={burger} alt="" />
             </button>
             <div
-              className={`flex h-screen flex-col text-white fixed  md:flex-1 transition-all md:p-0 px-4 py-8 pt-24 duration-300 z-[100] bg-black w-full top-0 overflow-y-auto md:overflow-visible md:top-auto md:w-auto md:h-auto md:bg-transparent md:static md:z-auto ${
-                isActive ? 'right-0' : '-right-[100vw]'
-              }`}
+              className={`flex h-screen flex-col text-white fixed  md:flex-1 transition-all md:p-0 px-4 py-8 pt-24 duration-300 z-[100] bg-black w-full top-0 overflow-y-auto md:overflow-visible md:top-auto md:w-auto md:h-auto md:bg-transparent md:static md:z-auto ${isActive ? 'right-0' : '-right-[100vw]'
+                }`}
             >
               <button
                 onClick={closeMenu}
@@ -86,7 +73,7 @@ const Header: FC<IHeader> = () => {
               </button>
               <div className="items-center gap-[4.875rem] flex md:flex-row flex-col">
                 <nav className="whitespace-nowrap text-[1.25rem] text-lightgreen-100 font-ocr-x-trial md:mx-auto">
-                  <ul className="flex md:flex-row flex-col items-center gap-8">
+                  <ul className="flex md:flex-row flex-col items-center gap-8 md:gap-12">
                     <li>
                       <Link
                         to="/about"

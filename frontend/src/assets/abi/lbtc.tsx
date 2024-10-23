@@ -159,6 +159,11 @@ export const LBTC_abi: Abi = [
         name: 'amount',
         type: 'uint256',
       },
+      {
+        internalType: 'address',
+        name: 'receiver',
+        type: 'address',
+      },
     ],
     name: 'burn',
     outputs: [],
@@ -245,6 +250,11 @@ export const LBTC_abi: Abi = [
         internalType: 'uint256',
         name: 'amount',
         type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: 'receiver',
+        type: 'address',
       },
     ],
     name: 'mint',

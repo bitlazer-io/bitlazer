@@ -1,5 +1,4 @@
 import React, { FC, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import MyModal from '@components/modal/MyModal'
 import HowItWorks from '@pages/how-it-works/HowItWorks'
@@ -21,11 +20,11 @@ const Footer: FC<IFooter> = () => {
         <div className="flex md:flex-row flex-col items-center justify-between gap-5 border-dimgray-100 border-0 border-t-[.075rem] border-dashed pt-5 pb-[1.625rem] ">
           <nav className="tracking-[-0.02em]">
             <ul className="flex items-center gap-5">
-              <li>
+              {/* <li>
                 <Link className="text-gray-100 hover:text-white" to="/about">
                   ABOUT
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <button
                   className="text-gray-100 hover:text-white"
