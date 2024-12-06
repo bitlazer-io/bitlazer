@@ -26,7 +26,7 @@ const Roadmap: FC<IRoadmap> = () => {
       <OverlayScrollbarsComponent options={{}} style={{ maxHeight, overflow: 'auto' }}>
         <div className="flex flex-col gap-[1.668rem]">
           <div className="flex flex-col gap-6 md:gap-[2.375rem] md:p-10 px-4 py-6 ">
-            <div className="tracking-[-0.06em] leading-[1.313rem]">## WHERE THIS IS GOING</div>
+            <div className="tracking-[-0.06em] leading-[1.313rem] text-2xl">## WHERE THIS IS GOING</div>
             <div className="flex flex-col gap-[2.375rem]">
               <div className="flex flex-col gap-4">
                 <div>

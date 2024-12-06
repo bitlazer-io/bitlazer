@@ -58,8 +58,8 @@ const MainLayout = () => {
           <div
             className="w-[.5713rem] h-[.5713rem] bg-[#90e38c] rounded-full blur-[.0938rem] absolute z-30 dot"
             style={{
-              top: showDot.y - 5,
-              left: showDot.x - 5,
+              top: showDot.y - 6.5,
+              left: showDot.x - 6.5,
               transform: `rotate(${showDot.rotate}deg)`,
             }}
           >
@@ -70,7 +70,7 @@ const MainLayout = () => {
         {/* Lines */}
         <div
           ref={(el) => el && linesRef.current.push(el)}
-          className="w-[150vw] h-px left-0 absolute origin-top-left rotate-line hover-area"
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
           data-rotate="-17.62"
           onMouseEnter={(e) => handleMouseEnter(e, -17.62)}
           onMouseMove={(e) => handleMouseMove(e, -17.62)}
@@ -81,7 +81,7 @@ const MainLayout = () => {
 
         <div
           ref={(el) => el && linesRef.current.push(el)}
-          className="w-[150vw] h-px left-0 absolute origin-top-left rotate-line hover-area"
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
           data-rotate="-6.96"
           onMouseEnter={(e) => handleMouseEnter(e, -6.96)}
           onMouseMove={(e) => handleMouseMove(e, -6.96)}
@@ -92,7 +92,7 @@ const MainLayout = () => {
 
         <div
           ref={(el) => el && linesRef.current.push(el)}
-          className="w-[150vw] h-px left-0 absolute origin-top-left rotate-line hover-area"
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
           data-rotate="37.45"
           onMouseEnter={(e) => handleMouseEnter(e, 37.45)}
           onMouseMove={(e) => handleMouseMove(e, 37.45)}
@@ -103,7 +103,7 @@ const MainLayout = () => {
 
         <div
           ref={(el) => el && linesRef.current.push(el)}
-          className="w-[150vw] h-px left-0 absolute origin-top-left rotate-line hover-area"
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
           data-rotate="-7.18"
           onMouseEnter={(e) => handleMouseEnter(e, -7.18)}
           onMouseMove={(e) => handleMouseMove(e, -7.18)}
@@ -114,13 +114,63 @@ const MainLayout = () => {
 
         <div
           ref={(el) => el && linesRef.current.push(el)}
-          className="w-[150vw] h-px left-0 md:left-0 absolute origin-top-left rotate-line hover-area"
-          data-rotate="8.23"
-          onMouseEnter={(e) => handleMouseEnter(e, 8.23)}
-          onMouseMove={(e) => handleMouseMove(e, 8.23)}
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
+          data-rotate="2.23"
+          onMouseEnter={(e) => handleMouseEnter(e, 2.23)}
+          onMouseMove={(e) => handleMouseMove(e, 2.23)}
           onMouseLeave={handleMouseLeave}
         >
           <div className="w-full h-full bg-[#68d861] absolute top-0 left-0"></div>
+        </div>
+        <div
+          ref={(el) => el && linesRef.current.push(el)}
+          className="w-[170vw] h-[0.9px] left-0 absolute origin-top-left rotate-line hover-area"
+          data-rotate="12.23"
+          onMouseEnter={(e) => handleMouseEnter(e, 12.23)}
+          onMouseMove={(e) => handleMouseMove(e, 12.23)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="w-full h-full bg-[#68d861] absolute top-0 left-0"></div>
+        </div>
+        <div
+          ref={(el) => el && linesRef.current.push(el)}
+          className="w-[170vw] h-[0.9px] right-0 absolute origin-top-right rotate-line hover-area"
+          data-rotate="-2.23"
+          onMouseEnter={(e) => handleMouseEnter(e, -2.23)}
+          onMouseMove={(e) => handleMouseMove(e, -2.23)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="w-full h-full bg-[#68d861] absolute top-0 right-0"></div>
+        </div>
+        <div
+          ref={(el) => el && linesRef.current.push(el)}
+          className="w-[170vw] h-[0.9px] right-0 absolute origin-top-right rotate-line hover-area"
+          data-rotate="22.23"
+          onMouseEnter={(e) => handleMouseEnter(e, 22.23)}
+          onMouseMove={(e) => handleMouseMove(e, 22.23)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="w-full h-full bg-[#68d861] absolute top-0 right-0"></div>
+        </div>
+        <div
+          ref={(el) => el && linesRef.current.push(el)}
+          className="w-[170vw] h-[0.9px] right-0 absolute origin-top-right rotate-line hover-area"
+          data-rotate="0"
+          onMouseEnter={(e) => handleMouseEnter(e, 0)}
+          onMouseMove={(e) => handleMouseMove(e, 0)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="w-full h-full bg-[#68d861] absolute top-0 right-0"></div>
+        </div>
+        <div
+          ref={(el) => el && linesRef.current.push(el)}
+          className="w-[170vw] h-[0.9px] right-0 absolute origin-top-right rotate-line hover-area"
+          data-rotate="14.23"
+          onMouseEnter={(e) => handleMouseEnter(e, 14.23)}
+          onMouseMove={(e) => handleMouseMove(e, 14.23)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="w-full h-full bg-[#68d861] absolute top-0 right-0"></div>
         </div>
       </div>
       <Suspense fallback={<Loader />}>

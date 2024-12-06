@@ -5,7 +5,6 @@ import HowItWorks from '@pages/how-it-works/HowItWorks'
 import ConnectWallet from '@pages/connect-wallet/ConnectWallet'
 import Roadmap from '@pages/roadmap/Roadmap'
 import Features from '@pages/features/Features'
-import clsx from 'clsx'
 
 interface IFooter {}
 
@@ -16,7 +15,7 @@ const Footer: FC<IFooter> = () => {
   const [openFeaturesModal, setOpenFeaturesModal] = useState(false)
 
   return (
-    <footer className="absolute bottom-0 left-0 z-10 w-full text-base text-gray-100 font-maison-neue z-30 md:pointer-events-auto md:[&_*]:pointer-events-auto">
+    <footer className="absolute bottom-0 left-0 w-full text-xl text-gray-100 font-ocrx z-30 md:pointer-events-auto md:[&_*]:pointer-events-auto">
       <div className="container">
         <div className="flex md:flex-row flex-col items-center justify-between gap-5 border-dimgray-100 border-0 border-t-[.075rem] border-dashed pt-5 pb-[1.625rem] ">
           <nav className="tracking-[-0.02em]">
@@ -27,19 +26,34 @@ const Footer: FC<IFooter> = () => {
                 </Link>
               </li> */}
               <li>
-                <a href="https://bitlazer.gitbook.io/bitlazer" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="hover:scale-105 hover:line-through inline-block"
+                  href="https://bitlazer.gitbook.io/bitlazer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   DOCUMENTATION
                 </a>
               </li>
               |
               <li>
-                <a href="https://explorer.testnet.bitlazer.io" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="hover:scale-105 hover:line-through inline-block"
+                  href="https://explorer.testnet.bitlazer.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   EXPLORER
                 </a>
               </li>
               |
               <li>
-                <a href="https://faucet.testnet.bitlazer.io" target="_blank" rel="noopener noreferrer">
+                <a
+                  className="hover:scale-105 hover:line-through inline-block"
+                  href="https://faucet.testnet.bitlazer.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   TESTNET FAUCET
                 </a>
               </li>
@@ -48,7 +62,7 @@ const Footer: FC<IFooter> = () => {
           <ul className="flex items-center gap-5 tracking-[-0.02em]">
             <li>
               <a
-                className="text-gray-100 hover:text-white"
+                className="text-gray-100 hover:scale-105 hover:line-through inline-block"
                 href="https://x.com/bitlazer"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -58,7 +72,7 @@ const Footer: FC<IFooter> = () => {
             </li>
             <li>
               <a
-                className="text-gray-100 hover:text-white"
+                className="text-gray-100 hover:scale-105 hover:line-through inline-block"
                 href="https://t.me/bitlazer_io"
                 target="_blank"
                 rel="noopener noreferrer"

@@ -34,7 +34,7 @@ const Button = ({
 }: PropsWithChildren<Props>) => {
   const buttonClassNames = clsx(
     className,
-    `font-ocrx w-full cursor-pointer rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-forestgreen flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group disabled:opacity-40 disabled:pointer-events-none disabled:touch-none
+    `font-ocrx w-full cursor-pointer rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.5rem] whitespace-nowrap bg-forestgreen flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group disabled:opacity-40 disabled:pointer-events-none disabled:touch-none
       `,
 
     variant === 'mini' ? '!h-10' : variant === 'dark' ? '!bg-darkslategray-200' : null,

@@ -27,10 +27,10 @@ const HowItWorks: FC<IHowItWorks> = () => {
       <OverlayScrollbarsComponent options={{}} style={{ maxHeight, overflow: 'auto' }}>
         <div className="flex flex-col gap-[1.668rem]">
           <div className="flex flex-col gap-6 md:gap-[2.375rem] md:p-10 px-4 py-6 ">
-            <div className="tracking-[-0.06em] leading-[1.313rem]">## HOW IT WORKS</div>
+            <div className="tracking-[-0.06em] leading-[1.313rem] text-2xl">## HOW IT WORKS</div>
             <div className="flex flex-col gap-[2.375rem]">
               <div className="flex flex-col gap-4">
-                <div>
+                <div className="text-2xl">
                   <span>[ Step 1 | </span>
                   <span className="text-fuchsia">Bridge Bitcoin to Bitlazer</span>
                   <span> ] </span>
@@ -43,7 +43,7 @@ const HowItWorks: FC<IHowItWorks> = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-4">
-                <div>
+                <div className="text-2xl">
                   <span>[ Step 2 | </span>
                   <span className="text-fuchsia">Stake L3 BTC or LZR Tokens</span>
                   <span> ] </span>
@@ -61,7 +61,7 @@ const HowItWorks: FC<IHowItWorks> = () => {
                 </div>
               </div>
               <div className="flex flex-col gap-4">
-                <div>
+                <div className="text-2xl">
                   <span>[ Step 3 | </span>
                   <span className="text-fuchsia">Claim Airdrop and Earn Yield</span>
                   <span> ] </span>

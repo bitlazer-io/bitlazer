@@ -39,13 +39,13 @@ body {
 @layer base {
   @font-face {
     font-family: 'OCRX';
-    src: url('./fonts/OCR-XTTF-Regular.eot');
+    src: url('./fonts/OCRX-Compressed.eot');
     src:
-      url('./fonts/OCR-XTTF-Regular.eot?#iefix') format('embedded-opentype'),
-      url('./fonts/OCR-XTTF-Regular.woff2') format('woff2'),
-      url('./fonts/OCR-XTTF-Regular.woff') format('woff'),
-      url('./fonts/OCR-XTTF-Regular.ttf') format('truetype');
-    font-weight: thin;
+      url('./fonts/OCRX-Compressed.eot?#iefix') format('embedded-opentype'),
+      url('./fonts/OCRX-Compressed.woff2') format('woff2'),
+      url('./fonts/OCRX-Compressed.woff') format('woff'),
+      url('./fonts/OCRX-Compressed.ttf') format('truetype');
+    font-weight: normal;
     font-style: normal;
     font-display: swap;
   }

@@ -3,11 +3,9 @@ import React, { FC, useEffect, useState } from 'react'
 import BridgeDeposit from './wrap/BridgeWrap'
 import BridgeStake from './stake/BridgeStake'
 import BridgeWithdraw from './crosschain/BridgeCrosschain'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount } from 'wagmi'
 import BridgeConnect from './connect/BridgeConnect'
 import clsx from 'clsx'
-import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
-import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import Cookies from 'universal-cookie'
 
 interface IBridge {}
@@ -104,11 +102,11 @@ const Bridge: FC<IBridge> = () => {
           <section className="md:max-w-[62.919rem] w-full flex md:flex-row flex-col-reverse text-[1rem] text-white ">
             <div className="md:max-w-[30.95rem] w-full flex flex-col md:pt-10">
               <div className="bg-black font-ocrx  border-white border-[.075rem] border-dashed flex flex-col md:pt-[2.562rem] md:pb-[2.25rem] md:pl-[2.5rem] md:pr-[0.5rem] px-4 py-6 md:gap-[2.375rem] gap-6 md:min-h-[44.6875rem]">
-                <div className="relative tracking-[-0.06em] leading-[1.313rem] font-maison-neue">## HOW IT WORKS</div>
+                <div className="relative tracking-[-0.06em] leading-[1.313rem] text-2xl">## HOW IT WORKS</div>
                 <div className="flex flex-col gap-10 max-w-[27rem] flex-1">
                   <div className="flex flex-col gap-[2.375rem]">
                     <div className="flex flex-col gap-4">
-                      <div>
+                      <div className="text-2xl">
                         <span>[ Step 1 | </span>
                         <span className="text-fuchsia">Wrap Bitcoin to Bitlazer BTC</span>
                         <span> ] </span>
@@ -123,7 +121,7 @@ const Bridge: FC<IBridge> = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
-                      <div>
+                      <div className="text-2xl">
                         <span>[ Step 2 | </span>
                         <span className="text-fuchsia">Bridge Bitcoin to Bitlazer</span>
                         <span> ] </span>
@@ -136,7 +134,7 @@ const Bridge: FC<IBridge> = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
-                      <div>
+                      <div className="text-2xl">
                         <span>[ Step 3 | </span>
                         <span className="text-fuchsia">Stake L3 BTC or LZR Tokens</span>
                         <span> ] </span>
@@ -154,7 +152,7 @@ const Bridge: FC<IBridge> = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
-                      <div>
+                      <div className="text-2xl">
                         <span>[ Step 4 | </span>
                         <span className="text-fuchsia">Claim Airdrop and Earn Yield</span>
                         <span> ] </span>
@@ -180,11 +178,11 @@ const Bridge: FC<IBridge> = () => {
                       <div className={currentProgress > 2 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
                       <div className={currentProgress > 3 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
                     </div>
-                    <div className="tracking-[-0.06em] leading-[1.25rem] font-maison-neue">
+                    <div className="tracking-[-0.06em] leading-[1.25rem] font-ocrx text-2xl mt-2">
                       CURRENT PROGRESS{' '}
                       <span className="font-ocrx">
-                        {currentProgress}/4 <span className="font-maison-neue">[</span>{' '}
-                        {Math.round((currentProgress / 4) * 100)}% <span className="font-maison-neue">]</span>
+                        {currentProgress}/4 <span className="">[</span> {Math.round((currentProgress / 4) * 100)}%{' '}
+                        <span className="font-">]</span>
                       </span>
                     </div>
                   </div>
