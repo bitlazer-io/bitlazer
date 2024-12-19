@@ -11,7 +11,7 @@ import Features from '@pages/features/Features'
 import clsx from 'clsx'
 import { useAccount, useBalance } from 'wagmi'
 import { Account } from '@pages/connect-wallet/Account'
-import { testnet } from 'src/web3/chains'
+import { mainnet } from 'src/web3/chains'
 import { formatEther } from 'viem'
 
 interface IHeader {}
@@ -60,7 +60,7 @@ const Header: FC<IHeader> = () => {
     // refetch: refetchBalanceL3,
   } = useBalance({
     address,
-    chainId: testnet.id,
+    chainId: mainnet.id,
   })
 
   return (

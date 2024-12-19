@@ -6,7 +6,7 @@ import { useBalance, useAccount, useSwitchChain } from 'wagmi'
 import { waitForTransactionReceipt, writeContract } from '@wagmi/core'
 import { stakelzrBTC_abi } from 'src/assets/abi/stakelzrBTC'
 import { formatEther, parseEther } from 'ethers/lib/utils'
-import { testnet } from 'src/web3/chains'
+import { mainnet } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
 import { config } from 'src/web3/config'
 import Cookies from 'universal-cookie'
@@ -21,7 +21,7 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
 
   const userBalance = useBalance({
     address: address,
-    chainId: testnet.id,
+    chainId: mainnet.id,
   })
 
   const {
@@ -143,7 +143,7 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
           <div className="flex flex-row items-center justify-between gap-[1.25rem]">
             <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">APY TBD%</div>
           </div>
-          {chainId === testnet.id ? (
+          {chainId === mainnet.id ? (
             <Button type="submit" disabled={!isStakeValid}>
               STAKE
             </Button>
@@ -204,7 +204,7 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
           </div>
         </div>
         <div className="flex flex-col gap-[0.687rem]">
-          {chainId === testnet.id ? (
+          {chainId === mainnet.id ? (
             <Button type="submit" disabled={!isUnstakeValid && !enabled}>
               UNSTAKE
             </Button>
