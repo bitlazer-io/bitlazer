@@ -54,7 +54,7 @@ const Button = ({
         <span
           className={clsx(
             variant === 'dark' && '!bg-darkslategray-200 group-hover:!bg-dimgray-200',
-            'px-[0.875rem] h-full bg-darkolivegreen-200 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 group-hover:bg-darkolivegreen-100 w-full',
+            'px-[0.875rem] h-full leading-[50%] pt-3 bg-darkolivegreen-200 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 group-hover:bg-darkolivegreen-100 w-full',
           )}
         >
           {!isLoading ? (
@@ -100,7 +100,7 @@ const Button = ({
         <span
           className={clsx(
             variant === 'dark' && '!bg-darkslategray-200 group-hover:!bg-dimgray-200',
-            'px-[0.875rem] h-full bg-darkolivegreen-200 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 group-hover:bg-darkolivegreen-100 w-full',
+            'px-[0.875rem] h-full leading-[50%] pt-3 bg-darkolivegreen-200 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 group-hover:bg-darkolivegreen-100 w-full',
           )}
         >
           {!isLoading ? (

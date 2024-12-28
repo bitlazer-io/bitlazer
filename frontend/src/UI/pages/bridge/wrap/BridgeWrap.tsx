@@ -228,7 +228,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
         <div className="flex flex-col relative gap-[0.75rem]">
           <label className="text-lightgreen-100">## WRAP {selectedToken.toUpperCase()} TO lzrBTC</label>
-          <div className="font-ocrx w-full rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
+          <div className="font-ocrx w-full pt-3 rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
             <div className="flex-1 flex items-center justify-center h-full">
               <span className="text-lightgreen-100">WBTC</span>
             </div>
@@ -316,7 +316,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       >
         <div className="flex flex-col relative gap-[0.75rem]">
           <label className="text-lightgreen-100">## UNWRAP lzrBTC TO {selectedTokenUnwrap.toUpperCase()}</label>
-          <div className="font-ocrx w-full rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
+          <div className="font-ocrx w-full pt-3 rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
             <div className="flex-1 flex items-center justify-center h-full">
               <span className="text-lightgreen-100">lzrBTC</span>
             </div>

@@ -16,7 +16,7 @@ const Home: FC<IHome> = () => {
               <span className="inline-block text-lightgreen-100">
                 <Typewriter
                   options={{
-                    strings: ['network', 'earnings', 'future'],
+                    strings: ['yield', 'staking', 'rewards', 'bridging'],
                     autoStart: true,
                     loop: true,
                     deleteSpeed: 50,

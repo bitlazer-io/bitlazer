@@ -5,12 +5,12 @@ html {
   box-sizing: border-box;
   scroll-behavior: smooth;
 
-  font-size: 0.941175vw;
+  font-size: 16px;
   font-weight: 200;
 
   scrollbar-color: #3d8938 rgba(0, 0, 0, 0.1);
 
-  @media (max-width: 1499.98px) {
+  @media (max-width: 1399.98px) {
     font-size: 1vw;
   }
   @media (max-width: 1299.98px) {
@@ -257,7 +257,6 @@ footer {
     transform: rotate(calc(var(--initial-rotate, 0deg)));
   }
   50% {
-    transform: rotate(calc(var(--initial-rotate, 0deg) + var(--random-offset, 2deg)));
   }
   100% {
     transform: rotate(calc(var(--initial-rotate, 0deg)));
@@ -265,7 +264,7 @@ footer {
 }
 
 .rotate-line {
-  animation: randomRotate 3s ease-in-out infinite;
+  transform: rotate(calc(var(--initial-rotate, 0deg) + var(--random-offset, 2deg)));
   pointer-events: all !important;
 
   position: relative;
@@ -282,7 +281,7 @@ footer {
   // }
 
   div {
-    animation: widthLine 1.5s;
+    animation: widthLine 4s ease-in-out;
   }
 }
 

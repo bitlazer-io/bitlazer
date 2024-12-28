@@ -53,13 +53,13 @@ const MyModal: FC<PropsWithChildren<IMyModal>> = ({
               <div className="w-full flex flex-col gap-[0.031rem] md:h-auto h-full">
                 <div className="self-stretch rounded-[.115rem] bg-forestgreen flex flex-col  py-[0.187rem] px-[0.125rem] modal-header">
                   <div className="self-stretch shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-center justify-between py-[0.25rem] pl-[0.875rem] pr-[0.25rem] gap-[1.25rem]">
-                    <div className="text-lightgreen-100 font-ocrx uppercase text-[1.25rem] md:text-[1.5rem]">
+                    <div className="text-lightgreen-100 font-ocrx uppercase text-[1.25rem] md:text-[1.5rem] leading-[50%] pt-3.5">
                       {label}
                     </div>
 
                     <button
                       onClick={handleClose}
-                      className="h-[2.025rem] w-[1.881rem] text-lightgreen-100 hover:text-lightgreen-100 shadow-[1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-[1.8px_1.8px_1.84px_1.4px_rgba(0,_0,_0,_0.91)_inset]"
+                      className="h-[2.025rem] w-[1.881rem] leading-[50%] pt-3 text-lightgreen-100 hover:text-lightgreen-100 shadow-[1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-[1.8px_1.8px_1.84px_1.4px_rgba(0,_0,_0,_0.91)_inset]"
                     >
                       X
                     </button>

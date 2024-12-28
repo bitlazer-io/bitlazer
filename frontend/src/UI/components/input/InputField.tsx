@@ -82,7 +82,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(
           >
             <input
               className={clsx(
-                'placeholder:text-lightgreen-300 text-lightgreen-100 py-[0.812rem] px-[1.25rem] text-[1.25rem] rounded-[.115rem] w-full font-ocrx text-center disabled:opacity-40 disabled:pointer-events-none disabled:touch-none',
+                'placeholder:text-lightgreen-300 text-lightgreen-100 py-[0.5rem] px-[1.25rem] pt-5 text-[1.45rem] rounded-[.115rem] w-full font-ocrx text-center disabled:opacity-40 disabled:pointer-events-none disabled:touch-none',
                 iconBefore && '!pl-12',
                 inputClassName,
               )}

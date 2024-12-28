@@ -20,6 +20,10 @@ body {
   color: rgb(var(--foreground-rgb));
 } */
 
+.transform-full {
+  transform: scale(-1, -1);
+}
+
 .Toastify__toast {
   color: #3d8938;
 }
