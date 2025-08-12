@@ -8,7 +8,7 @@ jobs:
     name: Main Web
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -43,7 +43,7 @@ jobs:
   #   name: Web App
   #   runs-on: ubuntu-latest
   #   steps:
-  #   - uses: actions/checkout@v4
+  #   - uses: actions/checkout@v5
 
   #   - name: Configure AWS Credentials
   #     uses: aws-actions/configure-aws-credentials@v4
