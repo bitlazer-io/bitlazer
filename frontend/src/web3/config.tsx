@@ -1,4 +1,4 @@
-import { arbitrum, arbitrumSepolia, sepolia } from 'viem/chains'
+import { arbitrum } from 'viem/chains'
 import { mainnet } from './chains'
 import { createConfig, CreateConnectorFn, http } from 'wagmi'
 import { walletConnect } from 'wagmi/connectors'

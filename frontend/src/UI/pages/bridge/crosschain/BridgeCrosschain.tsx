@@ -113,8 +113,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     let approvalTransactionHash
     try {
       approvalTransactionHash = await writeContract(config, approvalArgs)
-    } catch (error) {
-      toast(<TXToast {...{ message: 'Approval failed', error }} />)
+    } catch (error: any) {
+      // Check if user rejected the transaction
+      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Approval failed', error }} />, { autoClose: 7000 })
+      }
       setIsApproving(false)
       return
     }
@@ -123,12 +128,12 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     })
     if (approvalReceipt.status === 'success') {
       const txHash = approvalReceipt.transactionHash
-      toast(<TXToast {...{ message: 'Approval successful', txHash }} />)
+      toast(<TXToast {...{ message: 'Approval successful', txHash }} />, { autoClose: 7000 })
       setTimeout(() => {
         setRefreshApproval((prev) => !prev)
       }, 1000)
     } else {
-      toast(<TXToast {...{ message: 'Approval failed' }} />)
+      toast(<TXToast {...{ message: 'Approval failed' }} />, { autoClose: 7000 })
     }
     setIsApproving(false)
   }
@@ -177,7 +182,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
       if (receipt.status === 1) {
         const txHash = receipt.transactionHash
-        toast(<TXToast {...{ message: 'Bridge successful', txHash }} />)
+        toast(<TXToast {...{ message: 'Bridge successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasBridged', 'true', { path: '/' })
         // Clear input and refresh balances
@@ -191,10 +196,15 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         refetchBalance()
         refetchBalanceL3()
       } else {
-        toast(<TXToast {...{ message: 'Bridge failed' }} />)
+        toast(<TXToast {...{ message: 'Bridge failed' }} />, { autoClose: 7000 })
       }
-    } catch (error) {
-      toast(<TXToast {...{ message: 'Failed to Bridge tokens' }} />)
+    } catch (error: any) {
+      // Check if user rejected the transaction
+      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Failed to Bridge tokens' }} />, { autoClose: 7000 })
+      }
     } finally {
       setIsWaitingForBridgeTx(false)
       if (toL3) {
@@ -236,7 +246,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     <div className="flex flex-col gap-7">
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
         <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <div className="relative tracking-[-0.06em] leading-[1.25rem] mb-1">## BRIDGE lzrBTC TO BITLAZER</div>
+          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO BITLAZER</label>
           <Controller
             name="amount"
             control={control}
@@ -313,7 +323,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
                 handleChainSwitch(false)
               }}
             >
-              SWITCH CHAIN
+              SWITCH TO ARBITRUM
             </Button>
           )}
         </div>
@@ -368,7 +378,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         className="flex flex-col gap-7"
       >
         <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <div className="relative tracking-[-0.06em] leading-[1.25rem] mb-1">## BRIDGE lzrBTC TO ARBITRUM</div>
+          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO ARBITRUM</label>
           <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
             <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
               Balance:{' '}

@@ -31,9 +31,10 @@ export const ${outputFileName.replace('.tsx', '')}_abi: Abi = ${JSON.stringify(a
   }
 }
 
-// Generate ABIs for both contracts
+// Generate ABIs for all contracts
 // Note: The contract file is lBTC.sol but the contract name is lzrBTC
 generateTypeScriptABI('lBTC', 'lzrBTC.tsx', 'lzrBTC');
 generateTypeScriptABI('stakelBTC', 'stakelzrBTC.tsx', 'StakeLBTC');
+generateTypeScriptABI('stakedBTCAdapter', 'stakeAdapter.tsx', 'StakeAdapter');
 
 console.log('\nABIs generated successfully! They are now aligned with the latest contract code.');

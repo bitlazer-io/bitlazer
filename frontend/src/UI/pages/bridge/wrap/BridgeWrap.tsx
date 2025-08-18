@@ -225,7 +225,12 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     try {
       approvalTransactionHash = await writeContract(config, approvalArgs)
     } catch (error: any) {
-      toast(<TXToast {...{ message: 'Approval failed', error }} />)
+      // Check if user rejected the transaction
+      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Approval failed', error }} />, { autoClose: 7000 })
+      }
       setIsApproving(false)
       return
     }
@@ -235,12 +240,12 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
     if (approvalReceipt.status === 'success') {
       const txHash = approvalReceipt.transactionHash
-      toast(<TXToast {...{ message: 'Approval successful', txHash }} />)
+      toast(<TXToast {...{ message: 'Approval successful', txHash }} />, { autoClose: 7000 })
       setApproval(true)
       // Trigger refresh to update allowance
       setRefresh((prev) => !prev)
     } else {
-      toast(<TXToast {...{ message: 'Transaction failed' }} />)
+      toast(<TXToast {...{ message: 'Transaction failed' }} />, { autoClose: 7000 })
       setApproval(false)
     }
     setIsApproving(false)
@@ -271,22 +276,24 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
         })
       } catch (simulationError: any) {
         if (simulationError.message?.includes('Wrapper not supported')) {
-          toast(<TXToast {...{ message: 'WBTC is not configured as a supported wrapper' }} />)
+          toast(<TXToast {...{ message: 'WBTC is not configured as a supported wrapper' }} />, { autoClose: 7000 })
           setIsWrapping(false)
           return
         }
         if (simulationError.message?.includes('paused')) {
-          toast(<TXToast {...{ message: 'Contract is paused' }} />)
+          toast(<TXToast {...{ message: 'Contract is paused' }} />, { autoClose: 7000 })
           setIsWrapping(false)
           return
         }
         if (simulationError.message?.includes('Insufficient')) {
-          toast(<TXToast {...{ message: 'Insufficient WBTC balance' }} />)
+          toast(<TXToast {...{ message: 'Insufficient WBTC balance' }} />, { autoClose: 7000 })
           setIsWrapping(false)
           return
         }
 
-        toast(<TXToast {...{ message: `Transaction will fail: ${simulationError.message || 'Unknown error'}` }} />)
+        toast(<TXToast {...{ message: `Transaction will fail: ${simulationError.message || 'Unknown error'}` }} />, {
+          autoClose: 7000,
+        })
         setIsWrapping(false)
         return
       }
@@ -299,7 +306,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
       if (receipt.status === 'success') {
         const txHash = receipt.transactionHash
-        toast(<TXToast {...{ message: 'Wrap successful', txHash }} />)
+        toast(<TXToast {...{ message: 'Wrap successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasWrapped', 'true', { path: '/' })
         // Clear the input field and reset approval after successful wrap
@@ -308,15 +315,15 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
         // Single refresh after successful transaction
         setRefresh((prev) => !prev)
       } else {
-        toast(<TXToast {...{ message: 'Wrap failed' }} />)
+        toast(<TXToast {...{ message: 'Wrap failed' }} />, { autoClose: 7000 })
       }
       setIsWrapping(false)
     } catch (error: any) {
       setIsWrapping(false)
       if (!error.message.includes('User rejected the request.')) {
-        toast(<TXToast {...{ message: 'Failed to Wrap.' }} />)
+        toast(<TXToast {...{ message: 'Failed to Wrap.' }} />, { autoClose: 7000 })
       } else {
-        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />)
+        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 7000 })
       }
     }
   }
@@ -347,21 +354,21 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
       if (receipt.status === 'success') {
         const txHash = receipt.transactionHash
-        toast(<TXToast {...{ message: 'Unwrap successful', txHash }} />)
+        toast(<TXToast {...{ message: 'Unwrap successful', txHash }} />, { autoClose: 7000 })
         // Clear the input field after successful unwrap
         unwrapSetValue('amount', '')
         // Single refresh after successful transaction
         setRefresh((prev) => !prev)
       } else {
-        toast(<TXToast {...{ message: 'Unwrap failed' }} />)
+        toast(<TXToast {...{ message: 'Unwrap failed' }} />, { autoClose: 7000 })
       }
       setIsUnwrapping(false)
     } catch (error: any) {
       setIsUnwrapping(false)
       if (!error.message.includes('User rejected the request.')) {
-        toast(<TXToast {...{ message: 'Failed to Unwrap' }} />)
+        toast(<TXToast {...{ message: 'Failed to Unwrap' }} />, { autoClose: 7000 })
       } else {
-        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />)
+        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 7000 })
       }
     }
   }
@@ -452,7 +459,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
                           args: [WRAP_CONTRACT as `0x${string}`, BigInt(0)] as const,
                         })
                         await waitForTransactionReceipt(config, { hash: resetTx })
-                        toast(<TXToast {...{ message: 'Allowance reset to 0. Now approve the correct amount.' }} />)
+                        toast(<TXToast {...{ message: 'Allowance reset to 0. Now approve the correct amount.' }} />, {
+                          autoClose: 7000,
+                        })
                         setRefresh((prev) => !prev)
                       } catch (error) {
                         console.error('Reset failed:', error)
@@ -495,7 +504,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
                 handleChainSwitch(false)
               }}
             >
-              SWITCH CHAIN
+              SWITCH TO ARBITRUM
             </Button>
           )}
         </div>
@@ -610,7 +619,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
                 handleChainSwitch(false)
               }}
             >
-              SWITCH CHAIN
+              SWITCH TO ARBITRUM
             </Button>
           )}
           {/* <div className="h-[0.688rem] relative tracking-[-0.06em] leading-[1.25rem] text-gray-200 inline-block">
