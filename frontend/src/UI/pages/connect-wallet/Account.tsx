@@ -1,11 +1,10 @@
 import { MyModal } from '@components/index'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import ConnectWallet from './ConnectWallet'
-import { handleAddL3Chain } from 'src/web3/functions'
 
 export function Account() {
-  const { address, isConnected } = useAccount()
+  const { address } = useAccount()
   const [openConnectWalletModal, setOpenConnectWalletModal] = useState(false)
 
   // useEffect(() => {

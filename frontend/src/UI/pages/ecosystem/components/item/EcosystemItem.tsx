@@ -17,15 +17,7 @@ interface IEcosystemLinks {
 export type TypeEcosystemTag = 'defi' | 'bridge' | 'infra' | 'gaming' | 'nft'
 export type TypeEcosystemLiveness = 'live' | 'upcoming'
 
-const EcosystemItem: React.FC<IEcosystemItem> = ({
-  imageSrc,
-  logoSrc,
-  title,
-  description,
-  socialIcons,
-  tag,
-  liveness,
-}) => {
+const EcosystemItem: React.FC<IEcosystemItem> = ({ imageSrc, logoSrc, title, description, tag, liveness }) => {
   return (
     <article className="overflow-hidden rounded-[0.1153rem] bg-neutral-800 flex max-md:flex-col">
       <div className="flex flex-col md:max-w-[48.875rem] w-full relative">

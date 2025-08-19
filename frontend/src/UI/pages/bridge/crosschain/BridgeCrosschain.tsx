@@ -4,14 +4,9 @@ import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { arbitrum } from 'wagmi/chains'
-import {
-  ERC20_CONTRACT_ADDRESS,
-  L2_GATEWAY_ROUTER,
-  L2_GATEWAY_ROUTER_BACK,
-  TokenKeys,
-} from '../../../../web3/contracts'
-import { useAccount, useBalance, useReadContract, useSwitchChain } from 'wagmi'
-import { writeContract, waitForTransactionReceipt, simulateContract } from '@wagmi/core'
+import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
+import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { BigNumber, ethers } from 'ethers'
 import { toast } from 'react-toastify'
 import { formatEther, parseEther } from 'ethers/lib/utils'
@@ -39,30 +34,12 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     mode: 'onChange',
   })
 
-  const {
-    handleSubmit: handleUnstakeSubmit,
-    control: unstakeControl,
-    watch: unstakeWatch,
-    getValues: unstakeGetValues,
-    setValue: unstakeSetValue,
-    trigger: unstakeTrigger,
-    formState: { errors: unstakeErrors, isValid: unstakeIsValid },
-  } = useForm({
-    defaultValues: {
-      amount: '',
-    },
-    mode: 'onChange',
-  })
-
-  const [selectedToken, setSelectedToken] = useState<TokenKeys>('lzrBTC')
-  const { switchChain } = useSwitchChain()
-  const { address, isConnected, chainId, connector } = useAccount()
+  const { address, chainId, connector } = useAccount()
   const [approval, setApproval] = useState<boolean>(false)
   const [refreshApproval, setRefreshApproval] = useState(false)
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)
   const [isApproving, setIsApproving] = useState<boolean>(false)
   const [isBridging, setIsBridging] = useState<boolean>(false)
-  const [isBridgingBack, setIsBridgingBack] = useState<boolean>(false)
   const [bridgeSuccessInfo, setBridgeSuccessInfo] = useState<{ txHash: string } | null>(null)
 
   const { data: approvalData } = useReadContract({
@@ -139,26 +116,14 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   }
 
   const handleDeposit = async (toL3: boolean) => {
-    if (toL3) {
-      setIsBridging(true)
-    } else {
-      setIsBridgingBack(true)
-    }
+    setIsBridging(true)
     if (!connector) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
       return
     }
     const provider = await connector.getProvider()
     if (!provider) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
       return
     }
     const web3Provider = new ethers.providers.Web3Provider(provider)
@@ -207,15 +172,11 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       }
     } finally {
       setIsWaitingForBridgeTx(false)
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
     }
   }
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async () => {
     approval ? handleDeposit(true) : handleApprove()
   }
 

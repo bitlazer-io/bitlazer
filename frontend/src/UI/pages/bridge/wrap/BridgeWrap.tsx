@@ -2,32 +2,27 @@ import { Button, InputField, TXToast } from '@components/index'
 import Loading from '@components/loading/Loading'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { useAccount, useBalance, useReadContract, useSwitchChain } from 'wagmi'
-import { erc20Abi, formatUnits } from 'viem'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
+import { erc20Abi } from 'viem'
 import { waitForTransactionReceipt, writeContract, simulateContract } from '@wagmi/core'
-import { arbitrum, mainnet } from 'wagmi/chains'
+import { arbitrum } from 'wagmi/chains'
 import { config } from 'src/web3/config'
 import { ERC20_CONTRACT_ADDRESS, TokenKeys, WRAP_CONTRACT } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
-import { parseEther, formatEther } from 'ethers/lib/utils'
 import { toast } from 'react-toastify'
-import { BigNumber } from 'ethers'
 import { parseUnits } from 'viem'
 import Cookies from 'universal-cookie'
 import { handleChainSwitch } from 'src/web3/functions'
-import { use } from 'i18next'
 
 interface IBridgeWrap {}
 
 const BridgeWrap: FC<IBridgeWrap> = () => {
-  const [selectedToken, setSelectedToken] = useState<TokenKeys>('wbtc')
-  const [selectedTokenUnwrap, setSelectedTokenUnwrap] = useState<TokenKeys>('wbtc')
-  const { switchChain } = useSwitchChain()
-  const { address, isConnected, chainId } = useAccount()
+  const [selectedToken] = useState<TokenKeys>('wbtc')
+  const [selectedTokenUnwrap] = useState<TokenKeys>('wbtc')
+  const { address, chainId } = useAccount()
   const [approval, setApproval] = useState<boolean>(false)
   const [refresh, setRefresh] = useState<boolean>(false)
-  const [reverseApproval, setReverseApproval] = useState<boolean>(false)
-  const [holderBalance, setHolderBalance] = useState<string | undefined>(undefined)
+  const [, setHolderBalance] = useState<string | undefined>(undefined)
   const [isApproving, setIsApproving] = useState<boolean>(false)
   const [isWrapping, setIsWrapping] = useState<boolean>(false)
   const [isUnwrapping, setIsUnwrapping] = useState<boolean>(false)
@@ -48,7 +43,6 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
   })
 
   const {
-    handleSubmit: handleUnwrapSubmit,
     control: unwrapControl,
     setValue: unwrapSetValue,
     watch: unwrapWatch,
@@ -69,18 +63,14 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     scopeKey: refresh.toString(),
   })
 
-  const {
-    data: lzrBTCBalanceData,
-    isLoading: lzrBTCBalanceLoading,
-    refetch: refetchLzrBTC,
-  } = useBalance({
+  const { data: lzrBTCBalanceData, isLoading: lzrBTCBalanceLoading } = useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS['lzrBTC'],
     chainId: arbitrum.id,
     scopeKey: refresh.toString(),
   })
 
-  const { data: wbtcBalance, isLoading: wbtcBalanceLoading } = useBalance({
+  useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS['wbtc'],
     chainId: arbitrum.id,
@@ -96,7 +86,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     scopeKey: refresh.toString(),
   })
 
-  const { data: reverseApprovalData } = useReadContract({
+  // For reverse approval (not used currently)
+  useReadContract({
     abi: erc20Abi,
     address: WRAP_CONTRACT,
     functionName: 'allowance',
@@ -116,8 +107,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     scopeKey: refresh.toString(),
   })
 
-  // Check if contract is paused
-  const { data: isPaused } = useReadContract({
+  // Check if contract is paused (not used in UI currently)
+  useReadContract({
     abi: [
       {
         inputs: [],
@@ -148,8 +139,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     chainId: arbitrum.id,
   })
 
-  // Check if WBTC is set as supported wrapper
-  const { data: supportedWBTCAddress } = useReadContract({
+  // Check if WBTC is set as supported wrapper (not used in UI currently)
+  useReadContract({
     abi: [
       {
         inputs: [{ internalType: 'address', name: '', type: 'address' }],
@@ -373,7 +364,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     }
   }
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async () => {
     approval ? handleDeposit() : handleApprove()
   }
 

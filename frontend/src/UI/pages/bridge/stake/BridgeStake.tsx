@@ -4,7 +4,7 @@ import React, { FC, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { toast } from 'react-toastify'
 import { useBalance, useAccount, useReadContract } from 'wagmi'
-import { waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import { waitForTransactionReceipt, writeContract, simulateContract } from '@wagmi/core'
 import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
 import { formatEther } from 'ethers/lib/utils'
 import { mainnet } from 'src/web3/chains'
@@ -13,11 +13,9 @@ import { config } from 'src/web3/config'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
 import { parseUnits } from 'viem'
 
-interface IBridgeStake {
-  enabled: boolean
-}
+interface IBridgeStake {}
 
-const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
+const BridgeStake: FC<IBridgeStake> = () => {
   const { address, chainId } = useAccount()
   const [isStaking, setIsStaking] = useState(false)
   const [isUnstaking, setIsUnstaking] = useState(false)
@@ -100,23 +98,28 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
     try {
       const amountToStake = parseUnits(data.stakeAmount, 18)
 
-      // For native token staking, we need to send value
-      const txHash = await writeContract(config, {
+      // First simulate the transaction
+      const { request } = await simulateContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
         functionName: 'stake',
         args: [amountToStake],
-        value: amountToStake,
+        value: amountToStake, // For native token staking
         chainId: mainnet.id,
         account: address as `0x${string}`,
       })
+
+      // Execute the transaction with the simulated request
+      const txHash = await writeContract(config, request)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
       })
 
       if (receipt.status === 'success') {
-        toast(<TXToast {...{ message: 'Stake successful', txHash: receipt.transactionHash }} />, { autoClose: 7000 })
+        const wasRestaking = stakedBalance && Number(formatStakedAmount(stakedBalance as any)) > 0
+        const message = wasRestaking ? 'Stake successful. Previous rewards have been claimed!' : 'Stake successful'
+        toast(<TXToast {...{ message, txHash: receipt.transactionHash }} />, { autoClose: 7000 })
         stakeSetValue('stakeAmount', '')
         setRefreshData((prev) => prev + 1)
         setTimeout(() => {
@@ -129,6 +132,10 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
       }
     } catch (error: any) {
       console.error('Staking error:', error)
+      // Log detailed error info for debugging
+      if (error?.cause) {
+        console.error('Error cause:', error.cause)
+      }
       // Check if user rejected the transaction
       if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
         toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
@@ -153,14 +160,21 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
   const onUnstakeSubmit = async (data: any) => {
     setIsUnstaking(true)
     try {
-      const txHash = await writeContract(config, {
+      const amountToUnstake = parseUnits(data.unstakeAmount, 18)
+
+      // First simulate the transaction to get proper gas estimation
+      const { request } = await simulateContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
         functionName: 'unstake',
-        args: [parseUnits(data.unstakeAmount, 18)],
+        args: [amountToUnstake],
+        value: 0n, // Explicitly set value to 0 for payable function
         chainId: mainnet.id,
         account: address as `0x${string}`,
       })
+
+      // Execute the transaction with the simulated request
+      const txHash = await writeContract(config, request)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
@@ -188,9 +202,24 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
       }
     } catch (error: any) {
       console.error('Unstaking error:', error)
+      // Log detailed error info for debugging
+      if (error?.cause) {
+        console.error('Error cause:', error.cause)
+      }
       // Check if user rejected the transaction
       if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
         toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else if (error?.message?.includes('Insufficient balance for rewards')) {
+        // Contract doesn't have enough balance to pay rewards
+        toast(
+          <TXToast
+            {...{
+              message:
+                'Unable to unstake: The staking pool currently has insufficient funds for reward payouts. Please try again later or contact support.',
+            }}
+          />,
+          { autoClose: 7000 },
+        )
       } else {
         // Extract meaningful error message
         let errorMessage = 'Failed to unstake'
@@ -248,14 +277,6 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
     }
   }
 
-  if (!enabled) {
-    return (
-      <div className="flex flex-col gap-7">
-        <div className="text-2xl font-bold text-red-500 text-center mb-4">STAKING IS NOT AVAILABLE YET</div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-7">
       {/* Staking Stats Section */}
@@ -267,16 +288,18 @@ const BridgeStake: FC<IBridgeStake> = ({ enabled }) => {
               <span className="tracking-[-0.04em]">YOUR STAKE</span>
               <span className="font-mono text-lightgreen-100">{formatStakedAmount(stakedBalance)} lzrBTC</span>
             </div>
-            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
-              <span className="tracking-[-0.04em]">PENDING REWARDS</span>
-              <span className="font-mono text-lightgreen-100">{formatRewardAmount(pendingRewards)} lzrBTC</span>
+            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px] gap-2">
+              <span className="tracking-[-0.04em] whitespace-nowrap">PENDING REWARDS</span>
+              <span className="font-mono text-lightgreen-100 text-right break-all">
+                {formatRewardAmount(pendingRewards)} lzrBTC
+              </span>
             </div>
             <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
               <span className="tracking-[-0.04em]">APR</span>
               <span className="font-mono text-lightgreen-100">{formatAPR()}</span>
             </div>
             <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
-              <span className="tracking-[-0.04em]">TOTAL STAKED</span>
+              <span className="tracking-[-0.04em]">TOTAL POOL SIZE</span>
               <span className="font-mono text-lightgreen-100">{formatStakedAmount(totalStaked)} lzrBTC</span>
             </div>
           </div>

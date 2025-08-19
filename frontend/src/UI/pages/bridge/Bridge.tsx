@@ -24,14 +24,14 @@ const Bridge: FC<IBridge> = () => {
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [currentProgress, setCurrentProgress] = useState<number>(0)
 
-  const { address, isConnected, chainId } = useAccount()
+  const { isConnected } = useAccount()
 
   const renderContent = () => {
     switch (activeTabId) {
       case 'deposit':
         return <BridgeDeposit />
       case 'stake':
-        return <BridgeStake enabled={true} />
+        return <BridgeStake />
       case 'withdraw':
         return <BridgeWithdraw />
       case 'connect':

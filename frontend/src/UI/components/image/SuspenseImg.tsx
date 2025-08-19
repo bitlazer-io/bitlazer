@@ -11,7 +11,7 @@ const imgCache = {
           resolve(this.__cache[src])
         }
         img.src = src
-      }).then((img) => {
+      }).then(() => {
         this.__cache[src] = true
       })
     }

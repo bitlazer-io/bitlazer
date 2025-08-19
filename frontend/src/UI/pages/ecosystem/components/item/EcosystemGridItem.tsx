@@ -3,15 +3,7 @@ import { IEcosystemItem } from './EcosystemItem'
 
 interface IEcosystemGridItem extends IEcosystemItem {}
 
-const EcosystemGridItem: React.FC<IEcosystemGridItem> = ({
-  imageSrc,
-  logoSrc,
-  title,
-  description,
-  socialIcons,
-  tag,
-  liveness,
-}) => {
+const EcosystemGridItem: React.FC<IEcosystemGridItem> = ({ imageSrc, logoSrc, title, description, tag, liveness }) => {
   return (
     <article className="flex overflow-hidden flex-col items-center p-2 pb-7 w-full rounded-[0.1153rem] bg-neutral-800">
       <div className="flex flex-col overflow-hidden rounded-[0.1153rem] relative justify-between p-3 w-full text-sm font-medium leading-none uppercase whitespace-nowrap aspect-[1.815] text-white">
