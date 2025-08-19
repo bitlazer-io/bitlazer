@@ -98,8 +98,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
     try {
       const amountToStake = parseUnits(data.stakeAmount, 18)
 
-      // First simulate the transaction
-      const { request } = await simulateContract(config, {
+      // Execute the transaction directly without simulation
+      const txHash = await writeContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
         functionName: 'stake',
@@ -108,9 +108,6 @@ const BridgeStake: FC<IBridgeStake> = () => {
         chainId: mainnet.id,
         account: address as `0x${string}`,
       })
-
-      // Execute the transaction with the simulated request
-      const txHash = await writeContract(config, request)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
@@ -162,8 +159,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
     try {
       const amountToUnstake = parseUnits(data.unstakeAmount, 18)
 
-      // First simulate the transaction to get proper gas estimation
-      const { request } = await simulateContract(config, {
+      // Execute the transaction directly without simulation
+      const txHash = await writeContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
         functionName: 'unstake',
@@ -172,9 +169,6 @@ const BridgeStake: FC<IBridgeStake> = () => {
         chainId: mainnet.id,
         account: address as `0x${string}`,
       })
-
-      // Execute the transaction with the simulated request
-      const txHash = await writeContract(config, request)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
