@@ -98,7 +98,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     try {
       const amountToStake = parseUnits(data.stakeAmount, 18)
 
-      // Execute the transaction directly without simulation
+      // Execute the transaction with explicit gas to bypass estimation
       const txHash = await writeContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -107,7 +107,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
         value: amountToStake, // For native token staking
         chainId: mainnet.id,
         account: address as `0x${string}`,
-      })
+        gas: 300000n, // Provide explicit gas limit to bypass estimation
+      } as any)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
@@ -159,7 +160,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     try {
       const amountToUnstake = parseUnits(data.unstakeAmount, 18)
 
-      // Execute the transaction directly without simulation
+      // Execute the transaction with explicit gas to bypass estimation
       const txHash = await writeContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -168,7 +169,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
         value: 0n, // Explicitly set value to 0 for payable function
         chainId: mainnet.id,
         account: address as `0x${string}`,
-      })
+        gas: 300000n, // Provide explicit gas limit to bypass estimation
+      } as any)
 
       const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
