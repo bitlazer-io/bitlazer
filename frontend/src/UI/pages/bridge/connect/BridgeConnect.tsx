@@ -17,6 +17,7 @@ const BridgeConnect: FC<IBridgeConnect> = () => {
         </div>
         <div className="flex-1 flex flex-col gap-[0.562rem]">
           <button
+            type="button"
             className="font-ocrx w-full cursor-pointer rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group"
             onClick={() => {
               setOpenConnectWalletModal(true)
@@ -28,7 +29,7 @@ const BridgeConnect: FC<IBridgeConnect> = () => {
           </button>
           <MyModal
             label={'CONNECT WALLET'}
-            width="21.4375rem"
+            width="md:w-[21.4375rem]"
             open={openConnectWalletModal}
             handleClose={() => setOpenConnectWalletModal(false)}
           >
