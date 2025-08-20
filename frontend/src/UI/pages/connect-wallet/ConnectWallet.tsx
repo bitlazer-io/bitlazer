@@ -1,22 +1,13 @@
-import React, { FC, useEffect } from 'react'
-import { useAccount, useBalance, useDisconnect } from 'wagmi'
-import { switchChain } from '@wagmi/core'
+import React, { FC } from 'react'
+import { useAccount, useDisconnect } from 'wagmi'
 import { WalletOptions } from './WalletOptions'
-import { mainnet } from 'src/web3/chains'
-import { config } from 'src/web3/config'
-import { formatEther } from 'ethers/lib/utils'
 
 interface IConnectWallet {}
 
 const ConnectWallet: FC<IConnectWallet> = () => {
-  const { address, isConnected, chainId } = useAccount()
+  const { address, isConnected } = useAccount()
 
   const { disconnect } = useDisconnect()
-
-  const userBalance = useBalance({
-    address: address,
-    chainId: mainnet.id,
-  })
 
   return (
     <div className="flex-1 rounded-12xs bg-black font-ocrx border-forestgreen border-[.1875rem] border-solid box-border flex flex-col py-[1.25rem] px-[0.562rem] gap-[1.668rem] ">

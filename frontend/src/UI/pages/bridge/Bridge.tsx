@@ -15,23 +15,23 @@ interface BridgeTab {
 
 const Bridge: FC<IBridge> = () => {
   const tabs: BridgeTab[] = [
-    { id: 'deposit', name: '(UN)WRAP' },
+    { id: 'deposit', name: 'WRAP' },
     { id: 'withdraw', name: 'BRIDGE' },
-    { id: 'stake', name: '(UN)STAKE' },
+    { id: 'stake', name: 'STAKE' },
     { id: 'connect', name: 'CONNECT WALLET' },
   ]
 
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [currentProgress, setCurrentProgress] = useState<number>(0)
 
-  const { address, isConnected, chainId } = useAccount()
+  const { isConnected } = useAccount()
 
   const renderContent = () => {
     switch (activeTabId) {
       case 'deposit':
         return <BridgeDeposit />
       case 'stake':
-        return <BridgeStake enabled={false} />
+        return <BridgeStake />
       case 'withdraw':
         return <BridgeWithdraw />
       case 'connect':
@@ -173,7 +173,6 @@ const Bridge: FC<IBridge> = () => {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTabId(tab.id)}
-                        disabled={tab.id === 'stake'}
                         className={clsx(
                           'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
                           activeTabId === tab.id
@@ -184,8 +183,7 @@ const Bridge: FC<IBridge> = () => {
                         <span
                           className={clsx(
                             'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full',
-                            activeTabId === tab.id ? 'bg-darkolivegreen-200' : 'group-hover:bg-dimgray-200',
-                            tab.id === 'stake' ? 'bg-dimgray-200' : 'bg-black',
+                            activeTabId === tab.id ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
                           )}
                         >
                           {tab.name}

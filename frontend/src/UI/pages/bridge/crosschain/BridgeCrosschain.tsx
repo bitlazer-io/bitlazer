@@ -4,14 +4,9 @@ import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { arbitrum } from 'wagmi/chains'
-import {
-  ERC20_CONTRACT_ADDRESS,
-  L2_GATEWAY_ROUTER,
-  L2_GATEWAY_ROUTER_BACK,
-  TokenKeys,
-} from '../../../../web3/contracts'
-import { useAccount, useBalance, useReadContract, useSwitchChain } from 'wagmi'
-import { writeContract, waitForTransactionReceipt, simulateContract } from '@wagmi/core'
+import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
+import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
 import { BigNumber, ethers } from 'ethers'
 import { toast } from 'react-toastify'
 import { formatEther, parseEther } from 'ethers/lib/utils'
@@ -39,30 +34,12 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     mode: 'onChange',
   })
 
-  const {
-    handleSubmit: handleUnstakeSubmit,
-    control: unstakeControl,
-    watch: unstakeWatch,
-    getValues: unstakeGetValues,
-    setValue: unstakeSetValue,
-    trigger: unstakeTrigger,
-    formState: { errors: unstakeErrors, isValid: unstakeIsValid },
-  } = useForm({
-    defaultValues: {
-      amount: '',
-    },
-    mode: 'onChange',
-  })
-
-  const [selectedToken, setSelectedToken] = useState<TokenKeys>('lzrBTC')
-  const { switchChain } = useSwitchChain()
-  const { address, isConnected, chainId, connector } = useAccount()
+  const { address, chainId, connector } = useAccount()
   const [approval, setApproval] = useState<boolean>(false)
   const [refreshApproval, setRefreshApproval] = useState(false)
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)
   const [isApproving, setIsApproving] = useState<boolean>(false)
   const [isBridging, setIsBridging] = useState<boolean>(false)
-  const [isBridgingBack, setIsBridgingBack] = useState<boolean>(false)
   const [bridgeSuccessInfo, setBridgeSuccessInfo] = useState<{ txHash: string } | null>(null)
 
   const { data: approvalData } = useReadContract({
@@ -113,8 +90,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     let approvalTransactionHash
     try {
       approvalTransactionHash = await writeContract(config, approvalArgs)
-    } catch (error) {
-      toast(<TXToast {...{ message: 'Approval failed', error }} />)
+    } catch (error: any) {
+      // Check if user rejected the transaction
+      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Approval failed', error }} />, { autoClose: 7000 })
+      }
       setIsApproving(false)
       return
     }
@@ -123,37 +105,25 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     })
     if (approvalReceipt.status === 'success') {
       const txHash = approvalReceipt.transactionHash
-      toast(<TXToast {...{ message: 'Approval successful', txHash }} />)
+      toast(<TXToast {...{ message: 'Approval successful', txHash }} />, { autoClose: 7000 })
       setTimeout(() => {
         setRefreshApproval((prev) => !prev)
       }, 1000)
     } else {
-      toast(<TXToast {...{ message: 'Approval failed' }} />)
+      toast(<TXToast {...{ message: 'Approval failed' }} />, { autoClose: 7000 })
     }
     setIsApproving(false)
   }
 
   const handleDeposit = async (toL3: boolean) => {
-    if (toL3) {
-      setIsBridging(true)
-    } else {
-      setIsBridgingBack(true)
-    }
+    setIsBridging(true)
     if (!connector) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
       return
     }
     const provider = await connector.getProvider()
     if (!provider) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
       return
     }
     const web3Provider = new ethers.providers.Web3Provider(provider)
@@ -177,7 +147,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
       if (receipt.status === 1) {
         const txHash = receipt.transactionHash
-        toast(<TXToast {...{ message: 'Bridge successful', txHash }} />)
+        toast(<TXToast {...{ message: 'Bridge successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasBridged', 'true', { path: '/' })
         // Clear input and refresh balances
@@ -191,21 +161,22 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         refetchBalance()
         refetchBalanceL3()
       } else {
-        toast(<TXToast {...{ message: 'Bridge failed' }} />)
+        toast(<TXToast {...{ message: 'Bridge failed' }} />, { autoClose: 7000 })
       }
-    } catch (error) {
-      toast(<TXToast {...{ message: 'Failed to Bridge tokens' }} />)
+    } catch (error: any) {
+      // Check if user rejected the transaction
+      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Failed to Bridge tokens' }} />, { autoClose: 7000 })
+      }
     } finally {
       setIsWaitingForBridgeTx(false)
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingBack(false)
-      }
+      setIsBridging(false)
     }
   }
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async () => {
     approval ? handleDeposit(true) : handleApprove()
   }
 
@@ -236,7 +207,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     <div className="flex flex-col gap-7">
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
         <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <div className="relative tracking-[-0.06em] leading-[1.25rem] mb-1">## BRIDGE lzrBTC TO BITLAZER</div>
+          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO BITLAZER</label>
           <Controller
             name="amount"
             control={control}
@@ -313,7 +284,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
                 handleChainSwitch(false)
               }}
             >
-              SWITCH CHAIN
+              SWITCH TO ARBITRUM
             </Button>
           )}
         </div>
@@ -368,7 +339,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         className="flex flex-col gap-7"
       >
         <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <div className="relative tracking-[-0.06em] leading-[1.25rem] mb-1">## BRIDGE lzrBTC TO ARBITRUM</div>
+          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO ARBITRUM</label>
           <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
             <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
               Balance:{' '}

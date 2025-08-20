@@ -1,32 +1,14 @@
-import { Button, InputField, MyModal } from '@components/index'
+import { MyModal } from '@components/index'
 import ConnectWallet from '@pages/connect-wallet/ConnectWallet'
 import React, { FC, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { useAccount } from 'wagmi'
 
 interface IBridgeConnect {}
 
 const BridgeConnect: FC<IBridgeConnect> = () => {
-  const { isConnected } = useAccount()
   const [openConnectWalletModal, setOpenConnectWalletModal] = useState(false)
 
-  const {
-    handleSubmit,
-    control,
-    formState: { errors, isValid },
-  } = useForm({
-    defaultValues: {
-      amount: '',
-    },
-    mode: 'onChange',
-  })
-
-  const onSubmit = (data: any) => {
-    console.log('Form Data:', data)
-  }
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
+    <form className="flex flex-col gap-7">
       <div className="flex-1 rounded-12xs bg-black border-forestgreen border-[.1875rem] border-solid box-border flex flex-col py-[1.25rem] px-[0.562rem] gap-[1.668rem] ">
         <div className="flex-1 flex items-center justify-center">
           <div className="tracking-[-0.06em] leading-[1.313rem] text-center font-ocrx text-2xl">
@@ -35,6 +17,7 @@ const BridgeConnect: FC<IBridgeConnect> = () => {
         </div>
         <div className="flex-1 flex flex-col gap-[0.562rem]">
           <button
+            type="button"
             className="font-ocrx w-full cursor-pointer rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group"
             onClick={() => {
               setOpenConnectWalletModal(true)
@@ -46,7 +29,7 @@ const BridgeConnect: FC<IBridgeConnect> = () => {
           </button>
           <MyModal
             label={'CONNECT WALLET'}
-            width="21.4375rem"
+            width="md:w-[21.4375rem]"
             open={openConnectWalletModal}
             handleClose={() => setOpenConnectWalletModal(false)}
           >

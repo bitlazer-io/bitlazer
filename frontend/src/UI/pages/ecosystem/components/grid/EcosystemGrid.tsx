@@ -3,21 +3,10 @@ import EcosystemGridItem from '../item/EcosystemGridItem'
 
 import { useMediaQuery } from 'react-responsive'
 
-import quantumBackground from '@images/ecosystem/quantum/792989385625933014.png'
-import quantumLogo from '@images/ecosystem/quantum/quantum.png'
 import barbarianBackground from '@images/ecosystem/barbarian/792983471455859783.png'
 import barbarianLogo from '@images/ecosystem/barbarian/792982900225199389.png'
-import bitBeamBackground from '@images/ecosystem/bitbeam/image2.jpg'
-import bitBeamLogo from '@images/ecosystem/bitbeam/logo.png'
 import abyssLogo from '@images/ecosystem/abyss/792985258162286918.png'
 import abyssBackground from '@images/ecosystem/abyss/792991494454650274.png'
-import image4 from '@images/ecosystem/image4.jpg'
-import image5 from '@images/ecosystem/image5.jpg'
-import image6 from '@images/ecosystem/image6.png'
-
-import logo4 from '@images/ecosystem/logo4.png'
-import logo5 from '@images/ecosystem/logo5.png'
-import logo6 from '@images/ecosystem/logo6.png'
 import EcosystemItem, { IEcosystemItem, TypeEcosystemLiveness, TypeEcosystemTag } from '../item/EcosystemItem'
 import { DiscordIcon, LinkIcon, XIcon } from '@svgs'
 import { InputField, MySelect } from '@components/index'
@@ -208,12 +197,6 @@ const EcosystemGrid: FC<IEcosystemGrid> = () => {
     const matchesLiveness = selectedLiveness ? item.liveness === selectedLiveness : true
     return matchesSearch && matchesTag && matchesLiveness
   })
-
-  const handleResetFilters = () => {
-    setSearchTerm('')
-    setSelectedTag(null)
-    setSelectedLiveness(null)
-  }
 
   return (
     <div className="flex flex-col gap-10 md:gap-20">
