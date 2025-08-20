@@ -98,9 +98,9 @@ const Bridge: FC<IBridge> = () => {
     <div className="w-full min-h-screen relative overflow-hidden flex flex-col justify-center py-32">
       <div className="container">
         <div className="flex flex-col items-center md:pointer-events-auto md:[&_*]:pointer-events-auto">
-          <section className="md:max-w-[62.919rem] w-full flex md:flex-row flex-col-reverse text-[1rem] text-white ">
+          <section className="md:max-w-[62.919rem] w-full flex md:flex-row flex-col-reverse text-[1rem] text-white md:items-stretch">
             <div className="md:max-w-[30.95rem] w-full flex flex-col md:pt-10">
-              <div className="bg-black font-ocrx  border-white border-[.075rem] border-dashed flex flex-col md:pt-[2.562rem] md:pb-[2.25rem] md:pl-[2.5rem] md:pr-[0.5rem] px-4 py-6 md:gap-[2.375rem] gap-6 md:min-h-[44.6875rem]">
+              <div className="bg-black font-ocrx  border-white border-[.075rem] border-dashed flex flex-col md:pt-[2.562rem] md:pb-[2.25rem] md:pl-[2.5rem] md:pr-[0.5rem] px-4 py-6 md:gap-[2.375rem] gap-6 h-full">
                 <div className="relative tracking-[-0.06em] leading-[1.313rem] text-2xl">## HOW IT WORKS</div>
                 <div className="flex flex-col gap-10 max-w-[27rem] flex-1 text-2xl">
                   <div className="flex flex-col gap-[2.375rem]">
