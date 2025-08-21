@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { usePublicClient } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
 import { mainnet } from 'src/web3/chains'
+import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface NetworkStats {
   arbitrumBlockNumber: bigint | null
@@ -70,7 +71,7 @@ export const NetworkOverview: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Arbitrum Block */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">ARBITRUM</div>
+            <PrimaryLabel className="mb-1">ARBITRUM</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-28" />
@@ -78,12 +79,12 @@ export const NetworkOverview: React.FC = () => {
                 <>#{stats.arbitrumBlockNumber?.toString() || 'N/A'}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">BLOCK</div>
+            <SecondaryLabel className="mt-1">BLOCK</SecondaryLabel>
           </div>
 
           {/* Bitlazer Block */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">BITLAZER L3</div>
+            <PrimaryLabel className="mb-1">BITLAZER L3</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-28" />
@@ -91,12 +92,12 @@ export const NetworkOverview: React.FC = () => {
                 <>#{stats.bitlazerBlockNumber?.toString() || 'OFFLINE'}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">BLOCK</div>
+            <SecondaryLabel className="mt-1">BLOCK</SecondaryLabel>
           </div>
 
           {/* Gas Price */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">GAS PRICE</div>
+            <PrimaryLabel className="mb-1">GAS PRICE</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
@@ -104,12 +105,12 @@ export const NetworkOverview: React.FC = () => {
                 <>{formatGwei(stats.gasPrice)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">GWEI</div>
+            <SecondaryLabel className="mt-1">GWEI</SecondaryLabel>
           </div>
 
           {/* Network Status */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">STATUS</div>
+            <PrimaryLabel className="mb-1">STATUS</PrimaryLabel>
             <div className="flex items-center gap-2">
               <div
                 className={`w-2 h-2 rounded-full ${!loading ? 'bg-lightgreen-100' : 'bg-gray-300'} ${!loading ? 'animate-pulse' : ''}`}
@@ -118,7 +119,7 @@ export const NetworkOverview: React.FC = () => {
                 {loading ? 'LOADING' : 'ONLINE'}
               </span>
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">LIVE</div>
+            <SecondaryLabel className="mt-1">LIVE</SecondaryLabel>
           </div>
         </div>
       </div>

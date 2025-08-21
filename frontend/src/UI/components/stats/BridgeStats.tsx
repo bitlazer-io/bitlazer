@@ -5,6 +5,7 @@ import { mainnet } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { formatUnits } from 'viem'
+import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface BridgeStatsData {
   totalBridgedToL3: number
@@ -91,7 +92,7 @@ export const BridgeStats: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">BITLAZER L3</div>
+            <PrimaryLabel className="mb-1">BITLAZER L3</PrimaryLabel>
             <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
@@ -99,11 +100,11 @@ export const BridgeStats: React.FC = () => {
                 <>{formatAmount(stats.totalBridgedToL3)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">NATIVE lzrBTC</div>
+            <SecondaryLabel className="mt-1">NATIVE lzrBTC</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-3 border border-fuchsia/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">ARBITRUM</div>
+            <PrimaryLabel className="mb-1">ARBITRUM</PrimaryLabel>
             <div className="text-2xl font-bold text-fuchsia font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
@@ -111,20 +112,20 @@ export const BridgeStats: React.FC = () => {
                 <>{formatAmount(stats.totalBridgedToArbitrum)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">ERC-20 lzrBTC</div>
+            <SecondaryLabel className="mt-1">ERC-20 lzrBTC</SecondaryLabel>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80">PENDING</div>
+            <PrimaryLabel>PENDING</PrimaryLabel>
             <div className="text-lg font-bold text-lightgreen-100 font-maison-neue">
               {loading ? <div className="h-5 bg-gray-300/10 animate-pulse rounded w-8" /> : <>{stats.pendingBridges}</>}
             </div>
           </div>
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80">AVG TIME</div>
+            <PrimaryLabel>AVG TIME</PrimaryLabel>
             <div className="text-lg font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-16" />
@@ -135,7 +136,7 @@ export const BridgeStats: React.FC = () => {
           </div>
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80">24H VOL</div>
+            <PrimaryLabel>24H VOL</PrimaryLabel>
             <div className="text-lg font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-20" />
@@ -148,7 +149,7 @@ export const BridgeStats: React.FC = () => {
 
         <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-ocrx text-gray-100/80">DISTRIBUTION</span>
+            <PrimaryLabel>DISTRIBUTION</PrimaryLabel>
             <span className="text-xs text-lightgreen-100 font-ocrx">{formatAmount(totalLzrBTC)} TOTAL</span>
           </div>
 

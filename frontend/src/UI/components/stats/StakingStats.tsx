@@ -5,6 +5,7 @@ import { mainnet } from 'src/web3/chains'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
 import { stakelzrBTC_abi } from 'src/assets/abi/stakelzrBTC'
 import { formatUnits } from 'viem'
+import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface StakingStatsData {
   totalStaked: number
@@ -103,7 +104,7 @@ export const StakingStats: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="bg-black/80 p-4 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-2">TOTAL POOL SIZE</div>
+            <PrimaryLabel className="mb-2">TOTAL POOL SIZE</PrimaryLabel>
             <div className="text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-9 bg-gray-300/10 animate-pulse rounded" />
@@ -111,11 +112,11 @@ export const StakingStats: React.FC = () => {
                 <>{formatAmount(stats.totalPoolSize)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx">lzrBTC STAKED</div>
+            <SecondaryLabel>lzrBTC STAKED</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-4 border border-fuchsia/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-2">CURRENT APR</div>
+            <PrimaryLabel className="mb-2">CURRENT APR</PrimaryLabel>
             <div className="text-3xl font-bold text-fuchsia font-maison-neue mb-1 flex items-center gap-2">
               {loading ? (
                 <div className="h-9 bg-gray-300/10 animate-pulse rounded w-24" />
@@ -126,11 +127,11 @@ export const StakingStats: React.FC = () => {
                 </>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx">ANNUAL RETURNS</div>
+            <SecondaryLabel>ANNUAL RETURNS</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-4 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-2">TVL (USD)</div>
+            <PrimaryLabel className="mb-2">TVL (USD)</PrimaryLabel>
             <div className="text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-9 bg-gray-300/10 animate-pulse rounded" />
@@ -138,13 +139,13 @@ export const StakingStats: React.FC = () => {
                 <>${(stats.totalPoolSize * 68000).toFixed(0)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx">TOTAL VALUE</div>
+            <SecondaryLabel>TOTAL VALUE</SecondaryLabel>
           </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">STAKERS</div>
+            <PrimaryLabel className="mb-1">STAKERS</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-12" />
@@ -155,7 +156,7 @@ export const StakingStats: React.FC = () => {
           </div>
 
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">AVG STAKE</div>
+            <PrimaryLabel className="mb-1">AVG STAKE</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
@@ -166,7 +167,7 @@ export const StakingStats: React.FC = () => {
           </div>
 
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">24H REWARDS</div>
+            <PrimaryLabel className="mb-1">24H REWARDS</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
@@ -177,7 +178,7 @@ export const StakingStats: React.FC = () => {
           </div>
 
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">REWARDS</div>
+            <PrimaryLabel className="mb-1">REWARDS</PrimaryLabel>
             <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
@@ -194,13 +195,13 @@ export const StakingStats: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-base font-ocrx text-lightgreen-100 mb-1 uppercase">Staking Rewards</h3>
-                <p className="text-xs text-gray-100/70 font-maison-neue max-w-md">
+                <p className="text-xs text-white/70 font-maison-neue max-w-md">
                   Earn native Bitcoin gas fee rewards and LZR tokens by staking your lzrBTC
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-fuchsia font-maison-neue">{formatAPR(stats.apr)}</div>
-                <div className="text-xs text-gray-100/80 font-ocrx uppercase">APR</div>
+                <SecondaryLabel>APR</SecondaryLabel>
               </div>
             </div>
             <button

@@ -4,6 +4,7 @@ import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 // import { lzrBTC_abi } from 'src/assets/abi/lzrBTC' // Not needed for event logs
 import { parseAbiItem, formatUnits } from 'viem'
+import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface WrapStatsData {
   totalWrapped: number
@@ -128,7 +129,7 @@ export const WrapStats: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">TOTAL WRAPPED</div>
+            <PrimaryLabel className="mb-1">TOTAL WRAPPED</PrimaryLabel>
             <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
@@ -136,11 +137,11 @@ export const WrapStats: React.FC = () => {
                 <>{formatAmount(stats.totalWrapped)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">WBTC → lzrBTC</div>
+            <SecondaryLabel className="mt-1">WBTC → lzrBTC</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-3 border border-fuchsia/30 rounded-[.115rem]">
-            <div className="text-xs font-ocrx text-gray-100/80 mb-1">TOTAL UNWRAPPED</div>
+            <PrimaryLabel className="mb-1">TOTAL UNWRAPPED</PrimaryLabel>
             <div className="text-2xl font-bold text-fuchsia font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
@@ -148,14 +149,14 @@ export const WrapStats: React.FC = () => {
                 <>{formatAmount(stats.totalUnwrapped)}</>
               )}
             </div>
-            <div className="text-xs text-gray-100/70 font-ocrx mt-1">lzrBTC → WBTC</div>
+            <SecondaryLabel className="mt-1">lzrBTC → WBTC</SecondaryLabel>
           </div>
         </div>
 
         <div className="bg-black/80 p-3 border border-lightgreen-100/30 mb-4 rounded-[.115rem]">
           <div className="flex justify-between items-center">
             <div>
-              <div className="text-xs font-ocrx text-gray-100/80 mb-1">UNIQUE WRAPPERS</div>
+              <PrimaryLabel className="mb-1">UNIQUE WRAPPERS</PrimaryLabel>
               <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
                 {loading ? (
                   <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
@@ -164,15 +165,13 @@ export const WrapStats: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="text-3xl text-lightgreen-100/40">
-              <span className="font-ocrx">USERS</span>
-            </div>
+            <SecondaryLabel className="text-2xl">USERS</SecondaryLabel>
           </div>
         </div>
 
         {stats.recentWraps.length > 0 && (
           <div>
-            <div className="text-xs font-ocrx text-gray-100/80 mb-2">RECENT ACTIVITY</div>
+            <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
             <div className="space-y-1">
               {stats.recentWraps.map((wrap, index) => (
                 <div

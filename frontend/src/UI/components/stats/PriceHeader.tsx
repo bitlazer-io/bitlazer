@@ -4,6 +4,7 @@ import { useReadContract } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
+import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface PriceData {
   wbtcPrice: number
@@ -83,7 +84,7 @@ export const PriceHeader: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-4 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem]">
           <div className="flex flex-col">
-            <div className="text-xs font-ocrx text-gray-100/80 uppercase tracking-wider mb-1">WBTC Price</div>
+            <PrimaryLabel className="mb-1">WBTC Price</PrimaryLabel>
             <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
@@ -108,7 +109,7 @@ export const PriceHeader: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-4 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem]">
           <div className="flex flex-col">
-            <div className="text-xs font-ocrx text-gray-100/80 uppercase tracking-wider mb-1">lzrBTC Price</div>
+            <PrimaryLabel className="mb-1">lzrBTC Price</PrimaryLabel>
             <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
@@ -116,7 +117,7 @@ export const PriceHeader: React.FC = () => {
                 formatPrice(priceData.lzrBTCPrice)
               )}
             </div>
-            <div className="text-xs text-gray-100/80 font-ocrx">PEGGED 1:1</div>
+            <SecondaryLabel>PEGGED 1:1</SecondaryLabel>
           </div>
         </div>
       </div>
@@ -126,7 +127,7 @@ export const PriceHeader: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-4 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem]">
           <div className="flex flex-col">
-            <div className="text-xs font-ocrx text-gray-100/80 uppercase tracking-wider mb-1">Total Supply</div>
+            <PrimaryLabel className="mb-1">Total Supply</PrimaryLabel>
             <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {totalSupply ? (
                 `${Number(formatUnits(totalSupply as bigint, 8)).toFixed(4)}`
@@ -134,7 +135,7 @@ export const PriceHeader: React.FC = () => {
                 <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
               )}
             </div>
-            <div className="text-xs text-gray-100/80 font-ocrx">lzrBTC</div>
+            <SecondaryLabel>lzrBTC</SecondaryLabel>
           </div>
         </div>
       </div>
@@ -144,7 +145,7 @@ export const PriceHeader: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-fuchsia/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-fuchsia/10 backdrop-blur-sm border border-lightgreen-100/50 p-4 hover:border-fuchsia transition-all duration-300 rounded-[.115rem]">
           <div className="flex flex-col">
-            <div className="text-xs font-ocrx text-gray-100/80 uppercase tracking-wider mb-1">Market Cap</div>
+            <PrimaryLabel className="mb-1">Market Cap</PrimaryLabel>
             <div className="text-2xl font-bold text-fuchsia font-maison-neue mb-1">
               {loading ? (
                 <div className="h-7 w-20 bg-gray-300/10 animate-pulse rounded" />
@@ -152,7 +153,7 @@ export const PriceHeader: React.FC = () => {
                 formatMarketCap(priceData.marketCap)
               )}
             </div>
-            <div className="text-xs text-gray-100/80 font-ocrx">USD VALUE</div>
+            <SecondaryLabel>USD VALUE</SecondaryLabel>
           </div>
         </div>
       </div>
