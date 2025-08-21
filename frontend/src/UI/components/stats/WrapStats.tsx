@@ -63,7 +63,7 @@ export const WrapStats: React.FC = () => {
 
             const block = await publicClient.getBlock({ blockHash: log.blockHash! })
             recentTransactions.push({
-              amount: formatUnits(log.args.amount as bigint, 8),
+              amount: formatUnits(log.args.amount as bigint, 18),
               timestamp: Number(block.timestamp),
               txHash: log.transactionHash!,
             })
@@ -78,9 +78,25 @@ export const WrapStats: React.FC = () => {
 
         recentTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
+        const wrappedFormatted = Number(formatUnits(totalWrappedAmount, 18))
+        const unwrappedFormatted = Number(formatUnits(totalUnwrappedAmount, 18))
+
+        console.log('🔄 WrapStats Data:', {
+          wrapLogsCount: wrapLogs.length,
+          unwrapLogsCount: unwrapLogs.length,
+          totalWrappedAmount: totalWrappedAmount.toString(),
+          totalUnwrappedAmount: totalUnwrappedAmount.toString(),
+          totalWrappedFormatted: wrappedFormatted,
+          totalUnwrappedFormatted: unwrappedFormatted,
+          uniqueWrappers: uniqueAddresses.size,
+          recentTransactionsCount: recentTransactions.length,
+          blockRange: `${fromBlock} - ${currentBlock}`,
+          uniqueAddresses: Array.from(uniqueAddresses),
+        })
+
         setStats({
-          totalWrapped: Number(formatUnits(totalWrappedAmount, 8)),
-          totalUnwrapped: Number(formatUnits(totalUnwrappedAmount, 8)),
+          totalWrapped: wrappedFormatted,
+          totalUnwrapped: unwrappedFormatted,
           uniqueWrappers: uniqueAddresses.size,
           recentWraps: recentTransactions.slice(0, 5),
         })
@@ -120,14 +136,14 @@ export const WrapStats: React.FC = () => {
     <div className="relative group w-full">
       <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-4 md:p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
-        <h2 className="text-base md:text-lg lg:text-xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
           Wrap Statistics
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 md:mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">TOTAL WRAPPED</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -139,7 +155,7 @@ export const WrapStats: React.FC = () => {
 
           <div className="bg-black/80 p-3 border border-fuchsia/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">TOTAL UNWRAPPED</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-fuchsia font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-fuchsia font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -151,7 +167,7 @@ export const WrapStats: React.FC = () => {
 
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">UNIQUE WRAPPERS</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
@@ -172,19 +188,19 @@ export const WrapStats: React.FC = () => {
                   className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm md:text-base text-lightgreen-100 font-maison-neue font-bold">
+                    <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
                       {formatAmount(Number(wrap.amount))} BTC
                     </span>
                     <a
                       href={`https://arbiscan.io/tx/${wrap.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs md:text-sm text-gray-100/70 hover:text-lightgreen-100 font-ocrx transition-colors"
+                      className="text-sm md:text-base text-gray-100/70 hover:text-lightgreen-100 font-ocrx transition-colors"
                     >
                       {formatTxHash(wrap.txHash)}
                     </a>
                   </div>
-                  <span className="text-xs md:text-sm text-gray-100/70 font-ocrx">{formatTime(wrap.timestamp)}</span>
+                  <span className="text-sm md:text-base text-gray-100/70 font-ocrx">{formatTime(wrap.timestamp)}</span>
                 </div>
               ))}
             </div>

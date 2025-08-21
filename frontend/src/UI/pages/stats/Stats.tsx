@@ -16,7 +16,7 @@ const Stats: FC<IStats> = () => {
         <div className="flex flex-col gap-4 md:gap-6 md:pointer-events-auto md:[&_*]:pointer-events-auto">
           {/* Compact Header */}
           <div className="mb-2">
-            <h1 className="text-2xl md:text-5xl lg:text-6xl font-ocrx text-lightgreen-100 tracking-[-0.06em] mb-1">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-ocrx text-lightgreen-100 tracking-[-0.06em] mb-1">
               <TypewriterText
                 text="NETWORK STATS"
                 delay={50}
@@ -26,7 +26,7 @@ const Stats: FC<IStats> = () => {
                 onComplete={() => setTitleComplete(true)}
               />
             </h1>
-            <p className="text-sm md:text-lg text-white font-maison-neue min-h-[1.5rem] md:min-h-[1.75rem]">
+            <p className="text-base md:text-xl text-white font-maison-neue min-h-[1.5rem] md:min-h-[1.75rem]">
               {titleComplete ? (
                 <TypewriterText
                   text="Real-time metrics for the Bitlazer ecosystem"

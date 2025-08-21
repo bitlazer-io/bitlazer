@@ -49,6 +49,17 @@ export const BridgeStats: React.FC = () => {
         const arbSupply = arbitrumBalance ? Number(formatUnits(arbitrumBalance as bigint, 8)) : 0
         const l3Supply = bitlazerBalance ? Number(formatUnits(bitlazerBalance as bigint, 18)) : 0
 
+        console.log('🌉 BridgeStats Data:', {
+          arbitrumBalance: arbitrumBalance?.toString(),
+          bitlazerBalance: bitlazerBalance?.toString(),
+          arbSupplyFormatted: arbSupply,
+          l3SupplyFormatted: l3Supply,
+          pendingBridges: Math.floor(Math.random() * 3),
+          averageBridgeTime: '~15 min',
+          bridgeVolume24h: Math.random() * 0.001,
+          usingFallbackValues: !arbitrumBalance && !bitlazerBalance,
+        })
+
         setStats({
           totalBridgedToL3: l3Supply || 0.000089,
           totalBridgedToArbitrum: arbSupply || 0.000167,
@@ -87,14 +98,14 @@ export const BridgeStats: React.FC = () => {
     <div className="relative group w-full">
       <div className="absolute inset-0 bg-gradient-to-br from-fuchsia/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-4 md:p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
-        <h2 className="text-base md:text-lg lg:text-xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
           Bridge Statistics
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 md:mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">BITLAZER L3</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -106,7 +117,7 @@ export const BridgeStats: React.FC = () => {
 
           <div className="bg-black/80 p-3 border border-fuchsia/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">ARBITRUM</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-fuchsia font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-fuchsia font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -120,14 +131,14 @@ export const BridgeStats: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 md:mb-4">
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>PENDING</PrimaryLabel>
-            <div className="text-sm md:text-base lg:text-base font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? <div className="h-5 bg-gray-300/10 animate-pulse rounded w-8" /> : <>{stats.pendingBridges}</>}
             </div>
           </div>
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>AVG TIME</PrimaryLabel>
-            <div className="text-sm md:text-base lg:text-base font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
@@ -138,7 +149,7 @@ export const BridgeStats: React.FC = () => {
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>24H VOL</PrimaryLabel>
-            <div className="text-sm md:text-base lg:text-base font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
@@ -151,7 +162,9 @@ export const BridgeStats: React.FC = () => {
         <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
           <div className="flex items-center justify-between mb-2">
             <PrimaryLabel>DISTRIBUTION</PrimaryLabel>
-            <span className="text-xs md:text-sm text-lightgreen-100 font-ocrx">{formatAmount(totalLzrBTC)} TOTAL</span>
+            <span className="text-sm md:text-base text-lightgreen-100 font-ocrx">
+              {formatAmount(totalLzrBTC)} TOTAL
+            </span>
           </div>
 
           <div className="relative h-6 bg-black/60 border border-lightgreen-100/30 overflow-hidden">
@@ -160,7 +173,7 @@ export const BridgeStats: React.FC = () => {
               style={{ width: `${l3Percentage}%` }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs md:text-sm font-ocrx text-white mix-blend-difference">
+              <span className="text-sm md:text-base font-ocrx text-white mix-blend-difference">
                 L3: {l3Percentage.toFixed(1)}% | ARB: {arbPercentage.toFixed(1)}%
               </span>
             </div>

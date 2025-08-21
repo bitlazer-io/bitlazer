@@ -40,8 +40,18 @@ export const PriceHeader: React.FC = () => {
         const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
         const priceChange = data['wrapped-bitcoin']?.usd_24h_change || 0
 
-        const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 8)) : 0
+        const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
         const marketCap = supply * wbtcPrice
+
+        console.log('🏷️ PriceHeader Data:', {
+          wbtcPrice,
+          lzrBTCPrice: wbtcPrice,
+          priceChange24h: priceChange,
+          totalSupply: totalSupply?.toString(),
+          supply,
+          marketCap,
+          rawApiResponse: data,
+        })
 
         setPriceData({
           wbtcPrice,
@@ -86,10 +96,10 @@ export const PriceHeader: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
-              <div className="text-sm md:text-base lg:text-lg font-ocrx text-white/90 uppercase tracking-wider mb-1">
+              <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
                 WBTC Price
               </div>
-              <div className="text-sm md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {loading ? (
                   <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
                 ) : (
@@ -98,7 +108,7 @@ export const PriceHeader: React.FC = () => {
               </div>
               {!loading && (
                 <div
-                  className={`text-xs md:text-sm font-ocrx flex items-center gap-1 ${priceData.priceChange24h >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
+                  className={`text-sm md:text-base font-ocrx flex items-center gap-1 ${priceData.priceChange24h >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
                 >
                   <span className="text-lg leading-none">{priceData.priceChange24h >= 0 ? '↑' : '↓'}</span>
                   <span>{formatPercentage(Math.abs(priceData.priceChange24h))}</span>
@@ -113,17 +123,17 @@ export const PriceHeader: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
-              <div className="text-sm md:text-base lg:text-lg font-ocrx text-white/90 uppercase tracking-wider mb-1">
+              <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
                 lzrBTC Price
               </div>
-              <div className="text-sm md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {loading ? (
                   <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
                 ) : (
                   formatPrice(priceData.lzrBTCPrice)
                 )}
               </div>
-              <div className="text-xs md:text-sm lg:text-base text-white/70 font-ocrx uppercase">PEGGED 1:1</div>
+              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">PEGGED 1:1</div>
             </div>
           </div>
         </div>
@@ -133,17 +143,17 @@ export const PriceHeader: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-lightgreen-100/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
-              <div className="text-sm md:text-base lg:text-lg font-ocrx text-white/90 uppercase tracking-wider mb-1">
+              <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
                 Total Supply
               </div>
-              <div className="text-sm md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue mb-1">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {totalSupply ? (
                   formatSupply(Number(formatUnits(totalSupply as bigint, 8)))
                 ) : (
                   <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
                 )}
               </div>
-              <div className="text-xs md:text-sm lg:text-base text-white/70 font-ocrx uppercase">lzrBTC</div>
+              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">lzrBTC</div>
             </div>
           </div>
         </div>
@@ -153,17 +163,17 @@ export const PriceHeader: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-fuchsia/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm" />
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-fuchsia/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-fuchsia transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
-              <div className="text-sm md:text-base lg:text-lg font-ocrx text-white/90 uppercase tracking-wider mb-1">
+              <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
                 Market Cap
               </div>
-              <div className="text-sm md:text-xl lg:text-2xl font-bold text-fuchsia font-maison-neue mb-1 break-all sm:break-normal">
+              <div className="text-lg md:text-2xl lg:text-3xl font-bold text-fuchsia font-maison-neue mb-1 break-all sm:break-normal">
                 {loading ? (
                   <div className="h-7 w-20 bg-gray-300/10 animate-pulse rounded" />
                 ) : (
                   formatMarketCap(priceData.marketCap)
                 )}
               </div>
-              <div className="text-xs md:text-sm lg:text-base text-white/70 font-ocrx uppercase">USD VALUE</div>
+              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">USD VALUE</div>
             </div>
           </div>
         </div>

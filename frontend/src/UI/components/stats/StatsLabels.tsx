@@ -13,7 +13,7 @@ interface SecondaryLabelProps {
 // Primary label for main headings like "WBTC Price", "ARBITRUM", etc.
 export const PrimaryLabel: React.FC<PrimaryLabelProps> = ({ children, className = '' }) => {
   return (
-    <div className={`text-xs md:text-sm lg:text-base font-ocrx text-white/90 uppercase tracking-wider ${className}`}>
+    <div className={`text-sm md:text-base lg:text-lg font-ocrx text-white/90 uppercase tracking-wider ${className}`}>
       {children}
     </div>
   )
@@ -21,7 +21,7 @@ export const PrimaryLabel: React.FC<PrimaryLabelProps> = ({ children, className 
 
 // Secondary label for descriptive text like "BLOCK", "GWEI", "WBTC → lzrBTC", etc.
 export const SecondaryLabel: React.FC<SecondaryLabelProps> = ({ children, className = '' }) => {
-  return <div className={`text-xs md:text-sm text-white/70 font-ocrx uppercase ${className}`}>{children}</div>
+  return <div className={`text-sm md:text-base text-white/70 font-ocrx uppercase ${className}`}>{children}</div>
 }
 
 // Large decorative label like "USERS"

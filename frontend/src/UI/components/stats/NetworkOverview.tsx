@@ -38,6 +38,14 @@ export const NetworkOverview: React.FC = () => {
           console.log('Bitlazer L3 connection error:', error)
         }
 
+        console.log('🌐 NetworkOverview Data:', {
+          arbitrumBlockNumber: arbBlock?.toString(),
+          bitlazerBlockNumber: bitlazerBlock?.toString(),
+          gasPrice: gasPrice?.toString(),
+          gasPriceGwei: gasPrice ? Number(gasPrice) / 1e9 : 0,
+          transactionCount: 0,
+        })
+
         setStats({
           arbitrumBlockNumber: arbBlock || null,
           bitlazerBlockNumber: bitlazerBlock || null,
@@ -66,7 +74,7 @@ export const NetworkOverview: React.FC = () => {
     <div className="relative group w-full">
       <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 via-transparent to-fuchsia/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-4 md:p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
-        <h2 className="text-base md:text-lg lg:text-xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
           Network Status
         </h2>
 
@@ -74,7 +82,7 @@ export const NetworkOverview: React.FC = () => {
           {/* Arbitrum Block */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
             <PrimaryLabel className="mb-1">ARBITRUM</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-28" />
               ) : (
@@ -87,7 +95,7 @@ export const NetworkOverview: React.FC = () => {
           {/* Bitlazer Block */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
             <PrimaryLabel className="mb-1">BITLAZER L3</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-28" />
               ) : (
@@ -100,7 +108,7 @@ export const NetworkOverview: React.FC = () => {
           {/* Gas Price */}
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all rounded-[.115rem]">
             <PrimaryLabel className="mb-1">GAS PRICE</PrimaryLabel>
-            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
@@ -117,7 +125,7 @@ export const NetworkOverview: React.FC = () => {
               <div
                 className={`w-2 h-2 rounded-full ${!loading ? 'bg-lightgreen-100' : 'bg-gray-300'} ${!loading ? 'animate-pulse' : ''}`}
               />
-              <span className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+              <span className="text-base md:text-xl lg:text-2xl font-bold text-lightgreen-100 font-maison-neue">
                 {loading ? 'LOADING' : 'ONLINE'}
               </span>
             </div>
