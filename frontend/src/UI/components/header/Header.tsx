@@ -152,6 +152,15 @@ const Header: FC<IHeader> = () => {
                     </li>
                     <li>
                       <Link
+                        to="/stats"
+                        className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname === '/stats' ? 'line-through pointer-events-none' : ''}`}
+                        onClick={closeMenu}
+                      >
+                        [STATS]
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
                         to="/ecosystem"
                         className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname === '/ecosystem' ? 'line-through pointer-events-none' : ''}`}
                         onClick={closeMenu}
