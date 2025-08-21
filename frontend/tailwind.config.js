@@ -72,17 +72,26 @@ const config = {
       },
     },
     fontSize: {
+      xs: ['0.75rem', { lineHeight: '1rem' }],
+      sm: ['0.875rem', { lineHeight: '1.25rem' }],
       base: '1rem',
+      lg: ['1.125rem', { lineHeight: '1.75rem' }],
       xl: '1.25rem',
       '2xl': '1.45rem',
+      '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
       '4xl': '4.25rem',
+      '5xl': ['3rem', { lineHeight: '1' }],
       '6xl': '3.75rem',
       'lgi-7': '1.231rem',
       smi: '0.813rem',
       inherit: 'inherit',
     },
     screens: {
-      md: '992px',
+      sm: '640px',
+      md: '768px', 
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
       mq1650: {
         raw: 'screen and (max-width: 1650px)',
       },
@@ -91,9 +100,6 @@ const config = {
       },
       mq1250: {
         raw: 'screen and (max-width: 1250px)',
-      },
-      lg: {
-        max: '1200px',
       },
       mq1100: {
         raw: 'screen and (max-width: 1100px)',

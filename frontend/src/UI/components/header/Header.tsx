@@ -195,7 +195,7 @@ const Header: FC<IHeader> = () => {
                               className="w-full h-full object-contain brightness-0 invert"
                             />
                           </div>
-                          <span className="text-xs">
+                          <span className="text-2xl">
                             {arbitrumLoading
                               ? 'Loading...'
                               : `${formatBalance(arbitrumData?.value.toString() || '0')} lzrBTC`}
@@ -208,7 +208,7 @@ const Header: FC<IHeader> = () => {
                             alt="BLZ"
                             className="w-12 h-12 flex-shrink-0 brightness-0 invert"
                           />
-                          <span className="text-xs">
+                          <span className="text-2xl">
                             {bitlazerLoading
                               ? 'Loading...'
                               : `${formatBalance(bitlazerData?.value.toString() || '0')} lzrBTC`}
@@ -254,7 +254,7 @@ const Header: FC<IHeader> = () => {
                             className="w-full h-full object-contain brightness-0 invert"
                           />
                         </div>
-                        <span className="text-xs">
+                        <span className="text-2xl">
                           {arbitrumLoading
                             ? 'Loading...'
                             : `${formatBalance(arbitrumData?.value.toString() || '0')} lzrBTC`}
@@ -267,7 +267,7 @@ const Header: FC<IHeader> = () => {
                           alt="BLZ"
                           className="w-12 h-12 flex-shrink-0 brightness-0 invert"
                         />
-                        <span className="text-xs">
+                        <span className="text-2xl">
                           {bitlazerLoading
                             ? 'Loading...'
                             : `${formatBalance(bitlazerData?.value.toString() || '0')} lzrBTC`}
