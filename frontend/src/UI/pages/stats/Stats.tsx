@@ -11,12 +11,12 @@ interface IStats {}
 const Stats: FC<IStats> = () => {
   const [titleComplete, setTitleComplete] = useState(false)
   return (
-    <div className="w-full min-h-screen relative overflow-hidden flex flex-col py-24">
-      <div className="container">
-        <div className="flex flex-col gap-6 md:pointer-events-auto md:[&_*]:pointer-events-auto">
+    <div className="w-full min-h-screen relative overflow-hidden flex flex-col pt-20 pb-32 md:pt-28 md:pb-24">
+      <div className="container px-4 md:px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col gap-4 md:gap-6 md:pointer-events-auto md:[&_*]:pointer-events-auto">
           {/* Compact Header */}
           <div className="mb-2">
-            <h1 className="text-3xl md:text-4xl font-ocrx text-lightgreen-100 tracking-[-0.06em] mb-1">
+            <h1 className="text-2xl md:text-5xl lg:text-6xl font-ocrx text-lightgreen-100 tracking-[-0.06em] mb-1">
               <TypewriterText
                 text="NETWORK STATS"
                 delay={50}
@@ -26,8 +26,8 @@ const Stats: FC<IStats> = () => {
                 onComplete={() => setTitleComplete(true)}
               />
             </h1>
-            <p className="text-base text-white font-maison-neue">
-              {titleComplete && (
+            <p className="text-sm md:text-lg text-white font-maison-neue min-h-[1.5rem] md:min-h-[1.75rem]">
+              {titleComplete ? (
                 <TypewriterText
                   text="Real-time metrics for the Bitlazer ecosystem"
                   delay={30}
@@ -35,6 +35,8 @@ const Stats: FC<IStats> = () => {
                   cursor={true}
                   cursorChar="_"
                 />
+              ) : (
+                <span className="opacity-0">Real-time metrics for the Bitlazer ecosystem</span>
               )}
             </p>
           </div>
@@ -46,7 +48,7 @@ const Stats: FC<IStats> = () => {
           <NetworkOverview />
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="w-full flex flex-col gap-4 md:gap-6">
             <WrapStats />
             <BridgeStats />
           </div>

@@ -5,6 +5,7 @@ import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 // import { lzrBTC_abi } from 'src/assets/abi/lzrBTC' // Not needed for event logs
 import { parseAbiItem, formatUnits } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
+import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'
 
 interface WrapStatsData {
   totalWrapped: number
@@ -103,13 +104,7 @@ export const WrapStats: React.FC = () => {
   }, [publicClient])
 
   const formatAmount = (amount: number) => {
-    if (amount === 0) return '0'
-    if (amount < 0.0001) return '<0.0001'
-    return amount.toFixed(6)
-  }
-
-  const formatTxHash = (hash: string) => {
-    return `${hash.slice(0, 6)}...${hash.slice(-4)}`
+    return formatTokenAmount(amount)
   }
 
   const formatTime = (timestamp: number) => {
@@ -122,15 +117,17 @@ export const WrapStats: React.FC = () => {
   }
 
   return (
-    <div className="relative group">
+    <div className="relative group w-full">
       <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
-        <h2 className="text-lg font-ocrx text-lightgreen-100 mb-4 uppercase tracking-wide">Wrap Statistics</h2>
+      <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-4 md:p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
+        <h2 className="text-base md:text-lg lg:text-xl font-ocrx text-lightgreen-100 mb-3 md:mb-4 uppercase tracking-wide">
+          Wrap Statistics
+        </h2>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 md:mb-4">
           <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">TOTAL WRAPPED</PrimaryLabel>
-            <div className="text-2xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -142,7 +139,7 @@ export const WrapStats: React.FC = () => {
 
           <div className="bg-black/80 p-3 border border-fuchsia/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-1">TOTAL UNWRAPPED</PrimaryLabel>
-            <div className="text-2xl font-bold text-fuchsia font-maison-neue">
+            <div className="text-sm md:text-lg lg:text-xl font-bold text-fuchsia font-maison-neue">
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
@@ -151,21 +148,17 @@ export const WrapStats: React.FC = () => {
             </div>
             <SecondaryLabel className="mt-1">lzrBTC → WBTC</SecondaryLabel>
           </div>
-        </div>
 
-        <div className="bg-black/80 p-3 border border-lightgreen-100/30 mb-4 rounded-[.115rem]">
-          <div className="flex justify-between items-center">
-            <div>
-              <PrimaryLabel className="mb-1">UNIQUE WRAPPERS</PrimaryLabel>
-              <div className="text-xl font-bold text-lightgreen-100 font-maison-neue">
-                {loading ? (
-                  <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
-                ) : (
-                  <>{stats.uniqueWrappers}</>
-                )}
-              </div>
+          <div className="bg-black/80 p-3 border border-lightgreen-100/30 rounded-[.115rem]">
+            <PrimaryLabel className="mb-1">UNIQUE WRAPPERS</PrimaryLabel>
+            <div className="text-sm md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+              {loading ? (
+                <div className="h-7 bg-gray-300/10 animate-pulse rounded w-16" />
+              ) : (
+                <>{stats.uniqueWrappers}</>
+              )}
             </div>
-            <SecondaryLabel className="text-2xl">USERS</SecondaryLabel>
+            <SecondaryLabel className="mt-1">USERS</SecondaryLabel>
           </div>
         </div>
 
@@ -179,19 +172,19 @@ export const WrapStats: React.FC = () => {
                   className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-lightgreen-100 font-maison-neue font-bold">
+                    <span className="text-sm md:text-base text-lightgreen-100 font-maison-neue font-bold">
                       {formatAmount(Number(wrap.amount))} BTC
                     </span>
                     <a
                       href={`https://arbiscan.io/tx/${wrap.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-gray-100/70 hover:text-lightgreen-100 font-ocrx transition-colors"
+                      className="text-xs md:text-sm text-gray-100/70 hover:text-lightgreen-100 font-ocrx transition-colors"
                     >
                       {formatTxHash(wrap.txHash)}
                     </a>
                   </div>
-                  <span className="text-xs text-gray-100/70 font-ocrx">{formatTime(wrap.timestamp)}</span>
+                  <span className="text-xs md:text-sm text-gray-100/70 font-ocrx">{formatTime(wrap.timestamp)}</span>
                 </div>
               ))}
             </div>
