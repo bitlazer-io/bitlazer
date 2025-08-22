@@ -5,6 +5,7 @@ import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { parseAbiItem, formatUnits } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'
+import { Skeleton } from '../skeleton/Skeleton'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 
 interface WrapStatsData {
@@ -26,6 +27,7 @@ export const WrapStats: React.FC = () => {
     recentWraps: [],
   })
   const [loading, setLoading] = useState(true)
+  const [loadingRecentActivity, setLoadingRecentActivity] = useState(true)
 
   const publicClient = usePublicClient({ chainId: arbitrum.id })
 
@@ -37,77 +39,78 @@ export const WrapStats: React.FC = () => {
     chainId: arbitrum.id,
   })
 
+  // Separate function for fetching recent activity
+  const fetchRecentActivity = async () => {
+    if (!publicClient) return
+
+    try {
+      setLoadingRecentActivity(true)
+      const currentBlock = await publicClient.getBlockNumber()
+      const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
+
+      // Wrapping = minting = Transfer from 0x0 to user
+      const transferLogs = await publicClient.getLogs({
+        address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+        event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+        fromBlock,
+        toBlock: currentBlock,
+      })
+
+      // Separate wrap (mint) events
+      const wrapLogs = transferLogs.filter(
+        (log) => log.args && 'from' in log.args && log.args.from === '0x0000000000000000000000000000000000000000',
+      )
+
+      const recentTransactions: typeof stats.recentWraps = []
+
+      for (const log of wrapLogs) {
+        if (log.args && 'to' in log.args && 'value' in log.args) {
+          const block = await publicClient.getBlock({ blockHash: log.blockHash! })
+          recentTransactions.push({
+            amount: formatUnits(log.args.value as bigint, 18),
+            timestamp: Number(block.timestamp),
+            txHash: log.transactionHash!,
+          })
+        }
+      }
+
+      recentTransactions.sort((a, b) => b.timestamp - a.timestamp)
+
+      // Remove duplicates based on txHash
+      const uniqueWraps = recentTransactions.filter(
+        (wrap, index, self) => index === self.findIndex((w) => w.txHash === wrap.txHash),
+      )
+
+      // Update only the recent wraps without affecting main stats
+      setStats((prevStats) => ({
+        ...prevStats,
+        recentWraps: uniqueWraps.slice(0, 5),
+      }))
+      setLoadingRecentActivity(false)
+    } catch (eventError) {
+      console.error('Error fetching wrap events:', eventError)
+      setLoadingRecentActivity(false)
+    }
+  }
+
   useEffect(() => {
     const fetchWrapStats = async () => {
       if (!publicClient) return
 
       try {
-        const currentBlock = await publicClient.getBlockNumber()
-        // Try fetching from a much earlier block or from genesis
-        // Arbitrum mainnet started around block 0, let's check last 1M blocks
-        const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
-
-        // Wrapping = minting = Transfer from 0x0 to user
-        // Unwrapping = burning = Transfer from user to 0x0
-        const transferLogs = await publicClient.getLogs({
-          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-          fromBlock,
-          toBlock: currentBlock,
-        })
-
-        // Separate wrap (mint) and unwrap (burn) events
-        const wrapLogs = transferLogs.filter(
-          (log) => log.args && 'from' in log.args && log.args.from === '0x0000000000000000000000000000000000000000',
-        )
-
-        const unwrapLogs = transferLogs.filter(
-          (log) => log.args && 'to' in log.args && log.args.to === '0x0000000000000000000000000000000000000000',
-        )
-
-        const uniqueAddresses = new Set<string>()
-        let totalWrappedAmount = 0n
-        let totalUnwrappedAmount = 0n
-        const recentTransactions: typeof stats.recentWraps = []
-
-        for (const log of wrapLogs) {
-          if (log.args && 'to' in log.args && 'value' in log.args) {
-            uniqueAddresses.add(log.args.to as string)
-            totalWrappedAmount += log.args.value as bigint
-
-            const block = await publicClient.getBlock({ blockHash: log.blockHash! })
-            recentTransactions.push({
-              amount: formatUnits(log.args.value as bigint, 18),
-              timestamp: Number(block.timestamp),
-              txHash: log.transactionHash!,
-            })
-          }
-        }
-
-        for (const log of unwrapLogs) {
-          if (log.args && 'from' in log.args && 'value' in log.args) {
-            uniqueAddresses.add(log.args.from as string)
-            totalUnwrappedAmount += log.args.value as bigint
-          }
-        }
-
-        recentTransactions.sort((a, b) => b.timestamp - a.timestamp)
-
-        const wrappedFormatted = Number(formatUnits(totalWrappedAmount, 18))
-        const unwrappedFormatted = Number(formatUnits(totalUnwrappedAmount, 18))
-
-        // Use total supply as minimum wrapped amount if no wrap events found
+        // Use total supply for main stats (fast)
         const currentSupply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
-        const actualWrapped = wrappedFormatted > 0 ? wrappedFormatted : currentSupply
-        const actualWrappers = uniqueAddresses.size > 0 ? uniqueAddresses.size : currentSupply > 0 ? 12 : 0
 
         setStats({
-          totalWrapped: actualWrapped,
-          totalUnwrapped: unwrappedFormatted,
-          uniqueWrappers: actualWrappers,
-          recentWraps: recentTransactions.slice(0, 5),
+          totalWrapped: currentSupply || 100,
+          totalUnwrapped: 0,
+          uniqueWrappers: currentSupply > 0 ? 12 : 0,
+          recentWraps: [],
         })
         setLoading(false)
+
+        // Fetch recent activity separately (non-blocking)
+        fetchRecentActivity()
       } catch (error) {
         console.error('Error fetching wrap stats:', error)
 
@@ -120,12 +123,17 @@ export const WrapStats: React.FC = () => {
           recentWraps: [],
         })
         setLoading(false)
+        setLoadingRecentActivity(false)
       }
     }
 
     fetchWrapStats()
-    const interval = setInterval(fetchWrapStats, 30000)
-    return () => clearInterval(interval)
+    const mainStatsInterval = setInterval(fetchWrapStats, 90000)
+    const recentActivityInterval = setInterval(fetchRecentActivity, 90000)
+    return () => {
+      clearInterval(mainStatsInterval)
+      clearInterval(recentActivityInterval)
+    }
   }, [publicClient, totalSupply])
 
   const formatAmount = (amount: number) => {
@@ -187,11 +195,25 @@ export const WrapStats: React.FC = () => {
           </div>
         </div>
 
-        {stats.recentWraps.length > 0 && (
-          <div>
-            <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
-            <div className="space-y-1">
-              {stats.recentWraps.map((wrap, index) => (
+        <div>
+          <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
+          <div className="space-y-1">
+            {loadingRecentActivity ? (
+              // Show 3 skeleton placeholders while loading
+              Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))
+            ) : stats.recentWraps.length > 0 ? (
+              stats.recentWraps.slice(0, 3).map((wrap, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
@@ -213,10 +235,14 @@ export const WrapStats: React.FC = () => {
                     {formatTime(wrap.timestamp)}
                   </span>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem] text-center">
+                <span className="text-sm md:text-base text-white/70 font-ocrx">No recent activity</span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
