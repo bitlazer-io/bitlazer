@@ -16,16 +16,20 @@ A comprehensive step-by-step guide to create and deploy the LZR token for the Bi
 
 The LZR token is the native governance and utility token for the Bitlazer ecosystem, designed to:
 - Provide governance rights for protocol decisions
-- Enable staking rewards and yield farming
-- Offer fee discounts and premium features
-- Create ecosystem incentives and rewards
+- Enable dual yield staking (Bitcoin + LZR rewards)
+- Power the grants program for ecosystem developers
+- Offer fee discounts on cross-chain bridge operations
+- Incentivize early builders and active contributors
+- Support the L3 network bootstrap process
 
 ### Token Economics Overview
 - **Name**: Lazer Token
 - **Symbol**: LZR
-- **Type**: ERC-20 (Ethereum/Arbitrum) or SPL (Solana)
-- **Total Supply**: To be determined based on tokenomics design
-- **Use Cases**: Governance, Staking, Fee Discounts, Rewards
+- **Type**: ERC-20 (Arbitrum One integration)
+- **Network**: Bitlazer L3 (Chain ID: 14235)
+- **Bridge Integration**: Works with existing lzrBTC staking mechanism
+- **Total Supply**: 1,000,000,000 LZR (aligned with roadmap)
+- **Use Cases**: Governance, Dual Yield Staking, Bridge Fees, Developer Grants
 
 ## Prerequisites
 
@@ -37,9 +41,10 @@ The LZR token is the native governance and utility token for the Bitlazer ecosys
 
 ### Tools You'll Need
 - **Development**: Hardhat, Remix IDE, or Foundry
-- **Wallets**: MetaMask, Phantom (for Solana)
-- **Testing**: Testnet funds (Sepolia ETH, Base Sepolia, Solana Devnet)
-- **Deployment**: Deployment scripts and verification tools
+- **Wallets**: MetaMask (with Bitlazer network added)
+- **Network Setup**: Bitlazer L3 configuration (Chain ID: 14235)
+- **Testing**: lzrBTC tokens for testing staking integration
+- **Deployment**: Deployment scripts and Caldera explorer verification
 
 ## Planning Phase
 
@@ -48,28 +53,33 @@ The LZR token is the native governance and utility token for the Bitlazer ecosys
 ```
 Total Supply: 1,000,000,000 LZR (1 Billion)
 
-Distribution:
-- Team & Advisors: 20% (200M LZR) - 4-year vesting
-- Public Sale: 15% (150M LZR) - Immediate unlock
-- Ecosystem & Rewards: 25% (250M LZR) - Released over 5 years
-- Staking Rewards: 20% (200M LZR) - Distributed as rewards
-- Liquidity Mining: 10% (100M LZR) - First 2 years
-- Treasury: 10% (100M LZR) - DAO controlled
+Distribution (Based on Bitlazer Roadmap):
+- Early Builders: 20% (200M LZR) - 4-year vesting (per roadmap)
+- Developer Grants: 15% (150M LZR) - Ecosystem growth program
+- Network Bootstrap: 25% (250M LZR) - L3 validator incentives
+- Dual Yield Staking: 20% (200M LZR) - Bitcoin + LZR rewards
+- Bridge Liquidity: 10% (100M LZR) - Cross-chain operations
+- Treasury/DAO: 10% (100M LZR) - Community controlled
 ```
 
 ### 2. Choose Blockchain Network
 
-#### Option A: Base Network (Recommended)
-- **Pros**: Low fees, Ethereum compatible, growing ecosystem
-- **Cons**: Newer network, smaller user base
+#### Option A: Bitlazer L3 Network (Primary)
+- **Chain ID**: 14235
+- **RPC**: https://bitlazer.calderachain.xyz/http
+- **Explorer**: https://bitlazer.calderaexplorer.xyz/
+- **Pros**: Native integration, ultra-low fees, optimized for Bitcoin operations
+- **Cons**: Newer network, requires bridging from Arbitrum
 
-#### Option B: Arbitrum Network (Current Bitlazer chain)
-- **Pros**: Established ecosystem, integrates with existing contracts
-- **Cons**: Higher complexity
+#### Option B: Arbitrum One (Bridge Integration)
+- **Existing Contracts**: WBTC (0x2f2a...), lzrBTC (0x0c97...)
+- **Pros**: Established ecosystem, existing liquidity, direct integration
+- **Cons**: Higher gas costs than L3
 
-#### Option C: Solana Network
-- **Pros**: Ultra-low fees, fast transactions, pump.fun integration
-- **Cons**: Different programming model (Rust vs Solidity)
+#### Option C: Multi-Chain Deployment
+- **Primary**: Bitlazer L3 for native operations
+- **Secondary**: Arbitrum One for liquidity and bridging
+- **Future**: Potential expansion to other EVM chains
 
 ### 3. Define Token Features
 
@@ -125,8 +135,12 @@ Create `.env` file:
 PRIVATE_KEY=your_wallet_private_key_here
 INFURA_API_KEY=your_infura_api_key
 ETHERSCAN_API_KEY=your_etherscan_api_key
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+BITLAZER_RPC_URL=https://bitlazer.calderachain.xyz/http
+ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
 ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+# Integration with existing contracts
+LZRBTC_CONTRACT=0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df
+WBTC_CONTRACT=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
 ```
 
 ## Token Contract Development
@@ -151,15 +165,25 @@ contract LZRToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ERC20Pe
     
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 Billion tokens
     
-    // Multiplier for staking rewards (basis points)
+    // Integration with existing lzrBTC staking
+    address public immutable lzrBTCContract;
     mapping(address => uint256) public stakingMultipliers;
     
-    constructor(address defaultAdmin) ERC20("Lazer Token", "LZR") ERC20Permit("Lazer Token") {
+    // Dual yield tracking
+    mapping(address => uint256) public bitcoinRewards;
+    mapping(address => uint256) public lzrRewards;
+    
+    constructor(
+        address defaultAdmin,
+        address _lzrBTCContract
+    ) ERC20("Lazer Token", "LZR") ERC20Permit("Lazer Token") {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(PAUSER_ROLE, defaultAdmin);
         _grantRole(MINTER_ROLE, defaultAdmin);
         
-        // Mint initial supply to deployer
+        lzrBTCContract = _lzrBTCContract;
+        
+        // Mint initial supply to deployer for distribution
         _mint(defaultAdmin, TOTAL_SUPPLY);
     }
     
@@ -340,13 +364,21 @@ main()
 
 ### Phase 1: Testnet Deployment
 
-#### Base Sepolia Deployment
+#### Bitlazer L3 Testnet Deployment
 ```bash
-# Configure Hardhat for Base Sepolia
-npx hardhat run scripts/deploy.js --network base-sepolia
+# Add Bitlazer network to Hardhat config
+# hardhat.config.js:
+bitlazer: {
+  url: "https://bitlazer.calderachain.xyz/http",
+  chainId: 14235,
+  accounts: [process.env.PRIVATE_KEY]
+}
 
-# Verify contracts
-npx hardhat verify --network base-sepolia CONTRACT_ADDRESS
+# Deploy to Bitlazer L3
+npx hardhat run scripts/deploy.js --network bitlazer
+
+# Verify on Caldera explorer
+npx hardhat verify --network bitlazer CONTRACT_ADDRESS
 ```
 
 #### Testing Checklist
@@ -366,11 +398,14 @@ npx hardhat verify --network base-sepolia CONTRACT_ADDRESS
 
 #### Mainnet Launch
 ```bash
-# Deploy to Base Mainnet
-npx hardhat run scripts/deploy.js --network base
+# Deploy to Bitlazer L3 Mainnet
+npx hardhat run scripts/deploy.js --network bitlazer
+
+# Deploy bridge contract to Arbitrum One for liquidity
+npx hardhat run scripts/deploy-bridge.js --network arbitrum
 
 # Verify contracts
-npx hardhat verify --network base CONTRACT_ADDRESS CONSTRUCTOR_ARGS
+npx hardhat verify --network bitlazer CONTRACT_ADDRESS CONSTRUCTOR_ARGS
 ```
 
 ### Phase 3: Alternative Networks
@@ -428,10 +463,11 @@ const liquidity = {
 ### 3. Growth Phase (Months 1-6)
 
 #### Ecosystem Integration
-- Integrate with existing Bitlazer contracts
-- Add LZR as fee token for discounts
-- Implement governance voting
-- Partner with other protocols
+- Integrate with existing lzrBTC staking (0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df)
+- Add LZR as fee token for bridge operations
+- Implement grants program distribution mechanism
+- Launch early builder reward system (20% allocation)
+- Partner with Arbitrum ecosystem protocols
 
 #### Marketing Activities
 - **Influencer Partnerships**: Crypto Twitter KOLs
@@ -530,9 +566,9 @@ contract LZRGovernance {
 - **Remix IDE**: https://remix.ethereum.org/
 
 ### Testing
-- **Base Sepolia**: https://sepolia.base.org/
+- **Bitlazer L3 Mainnet**: https://bitlazer.calderaexplorer.xyz/
+- **Arbitrum One**: https://arbiscan.io/
 - **Arbitrum Sepolia**: https://sepolia-rollup.arbitrum.io/
-- **Solana Devnet**: https://explorer.solana.com/?cluster=devnet
 
 ### Marketing
 - **Kaito.ai**: AI-powered crypto marketing
@@ -544,20 +580,62 @@ contract LZRGovernance {
 - **DeBank**: Portfolio tracking
 - **Nansen**: On-chain analytics
 
+## Integration with Bitlazer Ecosystem
+
+### Grants Program Integration
+The LZR token powers the Bitlazer grants program:
+- **Application Portal**: bitlazer.io/ecosystem
+- **Grant Distribution**: 15% of total supply (150M LZR)
+- **Evaluation Criteria**: Innovation, ecosystem impact, feasibility
+- **Benefits**: Financial support + community engagement
+
+### Network Configuration
+Add Bitlazer L3 to your wallet:
+```javascript
+const bitlazerNetwork = {
+  chainId: '0x379B', // 14235 in hex
+  chainName: 'Bitlazer',
+  nativeCurrency: {
+    name: 'lzrBTC',
+    symbol: 'lzrBTC',
+    decimals: 18
+  },
+  rpcUrls: ['https://bitlazer.calderachain.xyz/http'],
+  blockExplorerUrls: ['https://bitlazer.calderaexplorer.xyz/']
+}
+```
+
+### Dual Yield Staking Integration
+LZR token integrates with existing lzrBTC staking:
+```solidity
+// Enhanced staking with both Bitcoin and LZR rewards
+function stakeLZRWithBTCRewards(uint256 amount) external {
+    // Stake LZR tokens
+    lzrToken.transferFrom(msg.sender, address(this), amount);
+    
+    // Calculate Bitcoin rewards from network activity
+    uint256 btcRewards = calculateNetworkRewards(amount);
+    
+    // Distribute dual rewards
+    distributeBitcoinRewards(msg.sender, btcRewards);
+    distributeLZRRewards(msg.sender, amount);
+}
+```
+
 ## Conclusion
 
-This guide provides a comprehensive framework for deploying the LZR token. Remember that token deployment is just the beginning - success depends on community building, utility creation, and continuous development.
+This guide provides a comprehensive framework for deploying the LZR token within the Bitlazer ecosystem. The token leverages the existing L3 infrastructure, integrates with lzrBTC staking, and supports the grants program for ecosystem growth.
 
 ### Next Steps
-1. Review and customize tokenomics
-2. Set up development environment
-3. Deploy on testnet and test thoroughly
-4. Conduct security audit
-5. Plan marketing campaign
-6. Deploy to mainnet
-7. Execute go-to-market strategy
+1. Review tokenomics alignment with Bitlazer roadmap
+2. Set up Bitlazer L3 development environment
+3. Test integration with existing lzrBTC contracts
+4. Implement grants program distribution mechanism
+5. Deploy dual yield staking features
+6. Launch early builder rewards (20% allocation)
+7. Execute ecosystem growth strategy
 
-For questions or support, refer to the Bitlazer documentation or community channels.
+For questions or support, refer to the [Bitlazer documentation](https://bitlazer.gitbook.io/bitlazer) or apply for grants at bitlazer.io/ecosystem.
 
 ---
 
