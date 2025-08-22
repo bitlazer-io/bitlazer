@@ -5,6 +5,7 @@ import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { USDollar, formatCompactNumber, formatPercentage } from 'src/utils/formatters'
+import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
 
 interface PriceData {
   wbtcPrice: number
@@ -30,12 +31,23 @@ export const PriceHeader: React.FC = () => {
   })
 
   useEffect(() => {
-    const fetchPrices = async () => {
+    const fetchPrices = async (force = false) => {
       try {
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
+        // Use cache and debouncing to prevent API rate limiting
+        const data = await fetchWithCache(
+          CACHE_KEYS.BTC_PRICE,
+          async () => {
+            // Debounce multiple simultaneous requests
+            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
+              const response = await fetch(
+                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
+              )
+              if (!response.ok) throw new Error('Failed to fetch price')
+              return response.json()
+            })
+          },
+          { ttl: CACHE_TTL.PRICE, force },
         )
-        const data = await response.json()
 
         const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
         const priceChange = data['wrapped-bitcoin']?.usd_24h_change || 0
@@ -52,12 +64,29 @@ export const PriceHeader: React.FC = () => {
         setLoading(false)
       } catch (error) {
         console.error('Error fetching prices:', error)
+        // Try to use any stale cached data if available
+        const cachedData = await fetchWithCache(CACHE_KEYS.BTC_PRICE, async () => null as any, {
+          ttl: CACHE_TTL.LONG,
+        }).catch(() => null)
+
+        if (cachedData) {
+          const wbtcPrice = cachedData['wrapped-bitcoin']?.usd || 0
+          const priceChange = cachedData['wrapped-bitcoin']?.usd_24h_change || 0
+          const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
+
+          setPriceData({
+            wbtcPrice,
+            lzrBTCPrice: wbtcPrice,
+            priceChange24h: priceChange,
+            marketCap: supply * wbtcPrice,
+          })
+        }
         setLoading(false)
       }
     }
 
     fetchPrices()
-    const interval = setInterval(fetchPrices, 30000)
+    const interval = setInterval(() => fetchPrices(true), 30000) // Force refresh every 30s
     return () => clearInterval(interval)
   }, [totalSupply])
 
