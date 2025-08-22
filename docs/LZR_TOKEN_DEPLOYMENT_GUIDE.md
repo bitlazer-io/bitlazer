@@ -1,0 +1,564 @@
+# LZR Token Deployment Guide
+
+A comprehensive step-by-step guide to create and deploy the LZR token for the Bitlazer ecosystem.
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites)
+3. [Planning Phase](#planning-phase)
+4. [Development Environment Setup](#development-environment-setup)
+5. [Token Contract Development](#token-contract-development)
+6. [Deployment Strategy](#deployment-strategy)
+7. [Marketing & Launch Strategy](#marketing--launch-strategy)
+8. [Post-Launch Operations](#post-launch-operations)
+
+## Overview
+
+The LZR token is the native governance and utility token for the Bitlazer ecosystem, designed to:
+- Provide governance rights for protocol decisions
+- Enable staking rewards and yield farming
+- Offer fee discounts and premium features
+- Create ecosystem incentives and rewards
+
+### Token Economics Overview
+- **Name**: Lazer Token
+- **Symbol**: LZR
+- **Type**: ERC-20 (Ethereum/Arbitrum) or SPL (Solana)
+- **Total Supply**: To be determined based on tokenomics design
+- **Use Cases**: Governance, Staking, Fee Discounts, Rewards
+
+## Prerequisites
+
+### Technical Requirements
+- Node.js (v18 or higher)
+- Basic understanding of blockchain concepts
+- Familiarity with smart contracts
+- Wallet with testnet funds
+
+### Tools You'll Need
+- **Development**: Hardhat, Remix IDE, or Foundry
+- **Wallets**: MetaMask, Phantom (for Solana)
+- **Testing**: Testnet funds (Sepolia ETH, Base Sepolia, Solana Devnet)
+- **Deployment**: Deployment scripts and verification tools
+
+## Planning Phase
+
+### 1. Define Tokenomics
+
+```
+Total Supply: 1,000,000,000 LZR (1 Billion)
+
+Distribution:
+- Team & Advisors: 20% (200M LZR) - 4-year vesting
+- Public Sale: 15% (150M LZR) - Immediate unlock
+- Ecosystem & Rewards: 25% (250M LZR) - Released over 5 years
+- Staking Rewards: 20% (200M LZR) - Distributed as rewards
+- Liquidity Mining: 10% (100M LZR) - First 2 years
+- Treasury: 10% (100M LZR) - DAO controlled
+```
+
+### 2. Choose Blockchain Network
+
+#### Option A: Base Network (Recommended)
+- **Pros**: Low fees, Ethereum compatible, growing ecosystem
+- **Cons**: Newer network, smaller user base
+
+#### Option B: Arbitrum Network (Current Bitlazer chain)
+- **Pros**: Established ecosystem, integrates with existing contracts
+- **Cons**: Higher complexity
+
+#### Option C: Solana Network
+- **Pros**: Ultra-low fees, fast transactions, pump.fun integration
+- **Cons**: Different programming model (Rust vs Solidity)
+
+### 3. Define Token Features
+
+```solidity
+Core Features:
+- Standard ERC-20 functionality
+- Burnable tokens
+- Pausable transfers (emergency use)
+- Access control (roles-based)
+- Permit functionality (gasless approvals)
+
+Additional Features:
+- Staking integration
+- Governance voting power
+- Fee discount mechanism
+- Multi-signature wallet integration
+```
+
+## Development Environment Setup
+
+### 1. Install Required Tools
+
+```bash
+# Install Node.js and npm
+# Visit nodejs.org and download Node.js v18+
+
+# Install Hardhat
+npm install -g hardhat
+
+# Install other tools
+npm install -g @openzeppelin/contracts
+npm install -g dotenv
+```
+
+### 2. Initialize Project
+
+```bash
+# Create new directory
+mkdir lzr-token-deployment
+cd lzr-token-deployment
+
+# Initialize Hardhat project
+npx hardhat init
+
+# Install dependencies
+npm install @openzeppelin/contracts @nomiclabs/hardhat-ethers ethers dotenv
+```
+
+### 3. Environment Configuration
+
+Create `.env` file:
+```bash
+PRIVATE_KEY=your_wallet_private_key_here
+INFURA_API_KEY=your_infura_api_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+```
+
+## Token Contract Development
+
+### 1. Basic LZR Token Contract
+
+Create `contracts/LZRToken.sol`:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
+contract LZRToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ERC20Permit {
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    
+    uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 Billion tokens
+    
+    // Multiplier for staking rewards (basis points)
+    mapping(address => uint256) public stakingMultipliers;
+    
+    constructor(address defaultAdmin) ERC20("Lazer Token", "LZR") ERC20Permit("Lazer Token") {
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+        _grantRole(PAUSER_ROLE, defaultAdmin);
+        _grantRole(MINTER_ROLE, defaultAdmin);
+        
+        // Mint initial supply to deployer
+        _mint(defaultAdmin, TOTAL_SUPPLY);
+    }
+    
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+    
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+    
+    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
+        require(totalSupply() + amount <= TOTAL_SUPPLY, "Exceeds total supply");
+        _mint(to, amount);
+    }
+    
+    // Set staking multiplier for addresses (like Garden Finance)
+    function setStakingMultiplier(address user, uint256 multiplier) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        stakingMultipliers[user] = multiplier;
+    }
+    
+    // Get effective balance with multiplier
+    function getEffectiveBalance(address user) external view returns (uint256) {
+        uint256 balance = balanceOf(user);
+        uint256 multiplier = stakingMultipliers[user];
+        
+        if (multiplier > 0) {
+            return balance * multiplier / 10000; // multiplier in basis points
+        }
+        return balance;
+    }
+    
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        whenNotPaused
+        override(ERC20, ERC20Pausable)
+    {
+        super._beforeTokenTransfer(from, to, amount);
+    }
+}
+```
+
+### 2. Staking Contract (Garden Finance Style)
+
+Create `contracts/LZRStaking.sol`:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract LZRStaking is ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
+    
+    IERC20 public immutable lzrToken;
+    
+    struct StakeInfo {
+        uint256 amount;
+        uint256 multiplier; // basis points (10000 = 1x)
+        uint256 stakeTime;
+        uint256 lockPeriod; // in seconds
+    }
+    
+    mapping(address => StakeInfo) public stakes;
+    
+    // Multiplier tiers based on stake amount
+    uint256[] public stakeTiers = [0, 5000, 20000, 50000, 100000]; // in tokens
+    uint256[] public multipliers = [10000, 12000, 15000, 20000, 25000]; // basis points
+    
+    event Staked(address indexed user, uint256 amount, uint256 multiplier);
+    event Unstaked(address indexed user, uint256 amount);
+    
+    constructor(address _lzrToken) {
+        lzrToken = IERC20(_lzrToken);
+    }
+    
+    function stake(uint256 amount, uint256 lockPeriod) external nonReentrant {
+        require(amount > 0, "Amount must be > 0");
+        require(lockPeriod >= 30 days, "Minimum lock period is 30 days");
+        
+        lzrToken.safeTransferFrom(msg.sender, address(this), amount);
+        
+        uint256 multiplier = calculateMultiplier(amount, lockPeriod);
+        
+        stakes[msg.sender] = StakeInfo({
+            amount: amount,
+            multiplier: multiplier,
+            stakeTime: block.timestamp,
+            lockPeriod: lockPeriod
+        });
+        
+        emit Staked(msg.sender, amount, multiplier);
+    }
+    
+    function calculateMultiplier(uint256 amount, uint256 lockPeriod) public view returns (uint256) {
+        uint256 baseMultiplier = 10000; // 1x
+        
+        // Amount-based multiplier
+        for (uint i = stakeTiers.length - 1; i > 0; i--) {
+            if (amount >= stakeTiers[i] * 1e18) {
+                baseMultiplier = multipliers[i];
+                break;
+            }
+        }
+        
+        // Time-based bonus
+        uint256 timeBonus = (lockPeriod / 30 days) * 500; // 5% per month
+        return baseMultiplier + timeBonus;
+    }
+    
+    function unstake() external nonReentrant {
+        StakeInfo memory userStake = stakes[msg.sender];
+        require(userStake.amount > 0, "No stake found");
+        require(
+            block.timestamp >= userStake.stakeTime + userStake.lockPeriod,
+            "Still in lock period"
+        );
+        
+        delete stakes[msg.sender];
+        lzrToken.safeTransfer(msg.sender, userStake.amount);
+        
+        emit Unstaked(msg.sender, userStake.amount);
+    }
+    
+    function getEffectiveStake(address user) external view returns (uint256) {
+        StakeInfo memory userStake = stakes[user];
+        return userStake.amount * userStake.multiplier / 10000;
+    }
+}
+```
+
+### 3. Deployment Script
+
+Create `scripts/deploy.js`:
+
+```javascript
+const { ethers } = require("hardhat");
+
+async function main() {
+    const [deployer] = await ethers.getSigners();
+    console.log("Deploying contracts with account:", deployer.address);
+    
+    // Deploy LZR Token
+    const LZRToken = await ethers.getContractFactory("LZRToken");
+    const lzrToken = await LZRToken.deploy(deployer.address);
+    await lzrToken.deployed();
+    
+    console.log("LZR Token deployed to:", lzrToken.address);
+    
+    // Deploy Staking Contract
+    const LZRStaking = await ethers.getContractFactory("LZRStaking");
+    const lzrStaking = await LZRStaking.deploy(lzrToken.address);
+    await lzrStaking.deployed();
+    
+    console.log("LZR Staking deployed to:", lzrStaking.address);
+    
+    // Grant minter role to staking contract if needed
+    await lzrToken.grantRole(await lzrToken.MINTER_ROLE(), lzrStaking.address);
+    
+    console.log("Setup complete!");
+    console.log("LZR Token:", lzrToken.address);
+    console.log("LZR Staking:", lzrStaking.address);
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });
+```
+
+## Deployment Strategy
+
+### Phase 1: Testnet Deployment
+
+#### Base Sepolia Deployment
+```bash
+# Configure Hardhat for Base Sepolia
+npx hardhat run scripts/deploy.js --network base-sepolia
+
+# Verify contracts
+npx hardhat verify --network base-sepolia CONTRACT_ADDRESS
+```
+
+#### Testing Checklist
+- [ ] Token minting works correctly
+- [ ] Transfers function properly
+- [ ] Staking mechanism operates as expected
+- [ ] Multipliers calculate correctly
+- [ ] Access controls are enforced
+
+### Phase 2: Mainnet Deployment
+
+#### Security Audit
+- Conduct thorough code review
+- Get professional audit (recommended: OpenZeppelin, ConsenSys Diligence)
+- Test on testnets extensively
+- Set up monitoring and alerts
+
+#### Mainnet Launch
+```bash
+# Deploy to Base Mainnet
+npx hardhat run scripts/deploy.js --network base
+
+# Verify contracts
+npx hardhat verify --network base CONTRACT_ADDRESS CONSTRUCTOR_ARGS
+```
+
+### Phase 3: Alternative Networks
+
+#### Solana Deployment (Optional)
+Using pump.fun or manual deployment:
+
+1. **Using pump.fun**: 
+   - Visit https://pump.fun
+   - Click "Create coin"
+   - Upload token metadata
+   - Set initial parameters
+   - Launch with bonding curve
+
+2. **Manual Solana Deployment**:
+   - Install Solana CLI
+   - Create SPL token
+   - Set up metadata
+   - Deploy to mainnet
+
+## Marketing & Launch Strategy
+
+### 1. Pre-Launch (4-6 weeks)
+
+#### Community Building
+- **Discord/Telegram**: Create official channels
+- **Twitter/X**: Build following using tools like TweetHunter
+- **Medium**: Publish tokenomics and roadmap
+- **Documentation**: Complete technical docs
+
+#### Tools for Growth
+- **Kaito.ai**: AI-powered crypto marketing analytics
+- **TweetHunter**: Twitter growth automation
+- **RiseKarma**: Community engagement platform
+
+### 2. Launch Phase (Weeks 1-2)
+
+#### Liquidity Provision
+```javascript
+// Example Uniswap V3 liquidity addition
+const liquidity = {
+    token0: LZR_TOKEN_ADDRESS,
+    token1: USDC_ADDRESS, // or ETH
+    fee: 3000, // 0.3%
+    amount0: ethers.utils.parseEther("100000"), // 100k LZR
+    amount1: ethers.utils.parseUnits("10000", 6), // $10k USDC
+}
+```
+
+#### Distribution Strategy
+- **Airdrop**: 5% to early community members
+- **Liquidity Mining**: 10% over first 6 months
+- **Staking Rewards**: Start with 20% APY
+
+### 3. Growth Phase (Months 1-6)
+
+#### Ecosystem Integration
+- Integrate with existing Bitlazer contracts
+- Add LZR as fee token for discounts
+- Implement governance voting
+- Partner with other protocols
+
+#### Marketing Activities
+- **Influencer Partnerships**: Crypto Twitter KOLs
+- **AMAs**: Regular community sessions
+- **Content Marketing**: Technical articles, tutorials
+- **Yield Farming**: Incentivize liquidity provision
+
+## Post-Launch Operations
+
+### 1. Monitoring & Analytics
+
+#### Key Metrics to Track
+- Total Supply & Circulating Supply
+- Holder Count & Distribution
+- Trading Volume & Liquidity
+- Staking Participation Rate
+- Governance Participation
+
+#### Tools for Monitoring
+- **Dune Analytics**: Custom dashboards
+- **DeFiPulse**: TVL tracking
+- **CoinGecko/CoinMarketCap**: Listings and data
+
+### 2. Governance Implementation
+
+```solidity
+// Governance integration example
+contract LZRGovernance {
+    function propose(string memory description, bytes memory data) external {
+        require(lzrToken.balanceOf(msg.sender) >= PROPOSAL_THRESHOLD, "Insufficient LZR");
+        // Create proposal logic
+    }
+    
+    function vote(uint256 proposalId, bool support) external {
+        uint256 votingPower = lzrStaking.getEffectiveStake(msg.sender);
+        require(votingPower > 0, "No voting power");
+        // Voting logic
+    }
+}
+```
+
+### 3. Treasury Management
+
+#### Revenue Sources
+- Transaction fees from protocol
+- Trading fees from DEX pairs
+- Partnership revenue
+- NFT marketplace fees
+
+#### Treasury Allocation
+- 40% Development & Operations
+- 30% Marketing & Growth
+- 20% Community Rewards
+- 10% Emergency Fund
+
+### 4. Continuous Development
+
+#### Roadmap Items
+- **Q1**: Token launch, basic staking
+- **Q2**: Governance implementation, mobile app
+- **Q3**: Cross-chain expansion, advanced features
+- **Q4**: DAO transition, ecosystem growth
+
+#### Technical Improvements
+- Gas optimization
+- Multi-chain deployment
+- Advanced staking features
+- Integration with lending protocols
+
+## Risk Management
+
+### Technical Risks
+- Smart contract vulnerabilities
+- Oracle manipulation
+- Front-running attacks
+- Gas price volatility
+
+### Market Risks
+- Token price volatility
+- Liquidity constraints
+- Regulatory changes
+- Competitive pressure
+
+### Mitigation Strategies
+- Professional audits
+- Bug bounty programs
+- Gradual feature rollouts
+- Insurance coverage
+- Legal compliance review
+
+## Resources & Tools
+
+### Development
+- **Hardhat**: https://hardhat.org/
+- **OpenZeppelin**: https://openzeppelin.com/
+- **Remix IDE**: https://remix.ethereum.org/
+
+### Testing
+- **Base Sepolia**: https://sepolia.base.org/
+- **Arbitrum Sepolia**: https://sepolia-rollup.arbitrum.io/
+- **Solana Devnet**: https://explorer.solana.com/?cluster=devnet
+
+### Marketing
+- **Kaito.ai**: AI-powered crypto marketing
+- **TweetHunter**: Twitter growth tools
+- **RiseKarma**: Community engagement
+
+### Analytics
+- **Dune Analytics**: Custom dashboards
+- **DeBank**: Portfolio tracking
+- **Nansen**: On-chain analytics
+
+## Conclusion
+
+This guide provides a comprehensive framework for deploying the LZR token. Remember that token deployment is just the beginning - success depends on community building, utility creation, and continuous development.
+
+### Next Steps
+1. Review and customize tokenomics
+2. Set up development environment
+3. Deploy on testnet and test thoroughly
+4. Conduct security audit
+5. Plan marketing campaign
+6. Deploy to mainnet
+7. Execute go-to-market strategy
+
+For questions or support, refer to the Bitlazer documentation or community channels.
+
+---
+
+*This guide is for educational purposes. Always conduct thorough testing and security audits before mainnet deployment. Consider legal and regulatory requirements in your jurisdiction.*
