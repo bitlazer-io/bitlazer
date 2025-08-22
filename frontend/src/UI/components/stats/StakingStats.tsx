@@ -331,7 +331,7 @@ export const StakingStats: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/bridge')}
+              onClick={() => navigate('/bridge/stake')}
               className="bg-gradient-to-r from-lightgreen-100 to-lightgreen-100/90 hover:from-lightgreen-100/90 hover:to-lightgreen-100 text-black font-ocrx uppercase py-2 px-6 rounded-[.115rem] transition-all duration-200 hover:shadow-[0_0_15px_rgba(102,213,96,0.4)] text-sm md:text-base tracking-wide inline-block"
             >
               Start Staking Now
