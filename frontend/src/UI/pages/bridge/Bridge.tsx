@@ -117,47 +117,60 @@ const Bridge: FC<IBridge> = () => {
                   <div className="flex flex-col gap-[2.375rem]">
                     <div className="flex flex-col gap-4">
                       <div className="text-2xl">
-                        <span>[ Step 1 | </span>
+                        <span>[ </span>
+                        <span className="text-lightgreen-100">Step 1</span>
+                        <span> | </span>
                         <span className="text-fuchsia">Convert WBTC to lzrBTC</span>
                         <span> ] </span>
                       </div>
                       <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        Convert your Wrapped Bitcoin (WBTC) in Arbitrum to lzrBTC in Arbitrum
+                        Convert your Wrapped Bitcoin (WBTC) to lzrBTC tokens on Arbitrum. 1:1 ratio, instant conversion.
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
                       <div className="text-2xl">
-                        <span>[ Step 2 | </span>
+                        <span>[ </span>
+                        <span className="text-lightgreen-100">Step 2</span>
+                        <span> | </span>
                         <span className="text-fuchsia">Bridge lzrBTC to Bitlazer </span>
                         <span> ] </span>
                       </div>
                       <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        <p className="m-0">Securely bridge your lzrBTC in Arbitrum to Bitlazer</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      <div className="text-2xl">
-                        <span>[ Step 3 | </span>
-                        <span className="text-fuchsia">Stake and Earn Yield </span>
-                        <span> ] </span>
-                      </div>
-                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
                         <p className="m-0">
-                          Seamlessly stake your lzrBTC in Bitlazer to earn native Bitcoin gas fee rewards and LZR tokens
+                          Bridge your lzrBTC from Arbitrum to Bitlazer L3. Secure cross-chain transfer in ~15 minutes.
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-col gap-4">
                       <div className="text-2xl">
-                        <span>[ Step 4 | </span>
+                        <span>[ </span>
+                        <span className="text-lightgreen-100">Step 3</span>
+                        <span> | </span>
+                        <span className="text-fuchsia">Stake and Earn Yield </span>
+                        <span> ] </span>
+                      </div>
+                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
+                        <p className="m-0">
+                          Stake your lzrBTC on Bitlazer to earn dual yield: native Bitcoin gas rewards + LZR tokens.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      <div className="text-2xl">
+                        <span>[ </span>
+                        <span className="text-lightgreen-100">Step 4</span>
+                        <span> | </span>
                         <span className="text-fuchsia">Unstake and Collect Rewards </span>
                         <span> ] </span>
                       </div>
                       <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        <p className="m-0">Unstake and unwrap your lzrBTC to claim your rewards</p>
+                        <p className="m-0">
+                          Unstake anytime to claim your lzrBTC + rewards. Bridge back and unwrap to WBTC.
+                        </p>
                       </div>
                     </div>
                   </div>
+                  {/* Progress tracking - commented out for now
                   <div className="flex flex-col gap-[0.312rem] mt-auto overflow-hidden">
                     <div className="relative inline-flex flex-row max-w-full text-base font-normal  font-arial ">
                       <div className={currentProgress > 0 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
@@ -173,6 +186,7 @@ const Bridge: FC<IBridge> = () => {
                       </span>
                     </div>
                   </div>
+                  */}
                 </div>
               </div>
             </div>
