@@ -237,9 +237,10 @@ const BridgeStake: FC<IBridgeStake> = () => {
   const formatAPR = () => {
     if (!apr) return 'Loading...'
     try {
-      // APR is returned in basis points (1/100th of a percent)
-      const aprNumber = Number(apr) / 100
-      return `${aprNumber.toFixed(2)}%`
+      // APR is returned as direct percentage value (not basis points)
+      // getApy() returns 33333 which means 33,333%
+      const aprNumber = Number(apr)
+      return `${aprNumber.toLocaleString()}%`
     } catch {
       return 'Variable'
     }

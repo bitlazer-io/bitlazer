@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { usePublicClient } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
-// import { lzrBTC_abi } from 'src/assets/abi/lzrBTC' // Not needed for event logs
 import { parseAbiItem, formatUnits } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'

@@ -46,7 +46,7 @@ export const BridgeStats: React.FC = () => {
   useEffect(() => {
     const fetchBridgeStats = async () => {
       try {
-        const arbSupply = arbitrumBalance ? Number(formatUnits(arbitrumBalance as bigint, 8)) : 0
+        const arbSupply = arbitrumBalance ? Number(formatUnits(arbitrumBalance as bigint, 18)) : 0
         const l3Supply = bitlazerBalance ? Number(formatUnits(bitlazerBalance as bigint, 18)) : 0
 
         console.log('🌉 BridgeStats Data:', {
@@ -131,31 +131,34 @@ export const BridgeStats: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 md:mb-4">
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>PENDING</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? <div className="h-5 bg-gray-300/10 animate-pulse rounded w-8" /> : <>{stats.pendingBridges}</>}
             </div>
+            <SecondaryLabel>BRIDGES IN PROGRESS</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>AVG TIME</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
                 <>{stats.averageBridgeTime}</>
               )}
             </div>
+            <SecondaryLabel>BRIDGE DURATION</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-2 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel>24H VOL</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
                 <>{formatAmount(stats.bridgeVolume24h)}</>
               )}
             </div>
+            <SecondaryLabel>lzrBTC BRIDGED</SecondaryLabel>
           </div>
         </div>
 
