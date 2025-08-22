@@ -66,18 +66,6 @@ export const StakingStats: React.FC = () => {
         // Calculate daily rewards based on APR and total staked
         const dailyRewards = staked > 0 ? (staked * aprValue) / 100 / 365 : 0.000002
 
-        console.log('🥩 StakingStats Data:', {
-          totalStaked: totalStaked?.toString(),
-          apy: apy?.toString(),
-          targetApyBps: targetApyBps?.toString(),
-          stakedFormatted: staked,
-          aprValue,
-          numberOfStakers,
-          averageStakeSize: avgStake,
-          dailyRewards,
-          usingFallbackValues: !totalStaked && !apy,
-        })
-
         setStats({
           totalStaked: staked || 0.000256,
           totalRewards: 0,

@@ -35,16 +35,8 @@ export const NetworkOverview: React.FC = () => {
         try {
           bitlazerBlock = await bitlazerClient?.getBlockNumber()
         } catch (error) {
-          console.log('Bitlazer L3 connection error:', error)
+          // Bitlazer L3 connection error
         }
-
-        console.log('🌐 NetworkOverview Data:', {
-          arbitrumBlockNumber: arbBlock?.toString(),
-          bitlazerBlockNumber: bitlazerBlock?.toString(),
-          gasPrice: gasPrice?.toString(),
-          gasPriceGwei: gasPrice ? Number(gasPrice) / 1e9 : 0,
-          transactionCount: 0,
-        })
 
         setStats({
           arbitrumBlockNumber: arbBlock || null,

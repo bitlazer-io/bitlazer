@@ -43,16 +43,6 @@ export const PriceHeader: React.FC = () => {
         const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
         const marketCap = supply * wbtcPrice
 
-        console.log('🏷️ PriceHeader Data:', {
-          wbtcPrice,
-          lzrBTCPrice: wbtcPrice,
-          priceChange24h: priceChange,
-          totalSupply: totalSupply?.toString(),
-          supply,
-          marketCap,
-          rawApiResponse: data,
-        })
-
         setPriceData({
           wbtcPrice,
           lzrBTCPrice: wbtcPrice,

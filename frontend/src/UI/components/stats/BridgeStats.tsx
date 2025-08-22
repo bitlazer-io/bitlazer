@@ -49,17 +49,6 @@ export const BridgeStats: React.FC = () => {
         const arbSupply = arbitrumBalance ? Number(formatUnits(arbitrumBalance as bigint, 18)) : 0
         const l3Supply = bitlazerBalance ? Number(formatUnits(bitlazerBalance as bigint, 18)) : 0
 
-        console.log('🌉 BridgeStats Data:', {
-          arbitrumBalance: arbitrumBalance?.toString(),
-          bitlazerBalance: bitlazerBalance?.toString(),
-          arbSupplyFormatted: arbSupply,
-          l3SupplyFormatted: l3Supply,
-          pendingBridges: Math.floor(Math.random() * 3),
-          averageBridgeTime: '~15 min',
-          bridgeVolume24h: Math.random() * 0.001,
-          usingFallbackValues: !arbitrumBalance && !bitlazerBalance,
-        })
-
         setStats({
           totalBridgedToL3: l3Supply || 0.000089,
           totalBridgedToArbitrum: arbSupply || 0.000167,
