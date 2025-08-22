@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useReadContract } from 'wagmi'
+import { useReadContract, usePublicClient } from 'wagmi'
 import { mainnet } from 'src/web3/chains'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
 import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
-import { formatUnits } from 'viem'
+import { formatUnits, parseAbiItem } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
-import { formatTokenAmount, formatPercentage, formatMoney } from 'src/utils/formatters'
+import { formatTokenAmount, formatMoney, formatTxHash } from 'src/utils/formatters'
+import { Skeleton } from '../skeleton/Skeleton'
 
 interface StakingStatsData {
   totalStaked: number
@@ -16,6 +17,12 @@ interface StakingStatsData {
   numberOfStakers: number
   averageStakeSize: number
   rewardsDistributed24h: number
+  recentStakes: Array<{
+    amount: string
+    action: 'stake' | 'unstake'
+    txHash: string
+    timestamp: number
+  }>
 }
 
 export const StakingStats: React.FC = () => {
@@ -28,8 +35,12 @@ export const StakingStats: React.FC = () => {
     numberOfStakers: 0,
     averageStakeSize: 0,
     rewardsDistributed24h: 0,
+    recentStakes: [],
   })
   const [loading, setLoading] = useState(true)
+  const [loadingRecentActivity, setLoadingRecentActivity] = useState(true)
+
+  const bitlazerClient = usePublicClient({ chainId: mainnet.id })
 
   const { data: totalStaked } = useReadContract({
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -52,8 +63,87 @@ export const StakingStats: React.FC = () => {
     chainId: mainnet.id,
   })
 
+  // Separate function for fetching recent activity
+  const fetchRecentActivity = async () => {
+    if (!bitlazerClient) return
+
+    try {
+      setLoadingRecentActivity(true)
+      const currentBlock = await bitlazerClient.getBlockNumber()
+      const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
+
+      const recentStakes: typeof stats.recentStakes = []
+
+      // Fetch Staked events
+      const stakedLogs = await bitlazerClient.getLogs({
+        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+        event: parseAbiItem('event Staked(address indexed user, uint256 amount)'),
+        fromBlock,
+        toBlock: currentBlock,
+      })
+
+      // Fetch Transfer events for unstaking (stake tokens burned)
+      const transferLogs = await bitlazerClient.getLogs({
+        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+        event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+        fromBlock,
+        toBlock: currentBlock,
+      })
+
+      // Process staked events
+      for (const log of stakedLogs) {
+        if (log.args && 'user' in log.args && 'amount' in log.args) {
+          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+          recentStakes.push({
+            amount: formatUnits(log.args.amount as bigint, 18),
+            action: 'stake' as const,
+            txHash: log.transactionHash!,
+            timestamp: Number(block.timestamp),
+          })
+        }
+      }
+
+      // Process unstaking events (burns = transfers to 0x0)
+      const unstakeLogs = transferLogs.filter(
+        (log) => log.args && 'to' in log.args && log.args.to === '0x0000000000000000000000000000000000000000',
+      )
+
+      for (const log of unstakeLogs) {
+        if (log.args && 'value' in log.args) {
+          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+          recentStakes.push({
+            amount: formatUnits(log.args.value as bigint, 18),
+            action: 'unstake' as const,
+            txHash: log.transactionHash!,
+            timestamp: Number(block.timestamp),
+          })
+        }
+      }
+
+      // Sort by timestamp (most recent first)
+      recentStakes.sort((a, b) => b.timestamp - a.timestamp)
+
+      // Remove duplicates based on txHash
+      const uniqueStakes = recentStakes.filter(
+        (stake, index, self) => index === self.findIndex((s) => s.txHash === stake.txHash),
+      )
+
+      // Update only the recent stakes without affecting main stats
+      setStats((prevStats) => ({
+        ...prevStats,
+        recentStakes: uniqueStakes,
+      }))
+      setLoadingRecentActivity(false)
+    } catch (eventError) {
+      console.error('Error fetching staking events:', eventError)
+      setLoadingRecentActivity(false)
+    }
+  }
+
   useEffect(() => {
-    const calculateStats = () => {
+    const fetchStakingStats = async () => {
+      if (!bitlazerClient) return
+
       try {
         const staked = totalStaked ? Number(formatUnits(totalStaked as bigint, 18)) : 0.000256
 
@@ -74,8 +164,12 @@ export const StakingStats: React.FC = () => {
           numberOfStakers,
           averageStakeSize: avgStake,
           rewardsDistributed24h: dailyRewards,
+          recentStakes: [],
         })
         setLoading(false)
+
+        // Fetch recent activity separately (non-blocking)
+        fetchRecentActivity()
       } catch (error) {
         console.error('Error calculating staking stats:', error)
         setStats({
@@ -86,13 +180,20 @@ export const StakingStats: React.FC = () => {
           numberOfStakers: 12,
           averageStakeSize: 0.00002,
           rewardsDistributed24h: 0.000002,
+          recentStakes: [],
         })
         setLoading(false)
       }
     }
 
-    calculateStats()
-  }, [totalStaked, apy, targetApyBps])
+    fetchStakingStats()
+    const mainStatsInterval = setInterval(fetchStakingStats, 90000)
+    const recentActivityInterval = setInterval(fetchRecentActivity, 90000)
+    return () => {
+      clearInterval(mainStatsInterval)
+      clearInterval(recentActivityInterval)
+    }
+  }, [totalStaked, apy, targetApyBps, bitlazerClient])
 
   const formatAmount = (amount: number) => {
     return formatTokenAmount(amount)
@@ -101,6 +202,14 @@ export const StakingStats: React.FC = () => {
   const formatAPR = (apr: number) => {
     // APR is already a percentage value (e.g., 33333 = 33,333%)
     return `${apr.toLocaleString()}%`
+  }
+
+  const formatTime = (timestamp: number) => {
+    const now = Date.now() / 1000
+    const diff = now - timestamp
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
   }
 
   return (
@@ -229,6 +338,59 @@ export const StakingStats: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {(loadingRecentActivity || stats.recentStakes.length > 0) && (
+          <div className="mt-4">
+            <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
+            <div className="space-y-1">
+              {loadingRecentActivity
+                ? // Show 3 skeleton placeholders while loading
+                  Array.from({ length: 3 }, (_, index) => (
+                    <div
+                      key={`skeleton-${index}`}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-16" />
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))
+                : stats.recentStakes.slice(0, 3).map((stake, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
+                          {formatAmount(Number(stake.amount))} BTC
+                        </span>
+                        <span
+                          className={`text-sm md:text-base font-ocrx uppercase ${
+                            stake.action === 'stake' ? 'text-lightgreen-100' : 'text-fuchsia'
+                          }`}
+                        >
+                          {stake.action === 'stake' ? '↑ STAKED' : '↓ UNSTAKED'}
+                        </span>
+                        <a
+                          href={`https://bitlazer.calderaexplorer.xyz/tx/${stake.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+                        >
+                          {formatTxHash(stake.txHash)}
+                        </a>
+                      </div>
+                      <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
+                        {formatTime(stake.timestamp)}
+                      </span>
+                    </div>
+                  ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

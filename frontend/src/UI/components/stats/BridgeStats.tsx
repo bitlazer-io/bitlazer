@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { usePublicClient, useReadContract } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
 import { mainnet } from 'src/web3/chains'
-import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
+import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
-import { formatUnits } from 'viem'
+import { formatUnits, parseAbiItem } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
-import { formatTokenAmount } from 'src/utils/formatters'
+import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'
+import { Skeleton } from '../skeleton/Skeleton'
 
 interface BridgeStatsData {
   totalBridgedToL3: number
@@ -14,6 +15,13 @@ interface BridgeStatsData {
   pendingBridges: number
   averageBridgeTime: string
   bridgeVolume24h: number
+  recentBridges: Array<{
+    amount: string
+    from: string
+    to: string
+    txHash: string
+    timestamp: number
+  }>
 }
 
 export const BridgeStats: React.FC = () => {
@@ -23,8 +31,10 @@ export const BridgeStats: React.FC = () => {
     pendingBridges: 0,
     averageBridgeTime: '~15 min',
     bridgeVolume24h: 0,
+    recentBridges: [],
   })
   const [loading, setLoading] = useState(true)
+  const [loadingRecentActivity, setLoadingRecentActivity] = useState(true)
 
   const arbitrumClient = usePublicClient({ chainId: arbitrum.id })
   const bitlazerClient = usePublicClient({ chainId: mainnet.id })
@@ -43,6 +53,91 @@ export const BridgeStats: React.FC = () => {
     chainId: mainnet.id,
   })
 
+  // Separate function for fetching recent activity
+  const fetchRecentActivity = async () => {
+    try {
+      setLoadingRecentActivity(true)
+      const recentBridges: typeof stats.recentBridges = []
+
+      if (arbitrumClient && bitlazerClient) {
+        // Fetch transfers to bridge contract (Arbitrum -> L3)
+        const currentBlock = await arbitrumClient.getBlockNumber()
+        const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
+
+        const arbToBridgeLogs = await arbitrumClient.getLogs({
+          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+          args: {
+            to: L2_GATEWAY_ROUTER as `0x${string}`,
+          },
+          fromBlock,
+          toBlock: currentBlock,
+        })
+
+        // Process Arbitrum to L3 bridges
+        for (const log of arbToBridgeLogs) {
+          if (log.args && 'value' in log.args) {
+            const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
+            recentBridges.push({
+              amount: formatUnits(log.args.value as bigint, 18),
+              from: 'Arbitrum',
+              to: 'Bitlazer L3',
+              txHash: log.transactionHash!,
+              timestamp: Number(block.timestamp),
+            })
+          }
+        }
+
+        // Fetch L3 to Arbitrum bridges (look for withdrawals on L3)
+        const l3CurrentBlock = await bitlazerClient.getBlockNumber()
+        const l3FromBlock = l3CurrentBlock > 1000000n ? l3CurrentBlock - 1000000n : 0n
+
+        // Look for burns on L3 (withdrawals)
+        const l3WithdrawalLogs = await bitlazerClient.getLogs({
+          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+          args: {
+            to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+          },
+          fromBlock: l3FromBlock,
+          toBlock: l3CurrentBlock,
+        })
+
+        // Process L3 to Arbitrum bridges
+        for (const log of l3WithdrawalLogs) {
+          if (log.args && 'value' in log.args) {
+            const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+            recentBridges.push({
+              amount: formatUnits(log.args.value as bigint, 18),
+              from: 'Bitlazer L3',
+              to: 'Arbitrum',
+              txHash: log.transactionHash!,
+              timestamp: Number(block.timestamp),
+            })
+          }
+        }
+
+        // Sort by timestamp (most recent first)
+        recentBridges.sort((a, b) => b.timestamp - a.timestamp)
+      }
+
+      // Remove duplicates based on txHash
+      const uniqueBridges = recentBridges.filter(
+        (bridge, index, self) => index === self.findIndex((b) => b.txHash === bridge.txHash),
+      )
+
+      // Update only the recent bridges without affecting main stats
+      setStats((prevStats) => ({
+        ...prevStats,
+        recentBridges: uniqueBridges,
+      }))
+      setLoadingRecentActivity(false)
+    } catch (eventError) {
+      console.error('Error fetching bridge events:', eventError)
+      setLoadingRecentActivity(false)
+    }
+  }
+
   useEffect(() => {
     const fetchBridgeStats = async () => {
       try {
@@ -55,8 +150,12 @@ export const BridgeStats: React.FC = () => {
           pendingBridges: Math.floor(Math.random() * 3),
           averageBridgeTime: '~15 min',
           bridgeVolume24h: Math.random() * 0.001,
+          recentBridges: [],
         })
         setLoading(false)
+
+        // Fetch recent activity separately (non-blocking)
+        fetchRecentActivity()
       } catch (error) {
         console.error('Error fetching bridge stats:', error)
         setStats({
@@ -65,18 +164,31 @@ export const BridgeStats: React.FC = () => {
           pendingBridges: 0,
           averageBridgeTime: '~15 min',
           bridgeVolume24h: 0.000423,
+          recentBridges: [],
         })
         setLoading(false)
       }
     }
 
     fetchBridgeStats()
-    const interval = setInterval(fetchBridgeStats, 30000)
-    return () => clearInterval(interval)
+    const mainStatsInterval = setInterval(fetchBridgeStats, 90000)
+    const recentActivityInterval = setInterval(fetchRecentActivity, 90000)
+    return () => {
+      clearInterval(mainStatsInterval)
+      clearInterval(recentActivityInterval)
+    }
   }, [arbitrumBalance, bitlazerBalance, arbitrumClient, bitlazerClient])
 
   const formatAmount = (amount: number) => {
     return formatTokenAmount(amount)
+  }
+
+  const formatTime = (timestamp: number) => {
+    const now = Date.now() / 1000
+    const diff = now - timestamp
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
   }
 
   const totalLzrBTC = stats.totalBridgedToL3 + stats.totalBridgedToArbitrum
@@ -169,6 +281,63 @@ export const BridgeStats: React.FC = () => {
                 L3: {l3Percentage.toFixed(1)}% | ARB: {arbPercentage.toFixed(1)}%
               </span>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
+          <div className="space-y-1">
+            {loadingRecentActivity ? (
+              // Show 3 skeleton placeholders while loading
+              Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))
+            ) : stats.recentBridges.length > 0 ? (
+              stats.recentBridges.slice(0, 3).map((bridge, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
+                      {formatAmount(Number(bridge.amount))} BTC
+                    </span>
+                    <span className="text-sm md:text-base text-white/70 font-ocrx">
+                      {bridge.from} → {bridge.to}
+                    </span>
+                    <a
+                      href={
+                        bridge.from === 'Bitlazer L3'
+                          ? `https://bitlazer.calderaexplorer.xyz/tx/${bridge.txHash}`
+                          : `https://arbiscan.io/tx/${bridge.txHash}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+                    >
+                      {formatTxHash(bridge.txHash)}
+                    </a>
+                  </div>
+                  <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
+                    {formatTime(bridge.timestamp)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem] text-center">
+                <span className="text-sm md:text-base text-white/70 font-ocrx">No recent activity</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
