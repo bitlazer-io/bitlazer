@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useReadContract } from 'wagmi'
 import { mainnet } from 'src/web3/chains'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
-import { stakelzrBTC_abi } from 'src/assets/abi/stakelzrBTC'
+import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
 import { formatUnits } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatPercentage, formatMoney } from 'src/utils/formatters'
@@ -32,16 +32,23 @@ export const StakingStats: React.FC = () => {
   const [loading, setLoading] = useState(true)
 
   const { data: totalStaked } = useReadContract({
-    address: STAKING_CONTRACTS.StakedLZRChef as `0x${string}`,
-    abi: stakelzrBTC_abi,
+    address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+    abi: stakeAdapter_abi,
     functionName: 'totalSupply',
     chainId: mainnet.id,
   })
 
-  const { data: rewardRate } = useReadContract({
-    address: STAKING_CONTRACTS.StakedLZRChef as `0x${string}`,
-    abi: stakelzrBTC_abi,
-    functionName: 'rewardRate',
+  const { data: apy } = useReadContract({
+    address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+    abi: stakeAdapter_abi,
+    functionName: 'getApy',
+    chainId: mainnet.id,
+  })
+
+  const { data: targetApyBps } = useReadContract({
+    address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+    abi: stakeAdapter_abi,
+    functionName: 'targetApyBps',
     chainId: mainnet.id,
   })
 
@@ -49,36 +56,36 @@ export const StakingStats: React.FC = () => {
     const calculateStats = () => {
       try {
         const staked = totalStaked ? Number(formatUnits(totalStaked as bigint, 18)) : 0.000256
-        const rate = rewardRate ? Number(formatUnits(rewardRate as bigint, 18)) : 0.79
 
-        const annualRewards = rate * 365 * 24 * 60 * 60
-        const apr = staked > 0 ? (annualRewards / staked) * 100 : 0.79
+        // APR comes directly from contract as a percentage value (e.g., 33333 = 33,333%)
+        const aprValue = apy ? Number(apy) : 33333
 
         const numberOfStakers = Math.floor(Math.random() * 15) + 12
         const avgStake = staked > 0 ? staked / numberOfStakers : 0.00002
-        const dailyRewards = rate * 24 * 60 * 60
+
+        // Calculate daily rewards based on APR and total staked
+        const dailyRewards = staked > 0 ? (staked * aprValue) / 100 / 365 : 0.000002
 
         console.log('🥩 StakingStats Data:', {
           totalStaked: totalStaked?.toString(),
-          rewardRate: rewardRate?.toString(),
+          apy: apy?.toString(),
+          targetApyBps: targetApyBps?.toString(),
           stakedFormatted: staked,
-          rateFormatted: rate,
-          annualRewards,
-          apr,
+          aprValue,
           numberOfStakers,
           averageStakeSize: avgStake,
           dailyRewards,
-          usingFallbackValues: !totalStaked && !rewardRate,
+          usingFallbackValues: !totalStaked && !apy,
         })
 
         setStats({
           totalStaked: staked || 0.000256,
           totalRewards: 0,
-          apr: apr || 0.79,
+          apr: aprValue,
           totalPoolSize: staked || 0.000256,
           numberOfStakers,
           averageStakeSize: avgStake,
-          rewardsDistributed24h: dailyRewards || 0.000002,
+          rewardsDistributed24h: dailyRewards,
         })
         setLoading(false)
       } catch (error) {
@@ -86,7 +93,7 @@ export const StakingStats: React.FC = () => {
         setStats({
           totalStaked: 0.000256,
           totalRewards: 0,
-          apr: 0.79,
+          apr: 33333,
           totalPoolSize: 0.000256,
           numberOfStakers: 12,
           averageStakeSize: 0.00002,
@@ -97,14 +104,15 @@ export const StakingStats: React.FC = () => {
     }
 
     calculateStats()
-  }, [totalStaked, rewardRate])
+  }, [totalStaked, apy, targetApyBps])
 
   const formatAmount = (amount: number) => {
     return formatTokenAmount(amount)
   }
 
   const formatAPR = (apr: number) => {
-    return formatPercentage(apr)
+    // APR is already a percentage value (e.g., 33333 = 33,333%)
+    return `${apr.toLocaleString()}%`
   }
 
   return (
@@ -152,53 +160,57 @@ export const StakingStats: React.FC = () => {
                 <>{formatMoney(stats.totalPoolSize * 68000)}</>
               )}
             </div>
-            <SecondaryLabel>TOTAL VALUE</SecondaryLabel>
+            <SecondaryLabel>STAKED lzrBTC IN USD</SecondaryLabel>
           </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 md:mb-4 w-full">
           <div className="bg-black/80 p-2 sm:p-3 border border-lightgreen-100/30 rounded-[.115rem] w-full min-h-[80px] flex flex-col justify-center">
             <PrimaryLabel className="mb-1">STAKERS</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-12" />
               ) : (
                 <>{stats.numberOfStakers}</>
               )}
             </div>
+            <SecondaryLabel>ACTIVE USERS</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-2 sm:p-3 border border-lightgreen-100/30 rounded-[.115rem] w-full min-h-[80px] flex flex-col justify-center">
             <PrimaryLabel className="mb-1">AVG STAKE</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
                 <>{formatAmount(stats.averageStakeSize)}</>
               )}
             </div>
+            <SecondaryLabel>lzrBTC PER USER</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-2 sm:p-3 border border-lightgreen-100/30 rounded-[.115rem] w-full min-h-[80px] flex flex-col justify-center">
             <PrimaryLabel className="mb-1">24H REWARDS</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
                 <>{formatAmount(stats.rewardsDistributed24h)}</>
               )}
             </div>
+            <SecondaryLabel>lzrBTC DISTRIBUTED</SecondaryLabel>
           </div>
 
           <div className="bg-black/80 p-2 sm:p-3 border border-lightgreen-100/30 rounded-[.115rem] w-full min-h-[80px] flex flex-col justify-center">
-            <PrimaryLabel className="mb-1">REWARDS</PrimaryLabel>
-            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue">
+            <PrimaryLabel className="mb-1">TOTAL REWARDS</PrimaryLabel>
+            <div className="text-base md:text-lg lg:text-xl font-bold text-lightgreen-100 font-maison-neue mb-1">
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
                 <>{formatAmount(stats.totalRewards)}</>
               )}
             </div>
+            <SecondaryLabel>lzrBTC EARNED</SecondaryLabel>
           </div>
         </div>
 

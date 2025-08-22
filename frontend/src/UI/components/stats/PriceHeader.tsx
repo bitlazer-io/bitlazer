@@ -144,16 +144,18 @@ export const PriceHeader: React.FC = () => {
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
               <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
-                Total Supply
+                lzrBTC Supply
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {totalSupply ? (
-                  formatSupply(Number(formatUnits(totalSupply as bigint, 8)))
+                  formatSupply(Number(formatUnits(totalSupply as bigint, 18)))
                 ) : (
                   <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
                 )}
               </div>
-              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">lzrBTC</div>
+              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">
+                TOKENS ON ARBITRUM
+              </div>
             </div>
           </div>
         </div>
@@ -164,7 +166,7 @@ export const PriceHeader: React.FC = () => {
           <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/70 to-fuchsia/10 backdrop-blur-sm border border-lightgreen-100/50 p-3 md:p-4 lg:p-5 hover:border-fuchsia transition-all duration-300 rounded-[.115rem] h-full flex flex-col justify-between">
             <div className="flex flex-col">
               <div className="text-base md:text-lg lg:text-xl font-ocrx text-white/90 uppercase tracking-wider mb-1">
-                Market Cap
+                lzrBTC Market Cap
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-fuchsia font-maison-neue mb-1 break-all sm:break-normal">
                 {loading ? (
