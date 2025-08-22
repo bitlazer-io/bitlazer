@@ -129,8 +129,8 @@ const Header: FC<IHeader> = () => {
                   <ul className="flex md:flex-row flex-col items-center justify-center gap-8 md:gap-9 md:pt-3">
                     <li>
                       <Link
-                        to="/bridge"
-                        className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname === '/bridge' ? 'line-through pointer-events-none' : ''}`}
+                        to="/bridge/wrap"
+                        className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname.startsWith('/bridge') ? 'line-through pointer-events-none' : ''}`}
                         onClick={closeMenu}
                       >
                         [BRIDGE]

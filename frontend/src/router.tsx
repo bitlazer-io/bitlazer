@@ -1,4 +1,4 @@
-import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router-dom'
+import { createBrowserRouter, createRoutesFromElements, Route, Navigate } from 'react-router-dom'
 import NotFoundPage from '@pages/NotFoundPage'
 import IndexPage from '@pages/IndexPage'
 import { MainLayout } from '@layouts/index'
@@ -16,7 +16,13 @@ export const router = createBrowserRouter(
       <Route element={<MainLayout />}>
         <Route element={<IndexPage />} path="/" />
         <Route element={<ConnectWalletPage />} path="/connect-wallet" />
-        <Route element={<BridgePage />} path="/bridge" />
+        {/* Bridge routes with nested paths */}
+        <Route path="/bridge">
+          <Route index element={<Navigate to="/bridge/crosschain" replace />} />
+          <Route element={<BridgePage />} path="wrap" />
+          <Route element={<BridgePage />} path="crosschain" />
+          <Route element={<BridgePage />} path="stake" />
+        </Route>
         <Route element={<RoadmapPage />} path="/roadmap" />
         <Route element={<FeaturesPage />} path="/features" />
         <Route element={<StatsPage />} path="/stats" />
