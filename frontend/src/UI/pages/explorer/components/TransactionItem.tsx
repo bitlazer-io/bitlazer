@@ -53,25 +53,40 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
     return `${Math.floor(diff / 86400)}d ago`
   }
 
+  const getAddressExplorerUrl = (address: string, network: NetworkType) => {
+    if (network === NetworkType.ARBITRUM) {
+      return `https://arbiscan.io/address/${address}`
+    }
+    return `https://bitlazer.calderaexplorer.xyz/address/${address}`
+  }
+
   const getNetworkIcon = (network: NetworkType) => {
     if (network === NetworkType.ARBITRUM) {
-      return <img src="/icons/crypto/arbitrum.svg" alt="Arbitrum" className="w-4 h-4 inline-block mr-1" />
+      return (
+        <img
+          src="/icons/crypto/arbitrum.svg"
+          alt="Arbitrum"
+          className="w-5 h-5 inline-block mr-1 brightness-0 invert"
+        />
+      )
     }
-    return <img src="/safari-pinned-tab.svg" alt="Bitlazer" className="w-4 h-4 inline-block mr-1" />
+    return <img src="/src/assets/images/burger-no-bg.svg" alt="Bitlazer" className="w-5 h-5 inline-block mr-1" />
   }
 
   return (
     <div
       className={clsx(
-        'border border-lightgreen-100/30 rounded-[.115rem] p-4',
-        'hover:border-lightgreen-100/60 transition-all duration-200',
-        'cursor-pointer group',
+        'relative border border-lightgreen-100/30 rounded-[.115rem] p-4',
+        'hover:bg-black/50',
+        'hover:border-lightgreen-100/60',
+        'transition-all duration-300 ease-out',
+        'group',
       )}
     >
       {/* Desktop View */}
-      <div className="hidden md:grid md:grid-cols-12 gap-4 items-center">
+      <div className="hidden md:grid md:grid-cols-12 gap-4 items-center relative z-10">
         {/* Type */}
-        <div className="col-span-2">
+        <div className="col-span-1">
           <span className={clsx('font-ocrx text-base uppercase', getTypeColor(transaction.type))}>
             {transaction.type}
           </span>
@@ -83,26 +98,38 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
             href={transaction.explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-fuchsia hover:text-lightgreen-100 transition-colors font-maison-neue text-base"
+            className="text-fuchsia hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-base cursor-pointer"
             onClick={(e) => e.stopPropagation()}
           >
             {formatTxHash(transaction.hash)}
           </a>
         </div>
 
-        {/* From → To */}
+        {/* From Address */}
         <div className="col-span-2">
-          <div className="text-white/70 font-maison-neue text-base truncate">
-            <span title={transaction.from}>{formatAddress(transaction.from)}</span>
-            <span className="mx-1">→</span>
-            <span title={transaction.to}>{formatAddress(transaction.to)}</span>
-          </div>
+          <a
+            href={getAddressExplorerUrl(transaction.from, transaction.sourceNetwork)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/70 hover:text-lightgreen-100 hover:underline font-maison-neue text-base truncate inline-block transition-colors duration-200 cursor-pointer"
+            title={transaction.from}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {formatAddress(transaction.from)}
+          </a>
         </div>
 
         {/* Amount */}
         <div className="col-span-2">
-          <span className="text-white font-maison-neue text-base font-semibold">
+          <span className="text-white font-maison-neue text-base font-semibold whitespace-nowrap">
             {formatAmount(transaction.amount, transaction.asset)}
+          </span>
+        </div>
+
+        {/* Block */}
+        <div className="col-span-1">
+          <span className="text-white/70 font-maison-neue text-base">
+            {transaction.blockNumber ? `#${transaction.blockNumber}` : '-'}
           </span>
         </div>
 
@@ -110,14 +137,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
         <div className="col-span-2">
           <div className="flex items-center text-white/70 font-maison-neue text-base">
             {getNetworkIcon(transaction.sourceNetwork)}
-            <span className="capitalize">{transaction.sourceNetwork}</span>
-            {transaction.destinationNetwork && (
-              <>
-                <span className="mx-1">→</span>
-                {getNetworkIcon(transaction.destinationNetwork)}
-                <span className="capitalize">{transaction.destinationNetwork}</span>
-              </>
-            )}
+            <span className="capitalize ml-1">{transaction.sourceNetwork}</span>
           </div>
         </div>
 
@@ -129,13 +149,13 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
         </div>
 
         {/* Time */}
-        <div className="col-span-1">
+        <div className="col-span-1 text-right">
           <span className="text-white/50 font-maison-neue text-base">{formatTime(transaction.timestamp)}</span>
         </div>
       </div>
 
       {/* Mobile View */}
-      <div className="md:hidden space-y-2">
+      <div className="md:hidden space-y-2 relative z-10">
         <div className="flex justify-between items-start">
           <span className={clsx('font-ocrx text-sm uppercase', getTypeColor(transaction.type))}>
             {transaction.type}
@@ -150,12 +170,25 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
             href={transaction.explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-fuchsia hover:text-lightgreen-100 transition-colors font-maison-neue text-sm"
+            className="text-fuchsia hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-sm"
             onClick={(e) => e.stopPropagation()}
           >
             {formatTxHash(transaction.hash)}
           </a>
           <span className="text-white/50 font-maison-neue text-sm">{formatTime(transaction.timestamp)}</span>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-white/50 font-maison-neue text-sm">From:</span>
+          <a
+            href={getAddressExplorerUrl(transaction.from, transaction.sourceNetwork)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/70 hover:text-lightgreen-100 hover:underline font-maison-neue text-sm transition-colors duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {formatAddress(transaction.from)}
+          </a>
         </div>
 
         <div className="border-t border-lightgreen-100/20 pt-2">
