@@ -22,7 +22,6 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
     { value: TransactionType.BRIDGE, label: 'Bridge' },
     { value: TransactionType.STAKE, label: 'Stake' },
     { value: TransactionType.UNSTAKE, label: 'Unstake' },
-    { value: TransactionType.CLAIM, label: 'Claim' },
   ]
 
   const networkOptions: Array<{ value: NetworkType | 'all'; label: string }> = [

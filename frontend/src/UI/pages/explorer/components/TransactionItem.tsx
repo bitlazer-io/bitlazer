@@ -18,8 +18,6 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
       case TransactionType.STAKE:
       case TransactionType.UNSTAKE:
         return 'text-fuchsia'
-      case TransactionType.CLAIM:
-        return 'text-green-400'
       default:
         return 'text-white'
     }

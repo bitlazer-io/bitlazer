@@ -4,7 +4,6 @@ export enum TransactionType {
   BRIDGE = 'bridge',
   STAKE = 'stake',
   UNSTAKE = 'unstake',
-  CLAIM = 'claim',
 }
 
 export enum NetworkType {

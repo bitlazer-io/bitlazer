@@ -2,9 +2,9 @@ import React, { FC, useState, useEffect } from 'react'
 import { TypewriterText } from '@components/common/TypewriterText'
 import { TransactionList } from './components/TransactionList'
 import { TransactionFilters } from './components/TransactionFilters'
-import { SearchBar } from './components/SearchBar'
 import { fetchTransactions } from './services/transactionService'
 import { Transaction, TransactionType, NetworkType } from './types'
+import { cache } from 'src/utils/cache'
 
 interface IExplorer {}
 
@@ -40,12 +40,26 @@ const Explorer: FC<IExplorer> = () => {
   }, [page, filteredTransactions])
 
   const loadAllTransactions = async () => {
+    const CACHE_KEY = 'explorer_transactions'
+    const CACHE_TTL = 60 * 1000 // 1 minute cache
+
+    // Try to get cached data first
+    const cachedData = cache.get<Transaction[]>(CACHE_KEY)
+    if (cachedData) {
+      setAllTransactions(cachedData)
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     try {
       const data = await fetchTransactions({
         page: 1,
         limit: 1000, // Fetch all available transactions
       })
+
+      // Cache the transactions
+      cache.set(CACHE_KEY, data.transactions, CACHE_TTL)
       setAllTransactions(data.transactions)
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
@@ -133,14 +147,6 @@ const Explorer: FC<IExplorer> = () => {
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative group w-full">
-            <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-lightgreen-100/10 backdrop-blur-sm border border-lightgreen-100 p-4 md:p-5 hover:border-lightgreen-100 hover:shadow-[0_0_20px_rgba(102,213,96,0.2)] transition-all duration-300 rounded-[.115rem]">
-              <SearchBar onSearch={handleSearch} />
-            </div>
-          </div>
-
           {/* Filters */}
           <div className="relative group w-full">
             <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
@@ -154,12 +160,14 @@ const Explorer: FC<IExplorer> = () => {
             </div>
           </div>
 
-          {/* Transaction List */}
+          {/* Transaction List with integrated Search */}
           <TransactionList
             transactions={displayedTransactions}
             loading={loading}
             hasMore={hasMore}
             onLoadMore={handleLoadMore}
+            onSearch={handleSearch}
+            searchQuery={searchQuery}
           />
         </div>
       </div>
