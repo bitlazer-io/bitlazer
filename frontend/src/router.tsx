@@ -9,6 +9,7 @@ import FeaturesPage from '@pages/FeaturesPage'
 import HowItWorksPage from '@pages/HowItWorksPage'
 import EcosystemPage from '@pages/EcosystemPage'
 import StatsPage from '@pages/StatsPage'
+import ExplorerPage from '@pages/ExplorerPage'
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -26,6 +27,7 @@ export const router = createBrowserRouter(
         <Route element={<RoadmapPage />} path="/roadmap" />
         <Route element={<FeaturesPage />} path="/features" />
         <Route element={<StatsPage />} path="/stats" />
+        <Route element={<ExplorerPage />} path="/explorer" />
         <Route element={<HowItWorksPage />} path="/how-it-works" />
         <Route element={<EcosystemPage />} path="/ecosystem" />
       </Route>
