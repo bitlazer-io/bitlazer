@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import logo from '../../../assets/images/logowhite.svg'
 import burger from '../../../assets/images/burger.jpeg'
 import { Link, useLocation } from 'react-router-dom'
@@ -24,9 +24,11 @@ const Header: FC<IHeader> = () => {
   const [openConnectWalletModal, setOpenConnectWalletModal] = useState(false)
   const [openRoadmapModal, setOpenRoadmapModal] = useState(false)
   const [openFeaturesModal, setOpenFeaturesModal] = useState(false)
+  const [openMoreDropdown, setOpenMoreDropdown] = useState(false)
   const [refresh, setRefresh] = useState(false)
   const [showArbitrum, setShowArbitrum] = useState(true)
   const { address, isConnected } = useAccount()
+  const dropdownRef = useRef<HTMLLIElement>(null)
 
   const location = useLocation()
 
@@ -51,13 +53,31 @@ const Header: FC<IHeader> = () => {
     setIsActive(false)
   }
 
-  // Close modals when the location changes
+  // Close modals and dropdown when the location changes
   useEffect(() => {
     setOpenHowItWorksModal(false)
     setOpenConnectWalletModal(false)
     setOpenRoadmapModal(false)
     setOpenFeaturesModal(false)
+    setOpenMoreDropdown(false)
   }, [location])
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenMoreDropdown(false)
+      }
+    }
+
+    if (openMoreDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openMoreDropdown])
 
   useEffect(() => {
     if (isConnected) {
@@ -137,20 +157,6 @@ const Header: FC<IHeader> = () => {
                       </Link>
                     </li>
                     <li>
-                      <button
-                        className={clsx(
-                          'text-lightgreen-100 inline-block hover:scale-105 hover:line-through',
-                          openFeaturesModal && 'line-through select-none',
-                        )}
-                        onClick={() => {
-                          setOpenFeaturesModal(!openFeaturesModal)
-                          closeMenu()
-                        }}
-                      >
-                        [FEATURES]
-                      </button>
-                    </li>
-                    <li>
                       <Link
                         to="/stats"
                         className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname === '/stats' ? 'line-through pointer-events-none' : ''}`}
@@ -168,16 +174,43 @@ const Header: FC<IHeader> = () => {
                         [ECOSYSTEM]
                       </Link>
                     </li>
-                    <li>
-                      <Link
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        to="https://bitlazer.gitbook.io"
-                        className={`text-lightgreen-100  inline-block hover:scale-105 hover:line-through ${location.pathname === '/about' ? 'line-through pointer-events-none' : ''}`}
-                        onClick={closeMenu}
+                    <li className="relative" ref={dropdownRef}>
+                      <button
+                        className={clsx(
+                          'text-lightgreen-100 inline-flex items-center gap-1 hover:scale-105 hover:line-through transition-all',
+                          openMoreDropdown && 'line-through',
+                        )}
+                        onClick={() => setOpenMoreDropdown(!openMoreDropdown)}
                       >
-                        [DOCS]
-                      </Link>
+                        <span>[MORE]</span>
+                        <span className="text-[0.75rem] inline-block">{openMoreDropdown ? '▲' : '▼'}</span>
+                      </button>
+                      {openMoreDropdown && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-black border-2 border-lightgreen-100 rounded-[.115rem] min-w-[12rem] z-50 font-ocrx text-[1.25rem]">
+                          <button
+                            className="block w-full text-left px-4 py-3 text-lightgreen-100 hover:bg-forestgreen hover:text-black transition-all border-b border-lightgreen-100/30"
+                            onClick={() => {
+                              setOpenFeaturesModal(true)
+                              setOpenMoreDropdown(false)
+                              closeMenu()
+                            }}
+                          >
+                            [FEATURES]
+                          </button>
+                          <Link
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            to="https://bitlazer.gitbook.io"
+                            className="block px-4 py-3 text-lightgreen-100 hover:bg-forestgreen hover:text-black transition-all"
+                            onClick={() => {
+                              setOpenMoreDropdown(false)
+                              closeMenu()
+                            }}
+                          >
+                            [DOCS] ↗
+                          </Link>
+                        </div>
+                      )}
                     </li>
                   </ul>
                 </nav>
