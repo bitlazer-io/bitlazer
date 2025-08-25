@@ -77,9 +77,9 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
               )}
               {option.value === NetworkType.BITLAZER && (
                 <img
-                  src="/safari-pinned-tab.svg"
+                  src="/src/assets/images/burger-no-bg.svg"
                   alt="Bitlazer"
-                  className={clsx('w-4 h-4', selectedNetwork === option.value ? 'brightness-0' : 'brightness-0 invert')}
+                  className={clsx('w-4 h-4', selectedNetwork === option.value ? 'opacity-100' : 'opacity-70')}
                 />
               )}
               {option.label}

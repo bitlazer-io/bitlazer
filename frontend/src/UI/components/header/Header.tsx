@@ -245,11 +245,7 @@ const Header: FC<IHeader> = () => {
                         </>
                       ) : (
                         <>
-                          <img
-                            src="/safari-pinned-tab.svg"
-                            alt="BLZ"
-                            className="w-12 h-12 flex-shrink-0 brightness-0 invert"
-                          />
+                          <img src="/src/assets/images/burger-no-bg.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
                           <span className="text-2xl">
                             {bitlazerLoading
                               ? 'Loading...'
@@ -304,11 +300,7 @@ const Header: FC<IHeader> = () => {
                       </>
                     ) : (
                       <>
-                        <img
-                          src="/safari-pinned-tab.svg"
-                          alt="BLZ"
-                          className="w-12 h-12 flex-shrink-0 brightness-0 invert"
-                        />
+                        <img src="/src/assets/images/burger-no-bg.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
                         <span className="text-2xl">
                           {bitlazerLoading
                             ? 'Loading...'
