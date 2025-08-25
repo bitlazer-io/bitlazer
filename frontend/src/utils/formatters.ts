@@ -116,3 +116,12 @@ export function formatCryptoAddress(address: string): string {
 export function formatTxHash(hash: string): string {
   return `${hash.slice(0, 6)}...${hash.slice(-4)}`
 }
+
+export function formatAddress(address: string): string {
+  if (!address) return ''
+  // Special case for zero address
+  if (address === '0x0000000000000000000000000000000000000000') {
+    return '0x0000...0000'
+  }
+  return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
