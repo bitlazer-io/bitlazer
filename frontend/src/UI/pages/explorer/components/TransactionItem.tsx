@@ -70,7 +70,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
         />
       )
     }
-    return <img src="/src/assets/images/burger-no-bg.svg" alt="Bitlazer" className="w-5 h-5 inline-block mr-1" />
+    return <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5 inline-block mr-1" />
   }
 
   return (

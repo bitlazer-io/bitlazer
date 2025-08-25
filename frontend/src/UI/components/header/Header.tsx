@@ -245,7 +245,7 @@ const Header: FC<IHeader> = () => {
                         </>
                       ) : (
                         <>
-                          <img src="/src/assets/images/burger-no-bg.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
+                          <img src="/images/bitlazer-icon.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
                           <span className="text-2xl">
                             {bitlazerLoading
                               ? 'Loading...'
