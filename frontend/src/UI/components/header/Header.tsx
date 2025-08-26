@@ -9,12 +9,9 @@ import ConnectWallet from '@pages/connect-wallet/ConnectWallet'
 import Roadmap from '@pages/roadmap/Roadmap'
 import Features from '@pages/features/Features'
 import clsx from 'clsx'
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { Account } from '@pages/connect-wallet/Account'
-import { arbitrum } from 'wagmi/chains'
-import { mainnet } from 'src/web3/chains'
-import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
-import { formatEther } from 'viem'
+import { LzrBTCBalance } from '@components/header/LzrBTCBalance'
 
 interface IHeader {}
 
@@ -25,25 +22,10 @@ const Header: FC<IHeader> = () => {
   const [openRoadmapModal, setOpenRoadmapModal] = useState(false)
   const [openFeaturesModal, setOpenFeaturesModal] = useState(false)
   const [openMoreDropdown, setOpenMoreDropdown] = useState(false)
-  const [refresh, setRefresh] = useState(false)
-  const [showArbitrum, setShowArbitrum] = useState(true)
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const dropdownRef = useRef<HTMLLIElement>(null)
 
   const location = useLocation()
-
-  const formatBalance = (balance: string) => {
-    if (!balance) return '0'
-    const etherValue = formatEther(BigInt(balance))
-    // Use string manipulation to avoid rounding - just truncate after 6 decimals
-    const parts = etherValue.split('.')
-    if (parts.length === 1) return parts[0] // No decimals
-    // Take up to 6 decimal places without rounding
-    const decimals = parts[1].substring(0, 6)
-    // Remove trailing zeros for cleaner display
-    const trimmedDecimals = decimals.replace(/0+$/, '')
-    return trimmedDecimals ? `${parts[0]}.${trimmedDecimals}` : parts[0]
-  }
 
   const toggleMenu = () => {
     setIsActive(!isActive)
@@ -82,39 +64,6 @@ const Header: FC<IHeader> = () => {
   useEffect(() => {
     if (isConnected) {
       setOpenConnectWalletModal(false)
-    }
-  }, [isConnected])
-
-  // lzrBTC balance on Arbitrum
-  const {
-    data: arbitrumData,
-    isLoading: arbitrumLoading,
-    refetch: refetchArbitrum, // eslint-disable-line @typescript-eslint/no-unused-vars
-  } = useBalance({
-    address,
-    token: ERC20_CONTRACT_ADDRESS['lzrBTC'],
-    chainId: arbitrum.id,
-    scopeKey: refresh.toString(),
-  })
-
-  // Native lzrBTC balance on Bitlazer L3
-  const {
-    data: bitlazerData,
-    isLoading: bitlazerLoading,
-    refetch: refetchBitlazer, // eslint-disable-line @typescript-eslint/no-unused-vars
-  } = useBalance({
-    address,
-    chainId: mainnet.id,
-    scopeKey: refresh.toString(),
-  })
-
-  // Refresh balances every 5 seconds when connected
-  useEffect(() => {
-    if (isConnected) {
-      const interval = setInterval(() => {
-        setRefresh((prev) => !prev)
-      }, 5000)
-      return () => clearInterval(interval)
     }
   }, [isConnected])
 
@@ -224,48 +173,8 @@ const Header: FC<IHeader> = () => {
                   </ul>
                 </nav>
               </div>
-              <div className="flex md:hidden items-center space-x-0 mt-8 mx-auto justify-center flex-wrap ">
-                {isConnected && (
-                  <Button className="!w-auto uppercase min-w-[12.5rem] relative overflow-hidden">
-                    <div className="flex items-center gap-2 min-h-[1.25rem]">
-                      {showArbitrum ? (
-                        <>
-                          <div className="w-5 h-5 flex-shrink-0 overflow-hidden">
-                            <img
-                              src="/icons/crypto/arbitrum.svg"
-                              alt="ARB"
-                              className="w-full h-full object-contain brightness-0 invert"
-                            />
-                          </div>
-                          <span className="text-2xl">
-                            {arbitrumLoading
-                              ? 'Loading...'
-                              : `${formatBalance(arbitrumData?.value.toString() || '0')} lzrBTC`}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <img src="/images/bitlazer-icon.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
-                          <span className="text-2xl">
-                            {bitlazerLoading
-                              ? 'Loading...'
-                              : `${formatBalance(bitlazerData?.value.toString() || '0')} lzrBTC`}
-                          </span>
-                        </>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowArbitrum(!showArbitrum)
-                        }}
-                        className="ml-auto flex flex-col text-white"
-                      >
-                        <span className="text-[10px] leading-[8px]">▲</span>
-                        <span className="text-[10px] leading-[8px]">▼</span>
-                      </button>
-                    </div>
-                  </Button>
-                )}
+              <div className="flex md:hidden items-center space-x-2 mt-8 mx-auto justify-center flex-wrap ">
+                {isConnected && <LzrBTCBalance />}
                 <Button
                   onClick={() => {
                     if (!isConnected) {
@@ -279,48 +188,8 @@ const Header: FC<IHeader> = () => {
                 </Button>
               </div>
             </div>
-            <div className="md:flex hidden items-center space-x-0">
-              {isConnected && (
-                <Button className="!w-auto uppercase min-w-[12.5rem] md:min-w-min relative overflow-hidden">
-                  <div className="flex items-center gap-2 min-h-[1.25rem]">
-                    {showArbitrum ? (
-                      <>
-                        <div className="w-5 h-5 flex-shrink-0 overflow-hidden">
-                          <img
-                            src="/icons/crypto/arbitrum.svg"
-                            alt="ARB"
-                            className="w-full h-full object-contain brightness-0 invert"
-                          />
-                        </div>
-                        <span className="text-2xl">
-                          {arbitrumLoading
-                            ? 'Loading...'
-                            : `${formatBalance(arbitrumData?.value.toString() || '0')} lzrBTC`}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <img src="/src/assets/images/burger-no-bg.svg" alt="BLZ" className="w-5 h-5 flex-shrink-0" />
-                        <span className="text-2xl">
-                          {bitlazerLoading
-                            ? 'Loading...'
-                            : `${formatBalance(bitlazerData?.value.toString() || '0')} lzrBTC`}
-                        </span>
-                      </>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowArbitrum(!showArbitrum)
-                      }}
-                      className="ml-auto flex flex-col text-white"
-                    >
-                      <span className="text-[10px] leading-[8px]">▲</span>
-                      <span className="text-[10px] leading-[8px]">▼</span>
-                    </button>
-                  </div>
-                </Button>
-              )}
+            <div className="md:flex hidden items-center space-x-2">
+              {isConnected && <LzrBTCBalance />}
               <Button
                 onClick={() => {
                   if (!isConnected) {
