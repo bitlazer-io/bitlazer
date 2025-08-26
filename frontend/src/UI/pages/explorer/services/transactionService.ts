@@ -190,11 +190,13 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
     }
 
     // 6. FETCH UNSTAKE TRANSACTIONS (Bitlazer)
-    // Look for Unstaked event instead of Transfer to avoid duplicates
+    // First try to fetch Unstaked events directly
     try {
       const unstakedLogs = await bitlazerClient.getLogs({
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-        event: parseAbiItem('event Unstaked(address indexed user, uint256 amount)'),
+        event: parseAbiItem(
+          'event Unstaked(address indexed user, uint256 amount, uint256 rewards, uint256 totalUnstaked)',
+        ),
         fromBlock: l3FromBlock,
         toBlock: l3CurrentBlock,
       })
@@ -219,8 +221,8 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
         }
       }
     } catch (unstakeError) {
-      // If Unstaked event doesn't exist, fall back to Transfer events but dedupe by tx hash
-      console.warn('Unstaked event not found, falling back to Transfer events:', unstakeError)
+      // If Unstaked event fails, fall back to Transfer events to 0x0 (burns)
+      console.log('Falling back to Transfer events for unstaking:', unstakeError)
 
       const unstakeLogs = await bitlazerClient.getLogs({
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -232,13 +234,11 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
         toBlock: l3CurrentBlock,
       })
 
-      // Group by transaction hash to avoid duplicates
-      const txHashMap = new Map<string, any>()
-
+      // Process unstaking events (burns = transfers to 0x0)
       for (const log of unstakeLogs) {
-        if (log.args && 'from' in log.args && 'value' in log.args && !txHashMap.has(log.transactionHash!)) {
+        if (log.args && 'from' in log.args && 'value' in log.args) {
           const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          txHashMap.set(log.transactionHash!, {
+          allTransactions.push({
             id: log.transactionHash!,
             hash: log.transactionHash!,
             type: TransactionType.UNSTAKE,
@@ -254,8 +254,6 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
           })
         }
       }
-
-      allTransactions.push(...txHashMap.values())
     }
   } catch (error) {
     console.error('Error fetching blockchain transactions:', error)

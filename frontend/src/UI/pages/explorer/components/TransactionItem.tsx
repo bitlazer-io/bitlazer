@@ -62,13 +62,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
 
   const getNetworkIcon = (network: NetworkType) => {
     if (network === NetworkType.ARBITRUM) {
-      return (
-        <img
-          src="/icons/crypto/arbitrum.svg"
-          alt="Arbitrum"
-          className="w-5 h-5 inline-block mr-1 brightness-0 invert"
-        />
-      )
+      return <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5 inline-block mr-1" />
     }
     return <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5 inline-block mr-1" />
   }
@@ -98,7 +92,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
             href={transaction.explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-fuchsia hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-base cursor-pointer"
+            className="text-white/70 hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-base cursor-pointer"
             onClick={(e) => e.stopPropagation()}
           >
             {formatTxHash(transaction.hash)}
@@ -170,7 +164,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
             href={transaction.explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-fuchsia hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-sm"
+            className="text-white/70 hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-sm"
             onClick={(e) => e.stopPropagation()}
           >
             {formatTxHash(transaction.hash)}

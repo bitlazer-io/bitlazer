@@ -69,11 +69,7 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
               )}
             >
               {option.value === NetworkType.ARBITRUM && (
-                <img
-                  src="/icons/crypto/arbitrum.svg"
-                  alt="Arbitrum"
-                  className={clsx('w-4 h-4', selectedNetwork === option.value ? 'brightness-0' : 'brightness-0 invert')}
-                />
+                <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-4 h-4" />
               )}
               {option.value === NetworkType.BITLAZER && (
                 <img
