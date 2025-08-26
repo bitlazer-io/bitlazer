@@ -31,9 +31,9 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
     const arbCurrentBlock = await arbitrumClient.getBlockNumber()
     const l3CurrentBlock = await bitlazerClient.getBlockNumber()
 
-    // Define block ranges (last ~1M blocks)
-    const arbFromBlock = arbCurrentBlock > 1000000n ? arbCurrentBlock - 1000000n : 0n
-    const l3FromBlock = l3CurrentBlock > 1000000n ? l3CurrentBlock - 1000000n : 0n
+    // Define block ranges (last ~3M blocks to capture more history)
+    const arbFromBlock = arbCurrentBlock > 3000000n ? arbCurrentBlock - 3000000n : 0n
+    const l3FromBlock = l3CurrentBlock > 3000000n ? l3CurrentBlock - 3000000n : 0n
 
     // 1. FETCH WRAP TRANSACTIONS (Arbitrum)
     const wrapLogs = await arbitrumClient.getLogs({
