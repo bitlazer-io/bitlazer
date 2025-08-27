@@ -78,8 +78,8 @@ const Home: FC<IHome> = () => {
             {/* <Button variant={'dark'} className="md:!w-auto min-w-[11.75rem]">
               LEARN MORE
             </Button> */}
-            <Button link={'/bridge'} className="md:!w-auto min-w-[11.5rem]">
-              BRIDGE & EARN
+            <Button link={'/bridge/wrap'} className="md:!w-auto min-w-[11.5rem]">
+              STAKE & EARN
             </Button>
           </div>
         </section>

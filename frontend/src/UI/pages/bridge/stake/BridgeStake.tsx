@@ -116,7 +116,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
       if (receipt.status === 'success') {
         const wasRestaking = stakedBalance && Number(formatStakedAmount(stakedBalance as any)) > 0
-        const message = wasRestaking ? 'Stake successful. Previous rewards have been claimed!' : 'Stake successful'
+        const message = wasRestaking
+          ? `Successfully staked ${data.stakeAmount} lzrBTC. Previous rewards have been claimed!`
+          : `Successfully staked ${data.stakeAmount} lzrBTC!`
         toast(<TXToast {...{ message, txHash: receipt.transactionHash }} />, { autoClose: 7000 })
         stakeSetValue('stakeAmount', '')
         setRefreshData((prev) => prev + 1)
@@ -161,6 +163,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
       const amountToUnstake = parseUnits(data.unstakeAmount, 18)
 
       // Execute the transaction with explicit gas to bypass estimation
+      // NOTE: MetaMask will show "0 lzrBTC" for unstaking transactions because it only displays
+      // the transaction value (which is 0), not the function parameter amount. This is a MetaMask
+      // limitation - the actual unstake amount is encoded in the function args.
       const txHash = await writeContract(config, {
         abi: stakeAdapter_abi,
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -180,7 +185,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
         toast(
           <TXToast
             {...{
-              message: 'Unstake successful. Rewards have been automatically claimed!',
+              message: `Successfully unstaked ${data.unstakeAmount} lzrBTC. Rewards have been automatically claimed!`,
               txHash: receipt.transactionHash,
             }}
           />,

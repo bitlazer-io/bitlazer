@@ -105,7 +105,7 @@ const Header: FC<IHeader> = () => {
                         className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname.startsWith('/bridge') ? 'line-through pointer-events-none' : ''}`}
                         onClick={closeMenu}
                       >
-                        [BRIDGE]
+                        [STAKE]
                       </Link>
                     </li>
                     <li>
