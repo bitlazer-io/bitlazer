@@ -101,10 +101,52 @@ export const WrapStats: React.FC = () => {
         // Use total supply for main stats (fast)
         const currentSupply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
 
+        // Fetch wrap and unwrap totals
+        const currentBlock = await publicClient.getBlockNumber()
+        const fromBlock = currentBlock > 3000000n ? currentBlock - 3000000n : 0n
+
+        // Count unique wrappers
+        const wrapLogs = await publicClient.getLogs({
+          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+          args: {
+            from: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+          },
+          fromBlock,
+          toBlock: currentBlock,
+        })
+
+        const uniqueWrapperAddresses = new Set<string>()
+        let totalUnwrapped = 0
+
+        // Count unique recipients of wraps
+        for (const log of wrapLogs) {
+          if (log.args && 'to' in log.args) {
+            uniqueWrapperAddresses.add((log.args.to as string).toLowerCase())
+          }
+        }
+
+        // Count unwraps (burns)
+        const unwrapLogs = await publicClient.getLogs({
+          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+          args: {
+            to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+          },
+          fromBlock,
+          toBlock: currentBlock,
+        })
+
+        for (const log of unwrapLogs) {
+          if (log.args && 'value' in log.args) {
+            totalUnwrapped += Number(formatUnits(log.args.value as bigint, 18))
+          }
+        }
+
         setStats({
-          totalWrapped: currentSupply || 100,
-          totalUnwrapped: 0,
-          uniqueWrappers: currentSupply > 0 ? 12 : 0,
+          totalWrapped: currentSupply + totalUnwrapped, // Total ever wrapped
+          totalUnwrapped: totalUnwrapped,
+          uniqueWrappers: uniqueWrapperAddresses.size,
           recentWraps: [],
         })
         setLoading(false)
@@ -115,11 +157,11 @@ export const WrapStats: React.FC = () => {
         console.error('Error fetching wrap stats:', error)
 
         // Use total supply as fallback
-        const currentSupply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 100
+        const currentSupply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
         setStats({
           totalWrapped: currentSupply,
           totalUnwrapped: 0,
-          uniqueWrappers: currentSupply > 0 ? 12 : 0,
+          uniqueWrappers: 0,
           recentWraps: [],
         })
         setLoading(false)

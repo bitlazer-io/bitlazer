@@ -191,6 +191,7 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
 
     // 6. FETCH UNSTAKE TRANSACTIONS (Bitlazer)
     // First try to fetch Unstaked events directly
+    let unstakeProcessed = false
     try {
       const unstakedLogs = await bitlazerClient.getLogs({
         address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -220,39 +221,47 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
           })
         }
       }
+      unstakeProcessed = true
     } catch (unstakeError) {
       // If Unstaked event fails, fall back to Transfer events to 0x0 (burns)
       console.log('Falling back to Transfer events for unstaking:', unstakeError)
+    }
 
-      const unstakeLogs = await bitlazerClient.getLogs({
-        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-        event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-        args: {
-          to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-        },
-        fromBlock: l3FromBlock,
-        toBlock: l3CurrentBlock,
-      })
+    // If Unstaked events failed, try Transfer events fallback
+    if (!unstakeProcessed) {
+      try {
+        const unstakeLogs = await bitlazerClient.getLogs({
+          address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+          args: {
+            to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+          },
+          fromBlock: l3FromBlock,
+          toBlock: l3CurrentBlock,
+        })
 
-      // Process unstaking events (burns = transfers to 0x0)
-      for (const log of unstakeLogs) {
-        if (log.args && 'from' in log.args && 'value' in log.args) {
-          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          allTransactions.push({
-            id: log.transactionHash!,
-            hash: log.transactionHash!,
-            type: TransactionType.UNSTAKE,
-            status: TransactionStatus.CONFIRMED,
-            from: log.args.from as string,
-            to: '0x0000000000000000000000000000000000000000',
-            amount: formatUnits(log.args.value as bigint, 18),
-            asset: 'lzrBTC',
-            sourceNetwork: NetworkType.BITLAZER,
-            timestamp: Number(block.timestamp),
-            blockNumber: Number(log.blockNumber),
-            explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-          })
+        // Process unstaking events (burns = transfers to 0x0)
+        for (const log of unstakeLogs) {
+          if (log.args && 'from' in log.args && 'value' in log.args) {
+            const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+            allTransactions.push({
+              id: log.transactionHash!,
+              hash: log.transactionHash!,
+              type: TransactionType.UNSTAKE,
+              status: TransactionStatus.CONFIRMED,
+              from: log.args.from as string,
+              to: '0x0000000000000000000000000000000000000000',
+              amount: formatUnits(log.args.value as bigint, 18),
+              asset: 'lzrBTC',
+              sourceNetwork: NetworkType.BITLAZER,
+              timestamp: Number(block.timestamp),
+              blockNumber: Number(log.blockNumber),
+              explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+            })
+          }
         }
+      } catch (fallbackError) {
+        console.error('Error fetching unstake transactions with fallback:', fallbackError)
       }
     }
   } catch (error) {
