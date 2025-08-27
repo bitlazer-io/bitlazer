@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import BridgeDeposit from './wrap/BridgeWrap'
 import BridgeStake from './stake/BridgeStake'
@@ -6,7 +6,6 @@ import BridgeWithdraw from './crosschain/BridgeCrosschain'
 import { useAccount } from 'wagmi'
 import BridgeConnect from './connect/BridgeConnect'
 import clsx from 'clsx'
-import Cookies from 'universal-cookie'
 
 interface IBridge {}
 interface BridgeTab {
@@ -25,7 +24,6 @@ const Bridge: FC<IBridge> = () => {
     { id: 'connect', name: 'CONNECT WALLET' },
   ]
 
-  const [currentProgress, setCurrentProgress] = useState<number>(0)
   const { isConnected } = useAccount()
 
   // Get active tab from URL path
@@ -78,118 +76,11 @@ const Bridge: FC<IBridge> = () => {
     }
   }, [isConnected, location.pathname, navigate])
 
-  useEffect(() => {
-    if (isConnected) {
-      const cookies = new Cookies()
-      const hasWrapped = (): boolean => {
-        return cookies.get('hasWrapped') === true
-      }
-
-      const hasBridged = (): boolean => {
-        return cookies.get('hasBridged') === true
-      }
-
-      const hasStaked = (): boolean => {
-        return cookies.get('hasStaked') === true
-      }
-
-      let progress = 0
-
-      if (hasWrapped()) {
-        progress = hasBridged() ? (hasStaked() ? 4 : 3) : hasStaked() ? 4 : 2
-      } else {
-        progress = hasBridged() ? (hasStaked() ? 4 : 3) : hasStaked() ? 4 : 1
-      }
-
-      setCurrentProgress(progress)
-    }
-  }, [isConnected])
-
   return (
     <div className="w-full min-h-screen relative overflow-hidden flex flex-col justify-center py-32">
       <div className="container">
         <div className="flex flex-col items-center md:pointer-events-auto md:[&_*]:pointer-events-auto">
-          <section className="md:max-w-[62.919rem] w-full flex md:flex-row flex-col-reverse text-[1rem] text-white md:items-stretch">
-            <div className="md:max-w-[30.95rem] w-full flex flex-col md:pt-10">
-              <div className="bg-black font-ocrx  border-white border-[.075rem] border-dashed flex flex-col md:pt-[2.562rem] md:pb-[2.25rem] md:pl-[2.5rem] md:pr-[0.5rem] px-4 py-6 md:gap-[2.375rem] gap-6 h-full">
-                <div className="relative tracking-[-0.06em] leading-[1.313rem] text-2xl">## HOW IT WORKS</div>
-                <div className="flex flex-col gap-10 max-w-[27rem] flex-1 text-2xl">
-                  <div className="flex flex-col gap-[2.375rem]">
-                    <div className="flex flex-col gap-4">
-                      <div className="text-2xl">
-                        <span>[ </span>
-                        <span className="text-lightgreen-100">Step 1</span>
-                        <span> | </span>
-                        <span className="text-fuchsia">Convert WBTC to lzrBTC</span>
-                        <span> ] </span>
-                      </div>
-                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        Convert your Wrapped Bitcoin (WBTC) to lzrBTC tokens on Arbitrum. 1:1 ratio, instant conversion.
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      <div className="text-2xl">
-                        <span>[ </span>
-                        <span className="text-lightgreen-100">Step 2</span>
-                        <span> | </span>
-                        <span className="text-fuchsia">Bridge lzrBTC to Bitlazer </span>
-                        <span> ] </span>
-                      </div>
-                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        <p className="m-0">
-                          Bridge your lzrBTC from Arbitrum to Bitlazer L3. Secure cross-chain transfer in ~15 minutes.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      <div className="text-2xl">
-                        <span>[ </span>
-                        <span className="text-lightgreen-100">Step 3</span>
-                        <span> | </span>
-                        <span className="text-fuchsia">Stake and Earn Yield </span>
-                        <span> ] </span>
-                      </div>
-                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        <p className="m-0">
-                          Stake your lzrBTC on Bitlazer to earn dual yield: native Bitcoin gas rewards + LZR tokens.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      <div className="text-2xl">
-                        <span>[ </span>
-                        <span className="text-lightgreen-100">Step 4</span>
-                        <span> | </span>
-                        <span className="text-fuchsia">Unstake and Collect Rewards </span>
-                        <span> ] </span>
-                      </div>
-                      <div className="tracking-[-0.06em] leading-[1.313rem] ">
-                        <p className="m-0">
-                          Unstake anytime to claim your lzrBTC + rewards. Bridge back and unwrap to WBTC.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Progress tracking - commented out for now
-                  <div className="flex flex-col gap-[0.312rem] mt-auto overflow-hidden">
-                    <div className="relative inline-flex flex-row max-w-full text-base font-normal  font-arial ">
-                      <div className={currentProgress > 0 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
-                      <div className={currentProgress > 1 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
-                      <div className={currentProgress > 2 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
-                      <div className={currentProgress > 3 ? 'text-[#66d560]' : ''}>░░░░░░░░░</div>
-                    </div>
-                    <div className="tracking-[-0.06em] leading-[1.25rem] font-ocrx text-2xl mt-2">
-                      CURRENT PROGRESS{' '}
-                      <span className="font-ocrx">
-                        {currentProgress}/4 <span className="">[</span> {Math.round((currentProgress / 4) * 100)}%{' '}
-                        <span className="font-">]</span>
-                      </span>
-                    </div>
-                  </div>
-                  */}
-                </div>
-              </div>
-            </div>
+          <section className="w-full flex justify-center text-[1rem] text-white">
             <div className="md:max-w-[31.75rem] w-full flex flex-col">
               <div className="grid grid-cols-3 relative z-10">
                 {tabs
