@@ -70,9 +70,12 @@ const Header: FC<IHeader> = () => {
   return (
     <>
       <header className="w-full fixed md:absolute top-0 left-0 z-50 bg-black md:bg-transparent md:pointer-events-auto md:[&_*]:pointer-events-auto">
-        <div className="container">
-          <div className="flex flex-row items-center justify-between gap-4 md:gap-16">
-            <Link to={'/'} className="h-[5.625rem] w-[9.606rem] flex items-center justify-center flex-shrink-0 p-px">
+        <div className="w-full px-4 md:px-6 lg:px-8 xl:px-10 2xl:px-12 max-w-[2000px] mx-auto">
+          <div className="flex flex-row items-center justify-between gap-2 md:gap-3">
+            <Link
+              to={'/'}
+              className="h-[4.5rem] md:h-[5rem] lg:h-[5.625rem] w-[8rem] md:w-[8.5rem] lg:w-[9.606rem] flex items-center justify-center flex-shrink-0 p-px"
+            >
               <img className="w-full h-full object-contain" loading="lazy" alt="" src={logo} />
             </Link>
             <button
@@ -83,7 +86,7 @@ const Header: FC<IHeader> = () => {
               <img className="w-full h-full object-contain" src={burger} alt="" />
             </button>
             <div
-              className={`flex h-screen flex-col text-white fixed  md:flex-1 transition-all md:p-0 px-4 py-8 pt-24 duration-300 z-[100] bg-black w-full top-0 overflow-y-auto md:overflow-visible md:top-auto md:w-auto md:h-auto md:bg-transparent md:static md:z-auto ${
+              className={`flex h-screen flex-col text-white fixed md:flex md:flex-row md:items-center md:justify-end md:flex-1 transition-all md:p-0 px-4 py-8 pt-24 duration-300 z-[100] bg-black w-full top-0 overflow-y-auto md:overflow-visible md:top-auto md:w-auto md:h-auto md:bg-transparent md:static md:z-auto ${
                 isActive ? 'right-0' : '-right-[100vw]'
               }`}
             >
@@ -93,9 +96,9 @@ const Header: FC<IHeader> = () => {
               >
                 X
               </button>
-              <div className="items-center gap-[4.875rem] flex md:flex-row flex-col justify-center">
-                <nav className="whitespace-nowrap text-[1.5rem] leading-[2rem] text-lightgreen-100 font-ocrx text-extrathin">
-                  <ul className="flex md:flex-row flex-col items-center justify-center gap-8 md:gap-9 md:pt-3">
+              <div className="items-center flex md:flex-row flex-col justify-center md:justify-end md:flex-1">
+                <nav className="whitespace-nowrap text-[1.5rem] leading-[2rem] text-lightgreen-100 font-ocrx text-extrathin md:mr-3 lg:mr-4 xl:mr-5">
+                  <ul className="flex md:flex-row flex-col items-center justify-center gap-8 md:gap-3 lg:gap-5 xl:gap-6 md:pt-3">
                     <li>
                       <Link
                         to="/bridge/wrap"
@@ -173,7 +176,7 @@ const Header: FC<IHeader> = () => {
                   </ul>
                 </nav>
               </div>
-              <div className="flex md:hidden items-center space-x-2 mt-8 mx-auto justify-center flex-wrap ">
+              <div className="flex md:hidden items-center space-x-2 mt-8 mx-auto justify-center flex-wrap">
                 {isConnected && <LzrBTCBalance />}
                 <Button
                   onClick={() => {
@@ -187,20 +190,20 @@ const Header: FC<IHeader> = () => {
                   {isConnected ? <Account /> : 'CONNECT WALLET'}
                 </Button>
               </div>
-            </div>
-            <div className="md:flex hidden items-center space-x-2">
-              {isConnected && <LzrBTCBalance />}
-              <Button
-                onClick={() => {
-                  if (!isConnected) {
-                    setOpenConnectWalletModal(!openConnectWalletModal)
-                    closeMenu()
-                  }
-                }}
-                className="!w-auto min-w-[12.5rem]  md:min-w-min"
-              >
-                {isConnected ? <Account /> : 'CONNECT WALLET'}
-              </Button>
+              <div className="md:flex hidden items-center space-x-2 flex-shrink-0">
+                {isConnected && <LzrBTCBalance />}
+                <Button
+                  onClick={() => {
+                    if (!isConnected) {
+                      setOpenConnectWalletModal(!openConnectWalletModal)
+                      closeMenu()
+                    }
+                  }}
+                  className="!w-auto min-w-[12.5rem] md:min-w-min"
+                >
+                  {isConnected ? <Account /> : 'CONNECT WALLET'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

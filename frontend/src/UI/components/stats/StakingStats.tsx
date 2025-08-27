@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReadContract, usePublicClient } from 'wagmi'
 import { mainnet } from 'src/web3/chains'
@@ -39,8 +39,39 @@ export const StakingStats: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
   const [loadingRecentActivity, setLoadingRecentActivity] = useState(true)
+  const [btcPrice, setBtcPrice] = useState<number>(0)
+  const [priceLoading, setPriceLoading] = useState(true)
 
   const bitlazerClient = usePublicClient({ chainId: mainnet.id })
+
+  // Price cache management
+  const priceCache = useRef<{ price: number; timestamp: number } | null>(null)
+  const PRICE_CACHE_TTL = 30000 // 30 seconds
+
+  const fetchBTCPrice = async () => {
+    // Check cache first
+    if (priceCache.current && Date.now() - priceCache.current.timestamp < PRICE_CACHE_TTL) {
+      setBtcPrice(priceCache.current.price)
+      setPriceLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
+      )
+      const data = await response.json()
+      const price = data['wrapped-bitcoin']?.usd || 0
+
+      // Update cache
+      priceCache.current = { price, timestamp: Date.now() }
+      setBtcPrice(price)
+    } catch (error) {
+      console.error('Error fetching BTC price:', error)
+    } finally {
+      setPriceLoading(false)
+    }
+  }
 
   const { data: totalStaked } = useReadContract({
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -145,22 +176,65 @@ export const StakingStats: React.FC = () => {
       if (!bitlazerClient) return
 
       try {
-        const staked = totalStaked ? Number(formatUnits(totalStaked as bigint, 18)) : 0.000256
+        const staked = totalStaked ? Number(formatUnits(totalStaked as bigint, 18)) : 0
 
         // APR comes directly from contract as a percentage value (e.g., 33333 = 33,333%)
-        const aprValue = apy ? Number(apy) : 33333
+        const aprValue = apy ? Number(apy) : targetApyBps ? Number(targetApyBps) : 0
 
-        const numberOfStakers = Math.floor(Math.random() * 15) + 12
-        const avgStake = staked > 0 ? staked / numberOfStakers : 0.00002
+        // Fetch unique stakers from blockchain events
+        const currentBlock = await bitlazerClient.getBlockNumber()
+        const fromBlock = currentBlock > 3000000n ? currentBlock - 3000000n : 0n
+
+        // Get all stake events to count unique stakers
+        const stakedLogs = await bitlazerClient.getLogs({
+          address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+          event: parseAbiItem('event Staked(address indexed user, uint256 amount)'),
+          fromBlock,
+          toBlock: currentBlock,
+        })
+
+        const uniqueStakerAddresses = new Set<string>()
+        let totalRewardsDistributed = 0
+
+        // Count unique stakers
+        for (const log of stakedLogs) {
+          if (log.args && 'user' in log.args) {
+            uniqueStakerAddresses.add((log.args.user as string).toLowerCase())
+          }
+        }
+
+        // Try to fetch Unstaked events to calculate total rewards
+        try {
+          const unstakedLogs = await bitlazerClient.getLogs({
+            address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
+            event: parseAbiItem(
+              'event Unstaked(address indexed user, uint256 amount, uint256 rewards, uint256 totalUnstaked)',
+            ),
+            fromBlock,
+            toBlock: currentBlock,
+          })
+
+          // Sum up all rewards distributed
+          for (const log of unstakedLogs) {
+            if (log.args && 'rewards' in log.args) {
+              totalRewardsDistributed += Number(formatUnits(log.args.rewards as bigint, 18))
+            }
+          }
+        } catch (error) {
+          console.log('Could not fetch Unstaked events for rewards calculation')
+        }
+
+        const numberOfStakers = uniqueStakerAddresses.size || 0
+        const avgStake = staked > 0 && numberOfStakers > 0 ? staked / numberOfStakers : 0
 
         // Calculate daily rewards based on APR and total staked
-        const dailyRewards = staked > 0 ? (staked * aprValue) / 100 / 365 : 0.000002
+        const dailyRewards = staked > 0 && aprValue > 0 ? (staked * aprValue) / 100 / 365 : 0
 
         setStats({
-          totalStaked: staked || 0.000256,
-          totalRewards: 0,
+          totalStaked: staked,
+          totalRewards: totalRewardsDistributed,
           apr: aprValue,
-          totalPoolSize: staked || 0.000256,
+          totalPoolSize: staked,
           numberOfStakers,
           averageStakeSize: avgStake,
           rewardsDistributed24h: dailyRewards,
@@ -172,14 +246,19 @@ export const StakingStats: React.FC = () => {
         fetchRecentActivity()
       } catch (error) {
         console.error('Error calculating staking stats:', error)
+
+        // Use actual contract values as fallback
+        const staked = totalStaked ? Number(formatUnits(totalStaked as bigint, 18)) : 0
+        const aprValue = apy ? Number(apy) : targetApyBps ? Number(targetApyBps) : 0
+
         setStats({
-          totalStaked: 0.000256,
+          totalStaked: staked,
           totalRewards: 0,
-          apr: 33333,
-          totalPoolSize: 0.000256,
-          numberOfStakers: 12,
-          averageStakeSize: 0.00002,
-          rewardsDistributed24h: 0.000002,
+          apr: aprValue,
+          totalPoolSize: staked,
+          numberOfStakers: 0,
+          averageStakeSize: 0,
+          rewardsDistributed24h: 0,
           recentStakes: [],
         })
         setLoading(false)
@@ -187,11 +266,14 @@ export const StakingStats: React.FC = () => {
     }
 
     fetchStakingStats()
+    fetchBTCPrice()
     const mainStatsInterval = setInterval(fetchStakingStats, 90000)
     const recentActivityInterval = setInterval(fetchRecentActivity, 90000)
+    const priceInterval = setInterval(fetchBTCPrice, 30000)
     return () => {
       clearInterval(mainStatsInterval)
       clearInterval(recentActivityInterval)
+      clearInterval(priceInterval)
     }
   }, [totalStaked, apy, targetApyBps, bitlazerClient])
 
@@ -251,10 +333,10 @@ export const StakingStats: React.FC = () => {
           <div className="bg-black/80 p-4 border border-lightgreen-100/30 rounded-[.115rem]">
             <PrimaryLabel className="mb-2">TVL (USD)</PrimaryLabel>
             <div className="text-base md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
-              {loading ? (
+              {loading || priceLoading ? (
                 <div className="h-9 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatMoney(stats.totalPoolSize * 68000)}</>
+                <>{formatMoney(stats.totalPoolSize * btcPrice)}</>
               )}
             </div>
             <SecondaryLabel>STAKED lzrBTC IN USD</SecondaryLabel>
