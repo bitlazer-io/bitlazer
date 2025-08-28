@@ -389,14 +389,14 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         />
 
         {/* Switch Button */}
-        <div className="flex justify-center -my-2 relative z-10">
+        <div className="flex justify-center -my-4 relative z-10">
           <button
             type="button"
             onClick={handleSwitch}
-            className="bg-darkslategray-200 border-4 border-[#0a0a0a] rounded-[.115rem] p-2 hover:bg-darkslategray-200/80 transition-colors group"
+            className="bg-darkslategray-200 border-4 border-[#0a0a0a] rounded-[.115rem] p-0.5 hover:bg-darkslategray-100 transition-colors group shadow-lg"
           >
             <svg
-              className="w-6 h-6 text-lightgreen-100 group-hover:rotate-180 transition-transform duration-300"
+              className="w-5 h-5 text-lightgreen-100 group-hover:rotate-180 transition-transform duration-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -585,8 +585,8 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
             }}
             className="w-full px-4 py-3 flex justify-between items-center text-white/70 hover:text-white transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-maison-neue">Bridge Details</span>
+            <div className="flex items-center gap-2 text-left">
+              <span className="text-sm font-maison-neue text-left">Bridge Details</span>
             </div>
             <svg
               className={clsx('w-4 h-4 transition-transform duration-300', showDetails && 'rotate-180')}
