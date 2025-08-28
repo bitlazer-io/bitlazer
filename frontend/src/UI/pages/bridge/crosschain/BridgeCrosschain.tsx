@@ -363,56 +363,51 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
             <div className="flex justify-between items-center mb-3">
               <span className="text-white/70 text-sm font-maison-neue">From</span>
               <div className="relative h-6 w-[160px] flex items-center justify-end">
-                {/* Show percentage buttons when focused with fade transition */}
-                <div
-                  className={clsx(
-                    'flex items-center gap-1 transition-opacity duration-200 z-10',
-                    isInputFocused ? 'opacity-100' : 'opacity-0 pointer-events-none',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(25)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    25%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(50)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    50%
-                  </button>
+                {isInputFocused ? (
+                  <div className="flex items-center gap-1 animate-fadeIn">
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(25)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      25%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(50)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(100)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={() => handlePercentage(100)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
                   >
-                    MAX
+                    {/* Wallet icon */}
+                    <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                    </svg>
+                    <span className="text-white/50 text-xs font-maison-neue">
+                      {isBridgeMode
+                        ? isLoading
+                          ? '...'
+                          : `${formatEther(data?.value.toString() || '0')}`
+                        : l3isLoading
+                          ? '...'
+                          : `${formatEther(l3Data?.value.toString() || '0')}`}
+                    </span>
                   </button>
-                </div>
-                {/* Balance display with fade transition */}
-                <div
-                  className={clsx(
-                    'absolute right-0 flex items-center gap-2 transition-opacity duration-200',
-                    !isInputFocused ? 'opacity-100' : 'opacity-0 pointer-events-none',
-                  )}
-                >
-                  {/* Wallet icon */}
-                  <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                  </svg>
-                  <span className="text-white/50 text-xs font-maison-neue">
-                    {isBridgeMode
-                      ? isLoading
-                        ? '...'
-                        : `${formatEther(data?.value.toString() || '0')}`
-                      : l3isLoading
-                        ? '...'
-                        : `${formatEther(l3Data?.value.toString() || '0')}`}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -461,7 +456,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
                         type="number"
                         placeholder="0"
                         className={clsx(
-                          'bg-transparent text-white text-2xl font-bold placeholder:text-white/30',
+                          'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
                           'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
                         )}
                         onFocus={() => setIsInputFocused(true)}
