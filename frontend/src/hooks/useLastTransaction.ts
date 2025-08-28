@@ -22,7 +22,7 @@ const MAX_TRANSACTION_AGE = 24 * 60 * 60 * 1000 // 24 hours
 const ARBITRUM_BLOCKS_TO_SEARCH = 3000000n
 const BITLAZER_BLOCKS_TO_SEARCH = 3000000n
 
-export const useLastTransaction = () => {
+export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'bitlazer-to-arbitrum') => {
   const { address } = useAccount()
   const [pendingTransactions, setPendingTransactions] = useState<PendingTransaction[]>([])
   const [historicalTransaction, setHistoricalTransaction] = useState<PendingTransaction | null>(null)
@@ -196,8 +196,9 @@ export const useLastTransaction = () => {
       setIsLoading(true)
 
       try {
-        // Create cache key unique to the user's address
-        const cacheKey = `${CACHE_KEYS.BRIDGE_TRANSACTIONS}_${address.toLowerCase()}`
+        // Create cache key unique to the user's address and bridge direction
+        const directionKey = bridgeDirection || 'all'
+        const cacheKey = `${CACHE_KEYS.BRIDGE_TRANSACTIONS}_${address.toLowerCase()}_${directionKey}`
 
         const transaction = await fetchWithCache(
           cacheKey,
@@ -212,103 +213,125 @@ export const useLastTransaction = () => {
 
             const allTransactions: PendingTransaction[] = []
 
-            // 1. FETCH BRIDGE TO L3 (transfers FROM user TO gateway on Arbitrum)
-            const bridgeToL3Logs = await arbitrumClient.getLogs({
-              address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-              event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-              args: {
-                from: address as `0x${string}`,
-                to: L2_GATEWAY_ROUTER as `0x${string}`,
-              },
-              fromBlock: arbFromBlock,
-              toBlock: arbCurrentBlock,
-            })
+            // Prioritize fetching based on bridge direction
+            if (!bridgeDirection || bridgeDirection === 'arbitrum-to-bitlazer') {
+              // 1. FETCH BRIDGE TO L3 (transfers FROM user TO gateway on Arbitrum)
+              const bridgeToL3Logs = await arbitrumClient.getLogs({
+                address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
+                event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
+                args: {
+                  from: address as `0x${string}`,
+                  to: L2_GATEWAY_ROUTER as `0x${string}`,
+                },
+                fromBlock: arbFromBlock,
+                toBlock: arbCurrentBlock,
+              })
 
-            for (const log of bridgeToL3Logs) {
-              if (log.args && 'value' in log.args) {
-                const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
-                allTransactions.push({
-                  id: `${log.transactionHash}_historical`,
-                  type: 'bridge',
-                  status: 'completed',
-                  stage: 'completed',
-                  fromChain: 'Arbitrum One',
-                  toChain: 'Bitlazer L3',
-                  fromToken: 'lzrBTC',
-                  toToken: 'lzrBTC',
-                  amount: (Number(log.args.value) / 1e18).toFixed(8),
-                  timestamp: Number(block.timestamp) * 1000,
-                  estimatedTime: 0,
-                  txHash: log.transactionHash!,
-                  fromChainId: arbitrum.id,
-                  toChainId: mainnet.id,
-                  explorerUrl: `https://arbiscan.io/tx/${log.transactionHash}`,
-                })
+              for (const log of bridgeToL3Logs) {
+                if (log.args && 'value' in log.args) {
+                  const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
+                  allTransactions.push({
+                    id: `${log.transactionHash}_historical`,
+                    type: 'bridge',
+                    status: 'completed',
+                    stage: 'completed',
+                    fromChain: 'Arbitrum One',
+                    toChain: 'Bitlazer L3',
+                    fromToken: 'lzrBTC',
+                    toToken: 'lzrBTC',
+                    amount: (Number(log.args.value) / 1e18).toFixed(8),
+                    timestamp: Number(block.timestamp) * 1000,
+                    estimatedTime: 0,
+                    txHash: log.transactionHash!,
+                    fromChainId: arbitrum.id,
+                    toChainId: mainnet.id,
+                    explorerUrl: `https://arbiscan.io/tx/${log.transactionHash}`,
+                  })
+                }
               }
             }
 
-            // 2. FETCH BRIDGE FROM L3 - Look for WithdrawalInitiated events from the bridge contract
-            // We know the event signature from the logs: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc
-            let bridgeFromL3Logs: any[] = []
+            if (!bridgeDirection || bridgeDirection === 'bitlazer-to-arbitrum') {
+              // 2. FETCH BRIDGE FROM L3 - Look for WithdrawalInitiated events from the bridge contract
+              // We know the event signature from the logs: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc
+              let bridgeFromL3Logs: any[] = []
 
-            try {
-              // Fetch logs with the WithdrawalInitiated signature we found
-              const allBridgeLogs = await bitlazerClient.getLogs({
-                address: '0x0000000000000000000000000000000000000064' as `0x${string}`,
-                fromBlock: 0n, // Start from 0 since chain is very new (only 131 blocks)
-                toBlock: l3CurrentBlock,
-              })
-
-              // Filter for WithdrawalInitiated events (signature: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc)
-              // and events that have our address in the topics
-              const withdrawalInitiatedSignature = '0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc'
-              const addressTopic = address ? `0x${address.slice(2).padStart(64, '0').toLowerCase()}` : ''
-
-              bridgeFromL3Logs = allBridgeLogs.filter((log) => {
-                // Check if it's a WithdrawalInitiated event
-                if (log.topics[0] !== withdrawalInitiatedSignature) return false
-
-                // Check if our address is in the topics (usually topic[1] is the from address)
-                return log.topics.some((topic) => topic.toLowerCase() === addressTopic.toLowerCase())
-              })
-            } catch (error) {
-              console.error('Failed to fetch bridge logs:', error)
-            }
-
-            for (const log of bridgeFromL3Logs) {
               try {
-                const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+                // Fetch logs with the WithdrawalInitiated signature we found
+                const allBridgeLogs = await bitlazerClient.getLogs({
+                  address: '0x0000000000000000000000000000000000000064' as `0x${string}`,
+                  fromBlock: 0n, // Start from 0 since chain is very new (only 131 blocks)
+                  toBlock: l3CurrentBlock,
+                })
 
-                // Get transaction details to extract amount
-                const tx = await bitlazerClient.getTransaction({ hash: log.transactionHash as `0x${string}` })
+                // Filter for WithdrawalInitiated events (signature: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc)
+                // and events that have our address in the topics
+                const withdrawalInitiatedSignature =
+                  '0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc'
+                const addressTopic = address ? `0x${address.slice(2).padStart(64, '0').toLowerCase()}` : ''
 
-                // Use the transaction value as the amount (native lzrBTC on L3)
-                const amount = tx ? (Number(tx.value) / 1e18).toFixed(8) : '0.00000000'
+                bridgeFromL3Logs = allBridgeLogs.filter((log) => {
+                  // Check if it's a WithdrawalInitiated event
+                  if (log.topics[0] !== withdrawalInitiatedSignature) return false
 
-                allTransactions.push({
-                  id: `${log.transactionHash}_historical`,
-                  type: 'bridge-reverse',
-                  status: 'pending',
-                  stage: 'finalizing',
-                  fromChain: 'Bitlazer L3',
-                  toChain: 'Arbitrum One',
-                  fromToken: 'lzrBTC',
-                  toToken: 'lzrBTC',
-                  amount: amount,
-                  timestamp: Number(block.timestamp) * 1000,
-                  estimatedTime: 0,
-                  txHash: log.transactionHash!,
-                  fromChainId: mainnet.id,
-                  toChainId: arbitrum.id,
-                  explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+                  // Check if our address is in the topics (usually topic[1] is the from address)
+                  return log.topics.some((topic) => topic.toLowerCase() === addressTopic.toLowerCase())
                 })
               } catch (error) {
-                console.error('Error processing bridge log:', error)
+                console.error('Failed to fetch bridge logs:', error)
+              }
+
+              for (const log of bridgeFromL3Logs) {
+                try {
+                  const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+
+                  // Get transaction details to extract amount
+                  const tx = await bitlazerClient.getTransaction({ hash: log.transactionHash as `0x${string}` })
+
+                  // Use the transaction value as the amount (native lzrBTC on L3)
+                  const amount = tx ? (Number(tx.value) / 1e18).toFixed(8) : '0.00000000'
+
+                  allTransactions.push({
+                    id: `${log.transactionHash}_historical`,
+                    type: 'bridge-reverse',
+                    status: 'pending',
+                    stage: 'finalizing',
+                    fromChain: 'Bitlazer L3',
+                    toChain: 'Arbitrum One',
+                    fromToken: 'lzrBTC',
+                    toToken: 'lzrBTC',
+                    amount: amount,
+                    timestamp: Number(block.timestamp) * 1000,
+                    estimatedTime: 0,
+                    txHash: log.transactionHash!,
+                    fromChainId: mainnet.id,
+                    toChainId: arbitrum.id,
+                    explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+                  })
+                } catch (error) {
+                  console.error('Error processing bridge log:', error)
+                }
               }
             }
 
-            // Find the most recent transaction
-            const mostRecent = allTransactions.sort((a, b) => b.timestamp - a.timestamp)[0] || null
+            // Find the most recent transaction, prioritizing the source chain direction
+            let mostRecent: PendingTransaction | null = null
+
+            if (bridgeDirection === 'arbitrum-to-bitlazer') {
+              // Prioritize Arbitrum → Bitlazer transactions
+              const arbToBitlazer = allTransactions.filter((tx) => tx.type === 'bridge')
+              const bitlazerToArb = allTransactions.filter((tx) => tx.type === 'bridge-reverse')
+              mostRecent = [...arbToBitlazer, ...bitlazerToArb].sort((a, b) => b.timestamp - a.timestamp)[0] || null
+            } else if (bridgeDirection === 'bitlazer-to-arbitrum') {
+              // Prioritize Bitlazer → Arbitrum transactions
+              const bitlazerToArb = allTransactions.filter((tx) => tx.type === 'bridge-reverse')
+              const arbToBitlazer = allTransactions.filter((tx) => tx.type === 'bridge')
+              mostRecent = [...bitlazerToArb, ...arbToBitlazer].sort((a, b) => b.timestamp - a.timestamp)[0] || null
+            } else {
+              // No specific direction, get most recent overall
+              mostRecent = allTransactions.sort((a, b) => b.timestamp - a.timestamp)[0] || null
+            }
+
             return mostRecent
           },
           {
@@ -325,7 +348,7 @@ export const useLastTransaction = () => {
         setIsLoading(false)
       }
     },
-    [address],
+    [address, bridgeDirection],
   )
 
   // Fetch historical transactions on mount and address change

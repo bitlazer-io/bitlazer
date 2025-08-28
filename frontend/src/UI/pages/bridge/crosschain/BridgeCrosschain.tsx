@@ -44,7 +44,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     checkTransactionStatus,
     determineTransactionStage,
     isLoading: isLoadingTransactions,
-  } = useLastTransaction()
+  } = useLastTransaction(isBridgeMode ? 'arbitrum-to-bitlazer' : 'bitlazer-to-arbitrum')
 
   // Get latest bridge transaction for display (only bridge types)
   const latestBridgeTransaction = getLatestBridgeTransaction()
@@ -118,26 +118,8 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     const monitorTransaction = async () => {
       const receipt = await checkTransactionStatus(latestBridgeTransaction.txHash, latestBridgeTransaction.fromChainId)
 
-      console.log('=== MONITORING TRANSACTION ===', {
-        txHash: latestBridgeTransaction.txHash,
-        fromChainId: latestBridgeTransaction.fromChainId,
-        currentStage: latestBridgeTransaction.stage,
-        receipt: receipt
-          ? {
-              status: receipt.status,
-              blockNumber: receipt.blockNumber ? receipt.blockNumber.toString() : '0',
-              confirmations: receipt.confirmations,
-            }
-          : null,
-      })
-
       if (receipt) {
         const newStage = determineTransactionStage(latestBridgeTransaction, receipt)
-        console.log('=== STAGE DETERMINATION ===', {
-          currentStage: latestBridgeTransaction.stage,
-          newStage,
-          shouldUpdate: newStage !== latestBridgeTransaction.stage,
-        })
 
         // Update transaction stage if it has changed
         if (newStage !== latestBridgeTransaction.stage) {
@@ -288,17 +270,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         toast(<TXToast {...{ message: 'Bridge successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasBridged', 'true', { path: '/' })
-
-        // Log transaction details for debugging
-        console.log('=== BRIDGE TRANSACTION DETAILS ===', {
-          txHash,
-          type: toL3 ? 'bridge' : 'bridge-reverse',
-          amount,
-          fromChain: toL3 ? 'Arbitrum One' : 'Bitlazer L3',
-          toChain: toL3 ? 'Bitlazer L3' : 'Arbitrum One',
-          timestamp: Date.now(),
-          explorerUrl: toL3 ? `https://arbiscan.io/tx/${txHash}` : `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
-        })
 
         // Add transaction to pending tracking
         addPendingTransaction({
@@ -692,11 +663,31 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
               <div className="flex justify-between items-center">
                 <span className="text-white/50 text-xs font-maison-neue">Route</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white text-xs font-ocrx">{isBridgeMode ? 'Arbitrum' : 'Bitlazer'}</span>
+                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Arbitrum' : 'Bitlazer'}</span>
                   <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="text-white text-xs font-ocrx">{isBridgeMode ? 'Bitlazer' : 'Arbitrum'}</span>
+                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Bitlazer' : 'Arbitrum'}</span>
+                </div>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Bridge Method</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-lightgreen-100/20 text-lightgreen-100 px-2 py-0.5 rounded font-maison-neue">
+                    Native
+                  </span>
+                  <span className="text-white/50 text-xs font-maison-neue">•</span>
+                  <a
+                    href="https://bitlazer.bridge.caldera.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lightgreen-100 text-xs font-maison-neue hover:text-lightgreen-200 underline"
+                  >
+                    Caldera Infrastructure
+                  </a>
                 </div>
               </div>
 
@@ -714,6 +705,12 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
                 <span className="text-white text-xs font-maison-neue">
                   {isBridgeMode ? 'ERC-20 → Native' : 'Native → ERC-20'}
                 </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10 mt-3"></div>
+
+              <div className="text-lightgreen-100 text-xs font-maison-neue mt-2 text-center">
+                More bridge options coming soon
               </div>
             </div>
           </div>
