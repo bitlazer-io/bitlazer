@@ -339,69 +339,65 @@ export const BridgeStats: React.FC = () => {
               style={{ width: `${l3Percentage}%` }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-sm md:text-base font-ocrx text-white mix-blend-difference">
+              <span className="text-sm md:text-base font-ocrx text-white font-bold">
                 L3: {l3Percentage.toFixed(1)}% | ARB: {arbPercentage.toFixed(1)}%
               </span>
             </div>
           </div>
         </div>
 
-        <div className="mt-4">
-          <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
-          <div className="space-y-1">
-            {loadingRecentActivity ? (
-              // Show 3 skeleton placeholders while loading
-              Array.from({ length: 3 }, (_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <Skeleton className="h-4 w-12" />
-                </div>
-              ))
-            ) : stats.recentBridges.length > 0 ? (
-              stats.recentBridges.slice(0, 3).map((bridge, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                      {formatAmount(Number(bridge.amount))} BTC
-                    </span>
-                    <span className="text-sm md:text-base text-white/70 font-ocrx">
-                      {bridge.from} → {bridge.to}
-                    </span>
-                    <a
-                      href={
-                        bridge.from === 'Bitlazer L3'
-                          ? `https://bitlazer.calderaexplorer.xyz/tx/${bridge.txHash}`
-                          : `https://arbiscan.io/tx/${bridge.txHash}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+        {(loadingRecentActivity || stats.recentBridges.length > 0) && (
+          <div className="mt-4">
+            <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
+            <div className="space-y-1">
+              {loadingRecentActivity
+                ? // Show 3 skeleton placeholders while loading
+                  Array.from({ length: 3 }, (_, index) => (
+                    <div
+                      key={`skeleton-${index}`}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
                     >
-                      {formatTxHash(bridge.txHash)}
-                    </a>
-                  </div>
-                  <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
-                    {formatTime(bridge.timestamp)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem] text-center">
-                <span className="text-sm md:text-base text-white/70 font-ocrx">No recent activity</span>
-              </div>
-            )}
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-16" />
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))
+                : stats.recentBridges.slice(0, 3).map((bridge, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
+                          {formatAmount(Number(bridge.amount))} BTC
+                        </span>
+                        <span className="text-sm md:text-base text-white/70 font-ocrx">
+                          {bridge.from} → {bridge.to}
+                        </span>
+                        <a
+                          href={
+                            bridge.from === 'Bitlazer L3'
+                              ? `https://bitlazer.calderaexplorer.xyz/tx/${bridge.txHash}`
+                              : `https://arbiscan.io/tx/${bridge.txHash}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+                        >
+                          {formatTxHash(bridge.txHash)}
+                        </a>
+                      </div>
+                      <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
+                        {formatTime(bridge.timestamp)}
+                      </span>
+                    </div>
+                  ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
