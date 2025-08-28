@@ -675,8 +675,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
           {/* Collapsible Details */}
           <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
-            <div className="px-4 pb-3 space-y-3 border-t border-lightgreen-100/20">
-              <div className="flex justify-between items-center pt-3">
+            <div className="px-4 pb-3 space-y-1.5 border-t border-lightgreen-100/20">
+              <div className="flex justify-between items-center pt-2">
                 <span className="text-white/50 text-xs font-maison-neue">Expected Output</span>
                 <span className="text-white text-xs font-maison-neue">
                   {expectedOutput || '0'} {isWrapMode ? 'lzrBTC' : 'WBTC'}

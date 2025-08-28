@@ -481,8 +481,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
             {/* Collapsible Details with smooth transition like Bridge Details */}
             <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
-              <div className="pt-3 space-y-3 border-t border-lightgreen-100/20">
-                <div className="flex justify-between items-center pt-3">
+              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                <div className="flex justify-between items-center pt-2">
                   <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
                   <span className="text-white text-xs font-maison-neue">
                     {formatStakedAmount(stakedBalance)} lzrBTC
@@ -725,8 +725,8 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
             {/* Collapsible Details with smooth transition like Bridge Details */}
             <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
-              <div className="pt-3 space-y-3 border-t border-lightgreen-100/20">
-                <div className="flex justify-between items-center pt-3">
+              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                <div className="flex justify-between items-center pt-2">
                   <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
                   <span className="text-white text-xs font-maison-neue">
                     {formatStakedAmount(stakedBalance)} lzrBTC
