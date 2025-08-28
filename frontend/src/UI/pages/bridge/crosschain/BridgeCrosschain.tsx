@@ -1,8 +1,8 @@
-import { Button, TXToast } from '@components/index'
+import { Button, TXToast, TokenCard } from '@components/index'
 import Loading from '@components/loading/Loading'
 import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
@@ -358,122 +358,35 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       {/* Main Bridge Container */}
       <div className="relative max-w-[28rem]">
         {/* From Card */}
-        <div className="relative">
-          <div className="relative bg-darkslategray-200 border border-lightgreen-100/50 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] p-4 overflow-visible">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-white/70 text-sm font-maison-neue">From</span>
-              <div className="relative h-6 w-[160px] flex items-center justify-end">
-                {isInputFocused ? (
-                  <div className="flex items-center gap-1 animate-fadeIn">
-                    <button
-                      type="button"
-                      onClick={() => handlePercentage(25)}
-                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                    >
-                      25%
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePercentage(50)}
-                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                    >
-                      50%
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePercentage(100)}
-                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                    >
-                      MAX
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(100)}
-                    className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
-                  >
-                    {/* Wallet icon */}
-                    <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                    </svg>
-                    <span className="text-white/50 text-xs font-maison-neue">
-                      {isBridgeMode
-                        ? isLoading
-                          ? '...'
-                          : `${formatEther(data?.value.toString() || '0')}`
-                        : l3isLoading
-                          ? '...'
-                          : `${formatEther(l3Data?.value.toString() || '0')}`}
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Token and Amount container */}
-            <div
-              className={clsx(
-                'bg-black/40 rounded-lg p-3 border transition-all duration-150',
-                isInputFocused
-                  ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
-                  : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
-              )}
-            >
-              <div className="flex items-center justify-between">
-                {/* Token Display */}
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/icons/crypto/bitcoin.svg"
-                    alt="lzrBTC"
-                    className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-base transition-colors duration-200">lzrBTC</span>
-                    <span className="text-white/50 text-xs">{isBridgeMode ? 'Arbitrum One' : 'Bitlazer L3'}</span>
-                  </div>
-                </div>
-
-                {/* Amount Input */}
-                <div className="flex flex-col items-end flex-1 min-w-0">
-                  <Controller
-                    key={isBridgeMode ? 'bridge-amount' : 'reverse-amount'}
-                    name="amount"
-                    control={isBridgeMode ? control : controlReverse}
-                    rules={{
-                      required: 'Amount is required',
-                      min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
-                      max: {
-                        value: isBridgeMode
-                          ? formatEther(data?.value.toString() || '0')
-                          : formatEther(l3Data?.value.toString() || '0'),
-                        message: 'Insufficient balance',
-                      },
-                    }}
-                    render={({ field }) => (
-                      <input
-                        {...field}
-                        type="number"
-                        placeholder="0"
-                        className={clsx(
-                          'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
-                          'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
-                        )}
-                        onFocus={() => setIsInputFocused(true)}
-                        onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      />
-                    )}
-                  />
-                  {/* USD Value inside the card */}
-                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
-                    ≈ {formatUSDValue(isBridgeMode ? watch('amount') : watchReverse('amount'))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TokenCard
+          type="from"
+          tokenInfo={{
+            symbol: 'lzrBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: isBridgeMode ? 'Arbitrum One' : 'Bitlazer L3',
+          }}
+          balance={
+            isBridgeMode ? formatEther(data?.value.toString() || '0') : formatEther(l3Data?.value.toString() || '0')
+          }
+          isBalanceLoading={isBridgeMode ? isLoading : l3isLoading}
+          isInputFocused={isInputFocused}
+          onInputFocus={() => setIsInputFocused(true)}
+          onInputBlur={() => setIsInputFocused(false)}
+          onPercentageClick={handlePercentage}
+          control={isBridgeMode ? control : controlReverse}
+          amount={isBridgeMode ? watch('amount') : watchReverse('amount')}
+          rules={{
+            required: 'Amount is required',
+            min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
+            max: {
+              value: isBridgeMode
+                ? formatEther(data?.value.toString() || '0')
+                : formatEther(l3Data?.value.toString() || '0'),
+              message: 'Insufficient balance',
+            },
+          }}
+          usdValue={formatUSDValue(isBridgeMode ? watch('amount') : watchReverse('amount'))}
+        />
 
         {/* Switch Button */}
         <div className="flex justify-center -my-2 relative z-10">
@@ -499,53 +412,21 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         </div>
 
         {/* To Card */}
-        <div className="relative">
-          <div className="relative bg-darkslategray-200 border border-lightgreen-100/50 hover:border-lightgreen-100 transition-all duration-300 rounded-[.115rem] p-4">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-white/70 text-sm font-maison-neue">To</span>
-              <div className="flex items-center gap-2">
-                {/* Wallet icon */}
-                <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                </svg>
-                <span className="text-white/50 text-xs font-maison-neue">
-                  {isBridgeMode
-                    ? l3isLoading
-                      ? '...'
-                      : `${formatEther(l3Data?.value.toString() || '0')}`
-                    : isLoading
-                      ? '...'
-                      : `${formatEther(data?.value.toString() || '0')}`}
-                </span>
-              </div>
-            </div>
-
-            {/* Token and Amount container */}
-            <div className="bg-black/40 rounded-lg p-3 border border-lightgreen-100/20">
-              <div className="flex items-center justify-between">
-                {/* Token Display */}
-                <div className="flex items-center gap-2">
-                  <img src="/icons/crypto/bitcoin.svg" alt="lzrBTC" className="w-8 h-8 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-base">lzrBTC</span>
-                    <span className="text-white/50 text-xs">{isBridgeMode ? 'Bitlazer L3' : 'Arbitrum One'}</span>
-                  </div>
-                </div>
-
-                {/* Amount Display */}
-                <div className="flex flex-col items-end flex-1 min-w-0">
-                  <div className="text-white text-2xl font-bold truncate w-full text-right">
-                    {expectedOutput || '0'}
-                  </div>
-                  {/* Token type info inside the card */}
-                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
-                    {isBridgeMode ? 'Native gas token' : 'ERC-20 token'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TokenCard
+          type="to"
+          tokenInfo={{
+            symbol: 'lzrBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: isBridgeMode ? 'Bitlazer L3' : 'Arbitrum One',
+          }}
+          balance={
+            isBridgeMode ? formatEther(l3Data?.value.toString() || '0') : formatEther(data?.value.toString() || '0')
+          }
+          isBalanceLoading={isBridgeMode ? l3isLoading : isLoading}
+          amount={expectedOutput}
+          customBottomText={isBridgeMode ? 'Native gas token' : 'ERC-20 token'}
+          showPercentageButtons={false}
+        />
       </div>
 
       {/* Error message after all cards */}
@@ -697,7 +578,11 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-transparent backdrop-blur-sm border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all duration-300 rounded-[.115rem]">
           <button
             type="button"
-            onClick={() => setShowDetails(!showDetails)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowDetails(!showDetails)
+            }}
             className="w-full px-4 py-3 flex justify-between items-center text-white/70 hover:text-white transition-colors"
           >
             <div className="flex items-center gap-2">
