@@ -307,9 +307,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
   // Render Stake Tab
   const renderStakeTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Mini Tabs - Full width, stuck to main card */}
-      <div className="w-full max-w-[28rem]">
+      <div className="w-full">
         <div className="grid grid-cols-2 relative z-10">
           <button
             onClick={() => setActiveTab('stake')}
@@ -353,7 +353,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       </div>
 
       {/* Big Card */}
-      <div className="w-full max-w-[28rem] -mt-6">
+      <div className="w-full -mt-6">
         <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
           <div className="flex justify-between items-center mb-3">
             <span className="text-white/70 text-sm font-maison-neue">Available Amount</span>
@@ -519,11 +519,11 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
       {/* Error message */}
       {stakeErrors.stakeAmount && (
-        <div className="text-red-500 text-sm max-w-[28rem] mt-2 mb-2">{stakeErrors.stakeAmount?.message}</div>
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">{stakeErrors.stakeAmount?.message}</div>
       )}
 
       {/* Action Button */}
-      <div className="w-full max-w-[28rem]">
+      <div className="w-full">
         {chainId === mainnet.id ? (
           <form onSubmit={handleStakeSubmit(onStakeSubmit)}>
             <Button
@@ -551,9 +551,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
   // Render Unstake Tab
   const renderUnstakeTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Mini Tabs - Full width, stuck to main card */}
-      <div className="w-full max-w-[28rem]">
+      <div className="w-full">
         <div className="grid grid-cols-2 relative z-10">
           <button
             onClick={() => setActiveTab('stake')}
@@ -597,7 +597,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       </div>
 
       {/* Big Card */}
-      <div className="w-full max-w-[28rem] -mt-6">
+      <div className="w-full -mt-6">
         <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
           <div className="flex justify-between items-center mb-3">
             <span className="text-white/70 text-sm font-maison-neue">Staked Amount</span>
@@ -763,11 +763,11 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
       {/* Error message */}
       {unstakeErrors.unstakeAmount && (
-        <div className="text-red-500 text-sm max-w-[28rem] mt-2 mb-2">{unstakeErrors.unstakeAmount?.message}</div>
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">{unstakeErrors.unstakeAmount?.message}</div>
       )}
 
       {/* Action Button */}
-      <div className="w-full max-w-[28rem]">
+      <div className="w-full">
         {chainId === mainnet.id ? (
           <form onSubmit={handleUnstakeSubmit(onUnstakeSubmit)}>
             <Button

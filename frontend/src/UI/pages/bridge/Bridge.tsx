@@ -81,7 +81,7 @@ const Bridge: FC<IBridge> = () => {
       <div className="container">
         <div className="flex flex-col items-center md:pointer-events-auto md:[&_*]:pointer-events-auto">
           <section className="w-full flex justify-center text-[1rem] text-white">
-            <div className="md:max-w-[31.75rem] w-full flex flex-col">
+            <div className="md:max-w-[35rem] w-full flex flex-col">
               <div className="grid grid-cols-3 relative z-10">
                 {tabs
                   .filter((tab) => tab.id !== 'connect')

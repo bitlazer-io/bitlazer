@@ -1,4 +1,5 @@
-import { Button, TXToast, TokenCard } from '@components/index'
+import { Button, TXToast, TokenCard, TransactionStatusCard } from '@components/index'
+import { Skeleton } from '@components/skeleton/Skeleton'
 import Loading from '@components/loading/Loading'
 import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
@@ -19,6 +20,7 @@ import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import { fetchWithCache, debouncedFetch, CACHE_KEYS, CACHE_TTL } from 'src/utils/cache'
 import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
+import { useLastTransaction } from 'src/hooks/useLastTransaction'
 
 interface IBridgeCrosschain {}
 
@@ -31,6 +33,23 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
   // Dynamic bridge details
   const bridgeDetails = useBridgeDetails(isBridgeMode)
+
+  // Transaction tracking
+  const {
+    getLatestTransactionByType,
+    getLatestBridgeTransaction,
+    addPendingTransaction,
+    updateTransactionStage,
+    removePendingTransaction,
+    checkTransactionStatus,
+    determineTransactionStage,
+    isLoading: isLoadingTransactions,
+  } = useLastTransaction()
+
+  // Get latest bridge transaction for display (only bridge types)
+  const latestBridgeTransaction = getLatestBridgeTransaction()
+  // Check if it's a pending transaction (not historical)
+  const isPendingTransaction = latestBridgeTransaction && latestBridgeTransaction.status !== 'completed'
 
   const {
     handleSubmit,
@@ -89,6 +108,58 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     const interval = setInterval(fetchBTCPrice, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  // Monitor pending bridge transaction status (only for actual pending transactions)
+  useEffect(() => {
+    if (!isPendingTransaction) {
+      return
+    }
+
+    const monitorTransaction = async () => {
+      const receipt = await checkTransactionStatus(latestBridgeTransaction.txHash, latestBridgeTransaction.fromChainId)
+
+      console.log('=== MONITORING TRANSACTION ===', {
+        txHash: latestBridgeTransaction.txHash,
+        fromChainId: latestBridgeTransaction.fromChainId,
+        currentStage: latestBridgeTransaction.stage,
+        receipt: receipt
+          ? {
+              status: receipt.status,
+              blockNumber: receipt.blockNumber ? receipt.blockNumber.toString() : '0',
+              confirmations: receipt.confirmations,
+            }
+          : null,
+      })
+
+      if (receipt) {
+        const newStage = determineTransactionStage(latestBridgeTransaction, receipt)
+        console.log('=== STAGE DETERMINATION ===', {
+          currentStage: latestBridgeTransaction.stage,
+          newStage,
+          shouldUpdate: newStage !== latestBridgeTransaction.stage,
+        })
+
+        // Update transaction stage if it has changed
+        if (newStage !== latestBridgeTransaction.stage) {
+          updateTransactionStage(latestBridgeTransaction.txHash, newStage)
+        }
+      }
+    }
+
+    // Check immediately
+    monitorTransaction()
+
+    // Set up polling every 30 seconds for active transactions
+    const statusInterval = setInterval(monitorTransaction, 30000)
+
+    return () => clearInterval(statusInterval)
+  }, [
+    isPendingTransaction,
+    latestBridgeTransaction,
+    checkTransactionStatus,
+    determineTransactionStage,
+    updateTransactionStage,
+  ])
 
   const { address, chainId } = useAccount()
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)
@@ -217,6 +288,34 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         toast(<TXToast {...{ message: 'Bridge successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasBridged', 'true', { path: '/' })
+
+        // Log transaction details for debugging
+        console.log('=== BRIDGE TRANSACTION DETAILS ===', {
+          txHash,
+          type: toL3 ? 'bridge' : 'bridge-reverse',
+          amount,
+          fromChain: toL3 ? 'Arbitrum One' : 'Bitlazer L3',
+          toChain: toL3 ? 'Bitlazer L3' : 'Arbitrum One',
+          timestamp: Date.now(),
+          explorerUrl: toL3 ? `https://arbiscan.io/tx/${txHash}` : `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
+        })
+
+        // Add transaction to pending tracking
+        addPendingTransaction({
+          type: toL3 ? 'bridge' : 'bridge-reverse',
+          status: 'pending',
+          stage: 'submitted',
+          fromChain: toL3 ? 'Arbitrum One' : 'Bitlazer L3',
+          toChain: toL3 ? 'Bitlazer L3' : 'Arbitrum One',
+          fromToken: 'lzrBTC',
+          toToken: 'lzrBTC',
+          amount: amount,
+          estimatedTime: toL3 ? 15 : 10080, // 15 minutes or 7 days
+          txHash: txHash,
+          fromChainId: toL3 ? arbitrum.id : mainnet.id,
+          toChainId: toL3 ? mainnet.id : arbitrum.id,
+          explorerUrl: toL3 ? `https://arbiscan.io/tx/${txHash}` : `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
+        })
 
         if (toL3) {
           setValue('amount', '')
@@ -355,10 +454,59 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         </div>
       </div>
 
+      {/* Transaction Status Card - Show latest transaction (pending or recent) */}
+      {(latestBridgeTransaction || isLoadingTransactions) && (
+        <div className="mb-6">
+          {isLoadingTransactions && !latestBridgeTransaction ? (
+            <div className="w-full">
+              <div className="relative overflow-hidden rounded-[.115rem] border transition-all duration-300 bg-gradient-to-r from-darkslategray-200/95 to-darkslategray-200/80 backdrop-blur-sm border-lightgreen-100/30">
+                <div className="p-3">
+                  {/* Row 1: Title */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base text-white font-ocrx">Loading last transaction...</span>
+                  </div>
+
+                  {/* Horizontal Separator */}
+                  <div className="h-px bg-lightgreen-100/10 mb-2"></div>
+
+                  {/* Row 2: Full width skeletons */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-2 w-full">
+                      {/* TX Hash skeleton - full width */}
+                      <Skeleton className="h-3 w-full" />
+
+                      {/* Value badge skeleton */}
+                      <Skeleton className="h-6 w-24" />
+
+                      {/* Timeline skeleton */}
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                        <Skeleton className="h-2 w-8" />
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            latestBridgeTransaction && (
+              <TransactionStatusCard
+                transaction={latestBridgeTransaction}
+                onClose={
+                  isPendingTransaction ? () => removePendingTransaction(latestBridgeTransaction.txHash) : undefined
+                }
+              />
+            )
+          )}
+        </div>
+      )}
+
       {/* Main Bridge Container */}
-      <div className="relative max-w-[28rem]">
+      <div className="relative w-full">
         {/* From Card */}
         <TokenCard
+          key={isBridgeMode ? 'bridge-amount' : 'reverse-amount'}
           type="from"
           tokenInfo={{
             symbol: 'lzrBTC',
@@ -431,13 +579,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
       {/* Error message after all cards */}
       {(isBridgeMode ? errors.amount : errorsReverse.amount) && (
-        <div className="text-red-500 text-sm max-w-[28rem] mt-2 mb-2">
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">
           {isBridgeMode ? errors.amount?.message : errorsReverse.amount?.message}
         </div>
       )}
 
       {/* Action Button */}
-      <div className="w-full max-w-[28rem] mt-3">
+      <div className="w-full mt-3">
         {isCorrectChain ? (
           <Button
             type="submit"
@@ -487,93 +635,8 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         )}
       </div>
 
-      {/* Success Info Cards */}
-      {bridgeSuccessInfo && (
-        <div className="mt-4 p-4 bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] text-gray-200 max-w-[28rem]">
-          <div className="mb-2">
-            <span className="text-lightgreen-100 font-ocrx">Transaction: </span>
-            <a
-              href={`https://arbiscan.io/tx/${bridgeSuccessInfo.txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-lightgreen-100 underline hover:text-lightgreen-200"
-            >
-              {fmtHash(bridgeSuccessInfo.txHash)}
-            </a>
-          </div>
-          <div className="mb-2 flex items-start">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="mr-2 mt-0.5 flex-shrink-0"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="8" cy="8" r="7" stroke="#66d560" strokeWidth="1.5" />
-              <path d="M8 7V11" stroke="#66d560" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="8" cy="5" r="0.5" fill="#66d560" />
-            </svg>
-            <span className="text-sm">Balance may take up to 15 minutes to be confirmed on Bitlazer network.</span>
-          </div>
-          <div className="text-sm">
-            Track status{' '}
-            <a
-              href="https://bitlazer.bridge.caldera.xyz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-lightgreen-100 underline hover:text-lightgreen-200"
-            >
-              here
-            </a>
-          </div>
-        </div>
-      )}
-
-      {bridgeReverseSuccessInfo && (
-        <div className="mt-4 p-4 bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] text-gray-200 max-w-[28rem]">
-          <div className="mb-2">
-            <span className="text-lightgreen-100 font-ocrx">Transaction: </span>
-            <a
-              href={`https://bitlazer.calderaexplorer.xyz/tx/${bridgeReverseSuccessInfo.txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-lightgreen-100 underline hover:text-lightgreen-200"
-            >
-              {fmtHash(bridgeReverseSuccessInfo.txHash)}
-            </a>
-          </div>
-          <div className="mb-2 flex items-start">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="mr-2 mt-0.5 flex-shrink-0"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="8" cy="8" r="7" stroke="#66d560" strokeWidth="1.5" />
-              <path d="M8 7V11" stroke="#66d560" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="8" cy="5" r="0.5" fill="#66d560" />
-            </svg>
-            <span className="text-sm">Withdrawal process may take up to 7 days to complete on Arbitrum network.</span>
-          </div>
-          <div className="text-sm">
-            Track status{' '}
-            <a
-              href="https://bitlazer.bridge.caldera.xyz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-lightgreen-100 underline hover:text-lightgreen-200"
-            >
-              here
-            </a>
-          </div>
-        </div>
-      )}
-
       {/* Expandable Details Section */}
-      <div className="relative group max-w-[28rem] mt-4">
+      <div className="relative group w-full mt-4">
         <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-[.115rem]" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-transparent backdrop-blur-sm border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all duration-300 rounded-[.115rem]">
           <button

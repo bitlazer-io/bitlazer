@@ -482,7 +482,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       </div>
 
       {/* Main Swap Container */}
-      <div className="relative max-w-[28rem]">
+      <div className="relative w-full">
         {/* From Card */}
         <TokenCard
           type="from"
@@ -551,13 +551,13 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
       {/* Error message after all cards */}
       {(isWrapMode ? errors.amount : unwrapErrors.amount) && (
-        <div className="text-red-500 text-sm max-w-[28rem] mt-2 mb-2">
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">
           {isWrapMode ? errors.amount?.message : unwrapErrors.amount?.message}
         </div>
       )}
 
       {/* Action Button */}
-      <div className="w-full max-w-[28rem] mt-3">
+      <div className="w-full mt-3">
         {chainId === arbitrum.id ? (
           <>
             {/* Reset allowance button (only shown when needed) */}
@@ -644,7 +644,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       </div>
 
       {/* Expandable Details Section - Keep gradient */}
-      <div className="relative group max-w-[28rem] mt-4">
+      <div className="relative group w-full mt-4">
         <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-[.115rem]" />
         <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-transparent backdrop-blur-sm border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all duration-300 rounded-[.115rem]">
           <button
