@@ -30,6 +30,8 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [btcPrice, setBtcPrice] = useState<number>(0)
+  const [minimumAmount, setMinimumAmount] = useState(0.00000001) // Default fallback
+  const [minimumAmountFormatted, setMinimumAmountFormatted] = useState('Amount must be greater than 0.00000001')
 
   // Dynamic bridge details
   const bridgeDetails = useBridgeDetails(isBridgeMode)
@@ -99,7 +101,16 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           { ttl: CACHE_TTL.PRICE },
         )
 
-        setBtcPrice(btcData['wrapped-bitcoin']?.usd || 0)
+        const wbtcPrice = btcData['wrapped-bitcoin']?.usd || 0
+        setBtcPrice(wbtcPrice)
+
+        // Calculate minimum amount equivalent to $0.01
+        if (wbtcPrice > 0) {
+          const minAmount = 0.01 / wbtcPrice
+          const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
+          setMinimumAmount(roundedMinAmount)
+          setMinimumAmountFormatted('Amount must be greater than $0.01')
+        }
       } catch (error) {
         console.error('Error fetching prices:', error)
       }
@@ -512,7 +523,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           amount={isBridgeMode ? watch('amount') : watchReverse('amount')}
           rules={{
             required: 'Amount is required',
-            min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
+            min: { value: minimumAmount, message: minimumAmountFormatted },
             max: {
               value: isBridgeMode
                 ? formatEther(data?.value.toString() || '0')
