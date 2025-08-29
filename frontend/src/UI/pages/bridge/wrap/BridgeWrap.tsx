@@ -33,6 +33,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
   const [isWrapMode, setIsWrapMode] = useState(true)
   const [showDetails, setShowDetails] = useState(false)
   const [btcPrice, setBtcPrice] = useState(0)
+  const [minimumAmount, setMinimumAmount] = useState(0.00000001) // Default fallback
+  const [minimumAmountFormatted, setMinimumAmountFormatted] = useState('Amount must be greater than 0.00000001')
   const [isInputFocused, setIsInputFocused] = useState(false)
 
   // Dynamic wrap details
@@ -96,6 +98,14 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
         const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
         setBtcPrice(wbtcPrice)
+
+        // Calculate minimum amount equivalent to $0.01
+        if (wbtcPrice > 0) {
+          const minAmount = 0.01 / wbtcPrice
+          const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
+          setMinimumAmount(roundedMinAmount)
+          setMinimumAmountFormatted('Amount must be greater than $0.01')
+        }
       } catch (error) {
         console.error('Error fetching BTC price:', error)
       }
@@ -505,7 +515,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           amount={isWrapMode ? watch('amount') : unwrapWatch('amount')}
           rules={{
             required: 'Amount is required',
-            min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+            min: { value: minimumAmount, message: minimumAmountFormatted },
             max: {
               value: parseFloat(isWrapMode ? balanceData?.formatted || '0' : lzrBTCBalanceData?.formatted || '0'),
               message: 'Insufficient balance',
