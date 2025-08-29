@@ -480,6 +480,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
                         {...field}
                         type="number"
                         placeholder="0"
+                        autoComplete="off"
                         className={clsx(
                           'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
                           'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
@@ -721,6 +722,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
                         {...field}
                         type="number"
                         placeholder="0"
+                        autoComplete="off"
                         className={clsx(
                           'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
                           'focus:outline-none text-right w-full overflow-hidden text-ellipsis',

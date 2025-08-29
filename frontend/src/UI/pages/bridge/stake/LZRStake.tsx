@@ -180,6 +180,7 @@ const LZRStake: FC<ILZRStake> = ({ onBack }) => {
                 type="text"
                 value={inputValue}
                 onChange={(e) => handleInputChange(e.target.value)}
+                autoComplete="off"
                 className="text-2xl font-bold font-maison-neue text-white mb-1 bg-transparent border-0 text-center w-full focus:outline-none"
                 placeholder="0"
               />
