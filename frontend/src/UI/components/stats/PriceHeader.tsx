@@ -5,6 +5,7 @@ import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { USDollar, formatCompactNumber, formatPercentage } from 'src/utils/formatters'
+import { calculateLzrBTCPrice, formatLzrBTCDisplay } from 'src/utils/lzrBTCConversion'
 import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
 
 interface PriceData {
@@ -53,11 +54,13 @@ export const PriceHeader: React.FC = () => {
         const priceChange = data['wrapped-bitcoin']?.usd_24h_change || 0
 
         const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
-        const marketCap = supply * wbtcPrice
+        // Calculate lzrBTC price based on new conversion
+        const lzrBTCPrice = calculateLzrBTCPrice(wbtcPrice)
+        const marketCap = supply * lzrBTCPrice
 
         setPriceData({
           wbtcPrice,
-          lzrBTCPrice: wbtcPrice,
+          lzrBTCPrice,
           priceChange24h: priceChange,
           marketCap,
         })
@@ -74,11 +77,12 @@ export const PriceHeader: React.FC = () => {
           const priceChange = cachedData['wrapped-bitcoin']?.usd_24h_change || 0
           const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
 
+          const lzrBTCPrice = calculateLzrBTCPrice(wbtcPrice)
           setPriceData({
             wbtcPrice,
-            lzrBTCPrice: wbtcPrice,
+            lzrBTCPrice,
             priceChange24h: priceChange,
-            marketCap: supply * wbtcPrice,
+            marketCap: supply * lzrBTCPrice,
           })
         }
         setLoading(false)
@@ -152,7 +156,9 @@ export const PriceHeader: React.FC = () => {
                   formatPrice(priceData.lzrBTCPrice)
                 )}
               </div>
-              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">PEGGED 1:1</div>
+              <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">
+                1 SAT = 1000 lzrBTC
+              </div>
             </div>
           </div>
         </div>
@@ -167,7 +173,7 @@ export const PriceHeader: React.FC = () => {
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {totalSupply ? (
-                  formatSupply(Number(formatUnits(totalSupply as bigint, 18)))
+                  formatLzrBTCDisplay(totalSupply as bigint, 2)
                 ) : (
                   <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
                 )}

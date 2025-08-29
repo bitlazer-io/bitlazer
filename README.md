@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Bitlazer is a revolutionary Bitcoin Layer 3 (L3) project that leverages advanced Arbitrum Orbitrum technology to bring unprecedented scalability and efficiency to the Bitcoin ecosystem. By enabling seamless bridging of WBTC and native BTC payments on a robust L3 layer, Bitlazer aims to create a thriving smart contracts ecosystem. This ecosystem is designed to be cheap, fast, and scalable, driving the next generation of blockchain innovation.
+Bitlazer is a revolutionary Bitcoin Layer 3 (L3) project that leverages advanced Arbitrum Orbitrum technology to bring unprecedented scalability and efficiency to the Bitcoin ecosystem. By enabling seamless bridging of WBTC and native BTC payments on a robust L3 layer, Bitlazer aims to create a thriving smart contracts ecosystem. The lzrBTC token follows a unique conversion rate where 1 satoshi equals 1000 lzrBTC, enabling ultra-precise microtransactions. This ecosystem is designed to be cheap, fast, and scalable, driving the next generation of blockchain innovation.
 
 ## Value Proposition Summary
 
@@ -31,7 +31,7 @@ As Bitlazer evolves, it will integrate additional features, such as Layer 3 BTC 
 ## Roadmap
 
 1. **Initial Launch and Bridging:**  
-   Enable the bridging of WBTC to the L3 native currency and support payments in native BTC.
+   Enable the bridging of WBTC to the L3 native currency (lzrBTC at 1 satoshi = 1000 lzrBTC) and support payments in native BTC.
 
 2. **Ecosystem Bootstrap with LZRD Airdrop:**  
    Conduct an airdrop of 20% of the LZRD tokens to early community builders.

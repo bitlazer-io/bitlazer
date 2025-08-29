@@ -10,7 +10,14 @@ import { config } from 'src/web3/config'
 import { ERC20_CONTRACT_ADDRESS, TokenKeys, WRAP_CONTRACT } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { toast } from 'react-toastify'
-import { parseUnits } from 'viem'
+import { parseUnits, formatUnits } from 'viem'
+import {
+  wbtcToLzrBTC,
+  lzrBTCToWbtc,
+  formatLzrBTCDisplay,
+  formatWBTCToLzrBTCDisplay,
+  calculateLzrBTCPrice,
+} from 'src/utils/lzrBTCConversion'
 import Cookies from 'universal-cookie'
 import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
@@ -436,13 +443,60 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     setIsInputFocused(false)
   }
 
-  // Calculate expected output (1:1 ratio)
-  const expectedOutput = isWrapMode ? watch('amount') : unwrapWatch('amount')
+  // Calculate expected output with new conversion (1 satoshi = 1000 lzrBTC)
+  const calculateExpectedOutput = () => {
+    if (isWrapMode) {
+      // Wrapping WBTC to lzrBTC
+      const wbtcAmount = watch('amount')
+      if (!wbtcAmount || wbtcAmount === '' || wbtcAmount === '0') return { display: '0', raw: '0' }
+      try {
+        // Remove any non-numeric characters except decimal point
+        const cleanAmount = wbtcAmount.replace(/[^0-9.]/g, '')
+        if (!cleanAmount || isNaN(parseFloat(cleanAmount))) return { display: '0', raw: '0' }
+
+        const wbtcUnits = parseUnits(cleanAmount, 8)
+        const lzrBTCUnits = wbtcToLzrBTC(wbtcUnits)
+        const rawValue = formatUnits(lzrBTCUnits, 18) // Raw numeric value without formatting
+        const displayValue = formatLzrBTCDisplay(lzrBTCUnits, 4) // Formatted for display
+        return { display: displayValue, raw: rawValue }
+      } catch (error) {
+        return { display: '0', raw: '0' }
+      }
+    } else {
+      // Unwrapping lzrBTC to WBTC
+      const lzrAmount = unwrapWatch('amount')
+      if (!lzrAmount || lzrAmount === '' || lzrAmount === '0') return { display: '0', raw: '0' }
+      try {
+        // Remove any non-numeric characters except decimal point
+        const cleanAmount = lzrAmount.replace(/[^0-9.]/g, '')
+        if (!cleanAmount || isNaN(parseFloat(cleanAmount))) return { display: '0', raw: '0' }
+
+        const lzrUnits = parseUnits(cleanAmount, 18)
+        const wbtcUnits = lzrBTCToWbtc(lzrUnits)
+        const value = formatUnits(wbtcUnits, 8)
+        return { display: value, raw: value } // WBTC doesn't need special formatting
+      } catch (error) {
+        return { display: '0', raw: '0' }
+      }
+    }
+  }
+
+  const expectedOutputData = calculateExpectedOutput()
+  const expectedOutput = expectedOutputData.display
+  const expectedOutputRaw = expectedOutputData.raw
 
   // Format USD value
-  const formatUSDValue = (amount: string | undefined) => {
+  const formatUSDValue = (amount: string | undefined, isLzrBTC = false) => {
     if (!amount || !btcPrice) return '$0.00'
-    const value = parseFloat(amount) * btcPrice
+    let value: number
+    if (isLzrBTC) {
+      // For lzrBTC, use the adjusted price
+      const lzrBTCPrice = calculateLzrBTCPrice(btcPrice)
+      value = parseFloat(amount) * lzrBTCPrice
+    } else {
+      // For WBTC, use the regular BTC price
+      value = parseFloat(amount) * btcPrice
+    }
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
@@ -488,6 +542,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
         {/* From Card */}
         <TokenCard
+          key={isWrapMode ? 'wrap-amount' : 'unwrap-amount'}
           type="from"
           tokenInfo={{
             symbol: isWrapMode ? 'WBTC' : 'lzrBTC',
@@ -506,11 +561,13 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
             required: 'Amount is required',
             min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
             max: {
-              value: parseFloat(isWrapMode ? balanceData?.formatted || '0' : lzrBTCBalanceData?.formatted || '0'),
+              value: parseFloat(
+                (isWrapMode ? balanceData?.formatted || '0' : lzrBTCBalanceData?.formatted || '0').replace(/,/g, ''),
+              ),
               message: 'Insufficient balance',
             },
           }}
-          usdValue={formatUSDValue(isWrapMode ? watch('amount') : unwrapWatch('amount'))}
+          usdValue={formatUSDValue(isWrapMode ? watch('amount') : unwrapWatch('amount'), !isWrapMode)}
         />
 
         {/* Switch Button */}
@@ -547,7 +604,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           balance={isWrapMode ? lzrBTCBalanceData?.formatted : balanceData?.formatted}
           isBalanceLoading={isWrapMode ? lzrBTCBalanceLoading : balanceLoading}
           amount={expectedOutput}
-          usdValue={formatUSDValue(expectedOutput)}
+          usdValue={formatUSDValue(expectedOutputRaw, isWrapMode)}
           showPercentageButtons={false}
         />
       </div>
@@ -661,7 +718,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           >
             <div className="flex items-center gap-2 text-left">
               <span className="text-sm font-maison-neue text-left">
-                1 {isWrapMode ? 'WBTC' : 'lzrBTC'} = 1 {isWrapMode ? 'lzrBTC' : 'WBTC'}
+                {isWrapMode ? `1 WBTC = 100,000,000,000 lzrBTC` : `100,000,000,000 lzrBTC = 1 WBTC`}
                 {btcPrice > 0 &&
                   ` ($${btcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
               </span>

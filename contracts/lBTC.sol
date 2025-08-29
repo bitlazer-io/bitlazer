@@ -93,8 +93,12 @@ contract lzrBTC is
 
     function mint(uint256 amount) public nonReentrant {
         require(!paused, "Contract paused");
+        // Convert WBTC amount (8 decimals) to lzrBTC (18 decimals) with 1000x multiplier
+        // 1 satoshi (1 WBTC unit) = 1000 lzrBTC tokens
+        // 1 WBTC unit needs to become 1000 * 10^18 lzrBTC units = 10^21 lzrBTC units
+        // So conversion factor = 10^21
         uint256 mintAmount = __apply8To18DecimalsConversion
-            ? amount * 10 ** 10
+            ? amount * 10 ** 21  // 1 satoshi = 1000 lzrBTC tokens
             : amount;
         _mint(msg.sender, mintAmount);
         WBTC.safeTransferFrom(msg.sender, address(this), amount);
@@ -115,12 +119,15 @@ contract lzrBTC is
     function burn(uint256 amount) public nonReentrant {
         require(!paused, "Contract paused");
         _burn(msg.sender, amount);
-        // Add allowance to the contract
+        // Convert lzrBTC amount back to WBTC
+        // amount is in lzrBTC units (18 decimals), need to convert to WBTC units (8 decimals)
+        // 1000 * 10^18 lzrBTC units = 1 WBTC unit (1 satoshi)
+        // burnAmount = amount / 10^21 to get WBTC units
         uint256 burnAmount = __apply8To18DecimalsConversion
-            ? (amount / 10 ** 10)
+            ? (amount / 10 ** 21)  // 1000 lzrBTC tokens = 1 satoshi
             : amount;
         uint256 dust = __apply8To18DecimalsConversion
-            ? amount - burnAmount * 10 ** 10
+            ? amount - burnAmount * 10 ** 21
             : 0;
         if (dust > 0 && dustCollector != address(0)) {
             emit DustCollected(dustCollector, dust);

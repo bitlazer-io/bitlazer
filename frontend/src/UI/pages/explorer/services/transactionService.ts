@@ -7,6 +7,7 @@ import {
   NetworkType,
 } from '../types'
 import { parseAbiItem, formatUnits, createPublicClient, http } from 'viem'
+import { formatLzrBTCDisplay } from 'src/utils/lzrBTCConversion'
 import { arbitrum } from 'wagmi/chains'
 import { mainnet } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS, STAKING_CONTRACTS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
@@ -56,7 +57,7 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
           status: TransactionStatus.CONFIRMED,
           from: '0x0000000000000000000000000000000000000000',
           to: log.args.to as string,
-          amount: formatUnits(log.args.value as bigint, 18),
+          amount: formatLzrBTCDisplay(log.args.value as bigint, 4),
           asset: 'lzrBTC',
           sourceNetwork: NetworkType.ARBITRUM,
           timestamp: Number(block.timestamp),
@@ -87,7 +88,7 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
           status: TransactionStatus.CONFIRMED,
           from: log.args.from as string,
           to: '0x0000000000000000000000000000000000000000',
-          amount: formatUnits(log.args.value as bigint, 18),
+          amount: formatLzrBTCDisplay(log.args.value as bigint, 4),
           asset: 'lzrBTC',
           sourceNetwork: NetworkType.ARBITRUM,
           timestamp: Number(block.timestamp),
@@ -118,7 +119,7 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
           status: TransactionStatus.CONFIRMED,
           from: log.args.from as string,
           to: L2_GATEWAY_ROUTER,
-          amount: formatUnits(log.args.value as bigint, 18),
+          amount: formatLzrBTCDisplay(log.args.value as bigint, 4),
           asset: 'lzrBTC',
           sourceNetwork: NetworkType.ARBITRUM,
           destinationNetwork: NetworkType.BITLAZER,
@@ -265,7 +266,7 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
               status: TransactionStatus.CONFIRMED,
               from: log.args.from as string,
               to: '0x0000000000000000000000000000000000000000',
-              amount: formatUnits(log.args.value as bigint, 18),
+              amount: formatLzrBTCDisplay(log.args.value as bigint, 4),
               asset: 'lzrBTC',
               sourceNetwork: NetworkType.BITLAZER,
               timestamp: Number(block.timestamp),
