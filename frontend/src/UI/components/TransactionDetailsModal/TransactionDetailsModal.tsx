@@ -122,6 +122,8 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
               <div className="flex items-center gap-2">
                 {transaction.fromChain === 'Arbitrum One' ? (
                   <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
+                ) : transaction.fromChain.includes('Bitlazer') ? (
+                  <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
                 ) : (
                   <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
                 )}
@@ -142,6 +144,8 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
               <div className="flex items-center gap-2">
                 {transaction.toChain === 'Arbitrum One' ? (
                   <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
+                ) : transaction.toChain.includes('Bitlazer') ? (
+                  <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
                 ) : (
                   <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
                 )}
