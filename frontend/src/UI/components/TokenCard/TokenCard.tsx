@@ -23,7 +23,6 @@ interface TokenCardProps {
   isReadOnly?: boolean
   usdValue?: string
   showPercentageButtons?: boolean
-  customBottomText?: string
 }
 
 const TokenCard: FC<TokenCardProps> = ({
@@ -41,7 +40,6 @@ const TokenCard: FC<TokenCardProps> = ({
   isReadOnly = false,
   usdValue = '$0.00',
   showPercentageButtons = true,
-  customBottomText,
 }) => {
   const isFrom = type === 'from'
 
@@ -116,7 +114,16 @@ const TokenCard: FC<TokenCardProps> = ({
                 <span className={clsx('text-white font-bold text-base', isFrom && 'transition-colors duration-200')}>
                   {tokenInfo.symbol}
                 </span>
-                <span className="text-white/50 text-xs">{tokenInfo.chain}</span>
+                <span
+                  className={clsx(
+                    'text-xs',
+                    isFrom
+                      ? 'text-red-500' // Bright red for From network
+                      : 'text-lightgreen-100', // Green for To network
+                  )}
+                >
+                  {tokenInfo.chain}
+                </span>
               </div>
             </div>
 
@@ -131,7 +138,12 @@ const TokenCard: FC<TokenCardProps> = ({
                     render={({ field }) => (
                       <input
                         {...field}
-                        type="number"
+                        value={field.value && field.value !== '0' ? `-${field.value}` : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/^-/, '')
+                          field.onChange(value)
+                        }}
+                        type="text"
                         placeholder="0"
                         className={clsx(
                           'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
@@ -149,11 +161,18 @@ const TokenCard: FC<TokenCardProps> = ({
                 </>
               ) : (
                 <>
-                  <div className="text-white text-2xl font-bold truncate w-full text-right">{amount}</div>
-                  {/* USD Value or custom text inside the card */}
-                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
-                    {customBottomText || `≈ ${usdValue}`}
+                  <div className="text-white text-xl font-bold truncate w-full text-right">
+                    {amount && amount !== '0' ? (
+                      <>
+                        {isFrom ? '-' : '+'}
+                        {amount}
+                      </>
+                    ) : (
+                      <span className="text-white/30">0</span>
+                    )}
                   </div>
+                  {/* USD Value or custom text inside the card */}
+                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">≈ {usdValue}</div>
                 </>
               )}
             </div>

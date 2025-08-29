@@ -488,6 +488,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
         {/* From Card */}
         <TokenCard
+          key={isWrapMode ? 'wrap-from' : 'unwrap-from'}
           type="from"
           tokenInfo={{
             symbol: isWrapMode ? 'WBTC' : 'lzrBTC',
@@ -538,6 +539,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
         {/* To Card */}
         <TokenCard
+          key={isWrapMode ? 'wrap-to' : 'unwrap-to'}
           type="to"
           tokenInfo={{
             symbol: isWrapMode ? 'lzrBTC' : 'WBTC',

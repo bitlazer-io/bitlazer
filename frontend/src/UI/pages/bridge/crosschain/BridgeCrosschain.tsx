@@ -559,7 +559,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           }
           isBalanceLoading={isBridgeMode ? l3isLoading : isLoading}
           amount={expectedOutput}
-          customBottomText={isBridgeMode ? 'Native gas token' : 'ERC-20 token'}
+          usdValue={formatUSDValue(expectedOutput)}
           showPercentageButtons={false}
         />
       </div>
