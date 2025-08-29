@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transactions'
 import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
 import { fmtHash } from '../../../utils/fmt'
+import { formatElapsedTime } from '../../../utils/time'
 
 interface TransactionDetailsModalProps {
   transaction: PendingTransaction
@@ -42,13 +43,6 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
   }, [isOpen, transaction.timestamp])
 
   if (!isOpen) return null
-
-  const formatElapsedTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
-  }
 
   const getActionLabel = () => {
     switch (transaction.type) {

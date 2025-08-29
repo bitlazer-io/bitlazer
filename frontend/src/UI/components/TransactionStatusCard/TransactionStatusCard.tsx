@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transactions'
 import TransactionDetailsModal from '../TransactionDetailsModal/TransactionDetailsModal'
 import { fmtHash } from '../../../utils/fmt'
+import { formatElapsedTime } from '../../../utils/time'
 
 interface TransactionStatusCardProps {
   transaction: PendingTransaction
@@ -26,13 +27,6 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, on
 
     return () => clearInterval(interval)
   }, [transaction.timestamp])
-
-  const formatElapsedTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
-  }
 
   const getStatusColor = () => {
     switch (transaction.status) {
