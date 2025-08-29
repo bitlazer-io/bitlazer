@@ -5,7 +5,7 @@ export const BRIDGE_CONFIG = {
   BITLAZER_TO_ARBITRUM_TIME: 10080, // 7 days in minutes
 
   // Protocol information
-  PROTOCOL_NAME: 'Caldera Rollup Bridge',
+  PROTOCOL_NAME: 'Orbit Bridge',
 
   // Gas estimates for bridge operations
   BRIDGE_GAS_LIMIT: 500000n, // Estimated gas for bridge transaction

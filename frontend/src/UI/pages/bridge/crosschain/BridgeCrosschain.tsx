@@ -693,7 +693,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
                     rel="noopener noreferrer"
                     className="text-lightgreen-100 text-xs font-maison-neue hover:text-lightgreen-200 underline"
                   >
-                    Caldera Infrastructure
+                    Orbit Bridge
                   </a>
                 </div>
               </div>
