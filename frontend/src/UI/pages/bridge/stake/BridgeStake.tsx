@@ -308,208 +308,207 @@ const BridgeStake: FC<IBridgeStake> = () => {
   // Render Stake Tab
   const renderStakeTab = () => (
     <div className="space-y-6 w-full">
-      {/* Mini Tabs - Full width, stuck to main card */}
+      {/* Big Card with integrated tabs */}
       <div className="w-full">
-        <div className="grid grid-cols-2 relative z-10">
-          <button
-            onClick={() => setActiveTab('stake')}
-            className={clsx(
-              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
-              activeTab === 'stake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
-            )}
-          >
-            <span
+        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] overflow-hidden">
+          {/* Mini Tabs - Full width, inside the card as header */}
+          <div className="grid grid-cols-2 bg-darkslategray-200 border-b border-lightgreen-100/20">
+            <button
+              onClick={() => setActiveTab('stake')}
               className={clsx(
-                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
-                activeTab === 'stake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+                'font-ocrx w-full cursor-pointer py-2 text-lightgreen-100 text-lg uppercase tracking-wider transition-all duration-300 border-b-2',
+                activeTab === 'stake'
+                  ? 'bg-darkslategray-100 border-lightgreen-100'
+                  : 'bg-darkslategray-200/70 hover:bg-darkslategray-200/90 border-transparent',
               )}
             >
-              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
-                1
-              </div>
-              STAKE
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('unstake')}
-            className={clsx(
-              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
-              activeTab === 'unstake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
-            )}
-          >
-            <span
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-[10px] font-bold text-black">
+                  1
+                </div>
+                STAKE
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('unstake')}
               className={clsx(
-                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
-                activeTab === 'unstake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+                'font-ocrx w-full cursor-pointer py-2 text-lightgreen-100 text-lg uppercase tracking-wider transition-all duration-300 border-b-2',
+                activeTab === 'unstake'
+                  ? 'bg-darkslategray-100 border-lightgreen-100'
+                  : 'bg-darkslategray-200/70 hover:bg-darkslategray-200/90 border-transparent',
               )}
             >
-              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
-                2
-              </div>
-              UNSTAKE
-            </span>
-          </button>
-        </div>
-      </div>
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-[10px] font-bold text-black">
+                  2
+                </div>
+                UNSTAKE
+              </span>
+            </button>
+          </div>
 
-      {/* Big Card */}
-      <div className="w-full -mt-6">
-        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-white/70 text-sm font-maison-neue">Available Amount</span>
-            {/* Percentage buttons and Balance */}
-            <div className="relative h-6 flex items-center justify-end">
-              {isInputFocused ? (
-                <div className="flex items-center gap-1 animate-fadeIn">
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(25)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    25%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(50)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    50%
-                  </button>
+          {/* Card Content */}
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-white/70 text-sm font-maison-neue">Available Amount</span>
+              {/* Percentage buttons and Balance */}
+              <div className="relative h-6 flex items-center justify-end">
+                {isInputFocused ? (
+                  <div className="flex items-center gap-1 animate-fadeIn">
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(25)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      25%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(50)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(100)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={() => handlePercentage(100)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
                   >
-                    MAX
+                    {/* Wallet icon */}
+                    <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                    </svg>
+                    <span className="text-white/50 text-xs font-maison-neue">
+                      {walletBalance ? formatEther(walletBalance.value.toString()) : '0'}
+                    </span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handlePercentage(100)}
-                  className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
-                >
-                  {/* Wallet icon */}
-                  <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                  </svg>
-                  <span className="text-white/50 text-xs font-maison-neue">
-                    {walletBalance ? formatEther(walletBalance.value.toString()) : '0'}
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Token and Amount container */}
-          <div
-            className={clsx(
-              'bg-black/40 rounded-lg p-3 border transition-all duration-150',
-              isInputFocused
-                ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
-                : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
-            )}
-          >
-            <div className="flex items-center justify-between">
-              {/* Token Display */}
-              <div className="flex items-center gap-2">
-                <img
-                  src="/icons/crypto/bitcoin.svg"
-                  alt="lzrBTC"
-                  className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
-                />
-                <div className="flex flex-col">
-                  <span className="text-white font-bold text-base transition-colors duration-200">lzrBTC</span>
-                  <span className="text-white/50 text-xs">Bitlazer L3</span>
-                </div>
-              </div>
-
-              {/* Amount Input */}
-              <div className="flex flex-col items-end flex-1 min-w-0">
-                <Controller
-                  key="stake-amount"
-                  name="stakeAmount"
-                  control={stakeControl}
-                  rules={{
-                    required: 'Amount is required',
-                    min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-                    max: {
-                      value: parseFloat(walletBalance ? formatEther(walletBalance.value.toString()) : '0'),
-                      message: 'Insufficient balance',
-                    },
-                  }}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="number"
-                      placeholder="0"
-                      className={clsx(
-                        'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
-                        'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
-                      )}
-                      onFocus={() => setIsInputFocused(true)}
-                      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    />
-                  )}
-                />
-                <div className="text-white/40 text-xs mt-1 truncate w-full text-right">APR: {formatAPR()}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Staking Overview Dropdown - Inside the main card */}
-          <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
-            <button
-              type="button"
-              onClick={() => setShowDetails(!showDetails)}
-              className="w-full flex items-center justify-between transition-all duration-200"
-            >
-              <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
-              <svg
-                className={clsx(
-                  'w-4 h-4 text-white/50 transition-transform duration-200',
-                  showDetails ? 'rotate-180' : '',
                 )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              </div>
+            </div>
+
+            {/* Token and Amount container */}
+            <div
+              className={clsx(
+                'bg-black/40 rounded-lg p-3 border transition-all duration-150',
+                isInputFocused
+                  ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
+                  : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                {/* Token Display */}
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/icons/crypto/bitcoin.svg"
+                    alt="lzrBTC"
+                    className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-base transition-colors duration-200">lzrBTC</span>
+                    <span className="text-white/50 text-xs">Bitlazer L3</span>
+                  </div>
+                </div>
+
+                {/* Amount Input */}
+                <div className="flex flex-col items-end flex-1 min-w-0">
+                  <Controller
+                    key="stake-amount"
+                    name="stakeAmount"
+                    control={stakeControl}
+                    rules={{
+                      required: 'Amount is required',
+                      min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+                      max: {
+                        value: parseFloat(walletBalance ? formatEther(walletBalance.value.toString()) : '0'),
+                        message: 'Insufficient balance',
+                      },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="number"
+                        placeholder="0"
+                        className={clsx(
+                          'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
+                          'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
+                        )}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      />
+                    )}
+                  />
+                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">APR: {formatAPR()}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Staking Overview Dropdown - Inside the main card */}
+            <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                className="w-full flex items-center justify-between transition-all duration-200"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
+                <svg
+                  className={clsx(
+                    'w-4 h-4 text-white/50 transition-transform duration-200',
+                    showDetails ? 'rotate-180' : '',
+                  )}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-            {/* Collapsible Details with smooth transition like Bridge Details */}
-            <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
-              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
-                  <span className="text-white text-xs font-maison-neue">
-                    {formatStakedAmount(stakedBalance)} lzrBTC
-                  </span>
-                </div>
+              {/* Collapsible Details with smooth transition like Bridge Details */}
+              <div
+                className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}
+              >
+                <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatStakedAmount(stakedBalance)} lzrBTC
+                    </span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
-                  <span className="text-white text-xs font-maison-neue">
-                    {formatRewardAmount(pendingRewards)} lzrBTC
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatRewardAmount(pendingRewards)} lzrBTC
+                    </span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">APR</span>
-                  <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
-                </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">APR</span>
+                    <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
-                  <span className="text-white text-xs font-maison-neue">{formatStakedAmount(totalStaked)} lzrBTC</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatStakedAmount(totalStaked)} lzrBTC
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -552,208 +551,207 @@ const BridgeStake: FC<IBridgeStake> = () => {
   // Render Unstake Tab
   const renderUnstakeTab = () => (
     <div className="space-y-6 w-full">
-      {/* Mini Tabs - Full width, stuck to main card */}
+      {/* Big Card with integrated tabs */}
       <div className="w-full">
-        <div className="grid grid-cols-2 relative z-10">
-          <button
-            onClick={() => setActiveTab('stake')}
-            className={clsx(
-              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
-              activeTab === 'stake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
-            )}
-          >
-            <span
+        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] overflow-hidden">
+          {/* Mini Tabs - Full width, inside the card as header */}
+          <div className="grid grid-cols-2 bg-darkslategray-200 border-b border-lightgreen-100/20">
+            <button
+              onClick={() => setActiveTab('stake')}
               className={clsx(
-                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
-                activeTab === 'stake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+                'font-ocrx w-full cursor-pointer py-2 text-lightgreen-100 text-lg uppercase tracking-wider transition-all duration-300 border-b-2',
+                activeTab === 'stake'
+                  ? 'bg-darkslategray-100 border-lightgreen-100'
+                  : 'bg-darkslategray-200/70 hover:bg-darkslategray-200/90 border-transparent',
               )}
             >
-              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
-                1
-              </div>
-              STAKE
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('unstake')}
-            className={clsx(
-              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
-              activeTab === 'unstake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
-            )}
-          >
-            <span
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-[10px] font-bold text-black">
+                  1
+                </div>
+                STAKE
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('unstake')}
               className={clsx(
-                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
-                activeTab === 'unstake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+                'font-ocrx w-full cursor-pointer py-2 text-lightgreen-100 text-lg uppercase tracking-wider transition-all duration-300 border-b-2',
+                activeTab === 'unstake'
+                  ? 'bg-darkslategray-100 border-lightgreen-100'
+                  : 'bg-darkslategray-200/70 hover:bg-darkslategray-200/90 border-transparent',
               )}
             >
-              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
-                2
-              </div>
-              UNSTAKE
-            </span>
-          </button>
-        </div>
-      </div>
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-[10px] font-bold text-black">
+                  2
+                </div>
+                UNSTAKE
+              </span>
+            </button>
+          </div>
 
-      {/* Big Card */}
-      <div className="w-full -mt-6">
-        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-white/70 text-sm font-maison-neue">Staked Amount</span>
-            {/* Percentage buttons and Balance */}
-            <div className="relative h-6 flex items-center justify-end">
-              {isInputFocused ? (
-                <div className="flex items-center gap-1 animate-fadeIn">
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(25)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    25%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePercentage(50)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    50%
-                  </button>
+          {/* Card Content */}
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-white/70 text-sm font-maison-neue">Staked Amount</span>
+              {/* Percentage buttons and Balance */}
+              <div className="relative h-6 flex items-center justify-end">
+                {isInputFocused ? (
+                  <div className="flex items-center gap-1 animate-fadeIn">
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(25)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      25%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(50)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePercentage(100)}
+                      className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={() => handlePercentage(100)}
-                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                    className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
                   >
-                    MAX
+                    {/* Wallet icon */}
+                    <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                    </svg>
+                    <span className="text-white/50 text-xs font-maison-neue">{formatStakedAmount(stakedBalance)}</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handlePercentage(100)}
-                  className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
-                >
-                  {/* Wallet icon */}
-                  <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
-                  </svg>
-                  <span className="text-white/50 text-xs font-maison-neue">{formatStakedAmount(stakedBalance)}</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Token and Amount container */}
-          <div
-            className={clsx(
-              'bg-black/40 rounded-lg p-3 border transition-all duration-150',
-              isInputFocused
-                ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
-                : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
-            )}
-          >
-            <div className="flex items-center justify-between">
-              {/* Token Display */}
-              <div className="flex items-center gap-2">
-                <img
-                  src="/icons/crypto/bitcoin.svg"
-                  alt="Staked lzrBTC"
-                  className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
-                />
-                <div className="flex flex-col">
-                  <span className="text-white font-bold text-base transition-colors duration-200">Staked lzrBTC</span>
-                  <span className="text-white/50 text-xs">Bitlazer L3</span>
-                </div>
-              </div>
-
-              {/* Amount Input */}
-              <div className="flex flex-col items-end flex-1 min-w-0">
-                <Controller
-                  key="unstake-amount"
-                  name="unstakeAmount"
-                  control={unstakeControl}
-                  rules={{
-                    required: 'Amount is required',
-                    min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-                    max: {
-                      value: parseFloat(formatStakedAmount(stakedBalance)),
-                      message: 'Insufficient staked balance',
-                    },
-                  }}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="number"
-                      placeholder="0"
-                      className={clsx(
-                        'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
-                        'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
-                      )}
-                      onFocus={() => setIsInputFocused(true)}
-                      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    />
-                  )}
-                />
-                <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
-                  Rewards: {formatRewardAmount(pendingRewards)} lzrBTC
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Staking Overview Dropdown - Inside the main card */}
-          <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
-            <button
-              type="button"
-              onClick={() => setShowDetails(!showDetails)}
-              className="w-full flex items-center justify-between transition-all duration-200"
-            >
-              <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
-              <svg
-                className={clsx(
-                  'w-4 h-4 text-white/50 transition-transform duration-200',
-                  showDetails ? 'rotate-180' : '',
                 )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              </div>
+            </div>
+
+            {/* Token and Amount container */}
+            <div
+              className={clsx(
+                'bg-black/40 rounded-lg p-3 border transition-all duration-150',
+                isInputFocused
+                  ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
+                  : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                {/* Token Display */}
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/icons/crypto/bitcoin.svg"
+                    alt="Staked lzrBTC"
+                    className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-base transition-colors duration-200">Staked lzrBTC</span>
+                    <span className="text-white/50 text-xs">Bitlazer L3</span>
+                  </div>
+                </div>
+
+                {/* Amount Input */}
+                <div className="flex flex-col items-end flex-1 min-w-0">
+                  <Controller
+                    key="unstake-amount"
+                    name="unstakeAmount"
+                    control={unstakeControl}
+                    rules={{
+                      required: 'Amount is required',
+                      min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+                      max: {
+                        value: parseFloat(formatStakedAmount(stakedBalance)),
+                        message: 'Insufficient staked balance',
+                      },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="number"
+                        placeholder="0"
+                        className={clsx(
+                          'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
+                          'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
+                        )}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      />
+                    )}
+                  />
+                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
+                    Rewards: {formatRewardAmount(pendingRewards)} lzrBTC
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Staking Overview Dropdown - Inside the main card */}
+            <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                className="w-full flex items-center justify-between transition-all duration-200"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
+                <svg
+                  className={clsx(
+                    'w-4 h-4 text-white/50 transition-transform duration-200',
+                    showDetails ? 'rotate-180' : '',
+                  )}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-            {/* Collapsible Details with smooth transition like Bridge Details */}
-            <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
-              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
-                  <span className="text-white text-xs font-maison-neue">
-                    {formatStakedAmount(stakedBalance)} lzrBTC
-                  </span>
-                </div>
+              {/* Collapsible Details with smooth transition like Bridge Details */}
+              <div
+                className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}
+              >
+                <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatStakedAmount(stakedBalance)} lzrBTC
+                    </span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
-                  <span className="text-white text-xs font-maison-neue">
-                    {formatRewardAmount(pendingRewards)} lzrBTC
-                  </span>
-                </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatRewardAmount(pendingRewards)} lzrBTC
+                    </span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">APR</span>
-                  <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
-                </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">APR</span>
+                    <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
+                  </div>
 
-                <div className="h-px bg-lightgreen-100/10"></div>
+                  <div className="h-px bg-lightgreen-100/10"></div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
-                  <span className="text-white text-xs font-maison-neue">{formatStakedAmount(totalStaked)} lzrBTC</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
+                    <span className="text-white text-xs font-maison-neue">
+                      {formatStakedAmount(totalStaked)} lzrBTC
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
