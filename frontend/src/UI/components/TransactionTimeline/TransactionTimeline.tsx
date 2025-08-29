@@ -68,7 +68,7 @@ const TransactionTimeline: FC<TransactionTimelineProps> = ({ type, currentStage,
                 {/* Label Below Circle */}
                 <div className="mt-2 text-center absolute top-full">
                   <div
-                    className={clsx('text-[11px] font-medium transition-colors whitespace-nowrap', {
+                    className={clsx('text-[11px] font-maison-neue transition-colors whitespace-nowrap', {
                       'text-lightgreen-100': isCompleted || isCurrent,
                       'text-white/50': isPending,
                     })}
@@ -88,7 +88,7 @@ const TransactionTimeline: FC<TransactionTimelineProps> = ({ type, currentStage,
       {/* Current Stage Description */}
       {currentStageIndex >= 0 && stages[currentStageIndex] && (
         <div className="mt-4 text-center">
-          <p className="text-xs text-white/50">{stages[currentStageIndex].description}</p>
+          <p className="text-xs text-white/50 font-maison-neue">{stages[currentStageIndex].description}</p>
         </div>
       )}
     </div>

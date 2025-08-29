@@ -1,8 +1,7 @@
 import React, { FC, useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transactions'
-import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
+import TransactionDetailsModal from '../TransactionDetailsModal/TransactionDetailsModal'
 import { fmtHash } from '../../../utils/fmt'
 
 interface TransactionStatusCardProps {
@@ -198,6 +197,7 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, on
 
               {/* RIGHT COLUMN - Button centered with content */}
               <button
+                type="button"
                 onClick={() => setShowModal(true)}
                 className="px-3 py-1.5 bg-lightgreen-100/10 hover:bg-lightgreen-100/20 border border-lightgreen-100/30 hover:border-lightgreen-100/50 rounded text-xs text-lightgreen-100 hover:text-lightgreen-200 transition-all duration-200 whitespace-nowrap self-center"
               >
@@ -208,130 +208,8 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, on
         </div>
       </div>
 
-      {/* Modal Popup - rendered as portal at document root */}
-      {showModal &&
-        createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="fixed top-0 left-0 w-screen h-screen bg-black/80" onClick={() => setShowModal(false)} />
-            <div className="relative bg-darkslategray-200 border-4 border-lightgreen-100 max-w-xl w-full shadow-[0_0_0_2px_rgba(102,213,96,0.4)]">
-              {/* Header Bar with Close Button */}
-              <div className="bg-darkslategray-200 px-3 py-1.5 flex items-center justify-between">
-                <h2 className="text-lightgreen-100 text-base font-ocrx uppercase">Transaction Details</h2>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-lightgreen-100 hover:bg-lightgreen-100 hover:text-black transition-colors w-6 h-6 flex items-center justify-center font-bold text-lg"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="p-5">
-                {/* Transaction Info Card */}
-                <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lightgreen-100 text-lg font-ocrx uppercase">{getActionLabel()}</span>
-                    <div className="text-right">
-                      <div className="text-lightgreen-100 text-lg font-ocrx">
-                        {transaction.amount} {transaction.fromToken}
-                      </div>
-                      <div className="text-white text-sm font-mono mt-1">{formatElapsedTime(timeElapsed)} ago</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Transaction Hash */}
-                <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white text-sm uppercase font-maison-neue">Transaction Hash</span>
-                    <a
-                      href={transaction.explorerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-lightgreen-100 font-mono text-sm hover:text-lightgreen-200 underline"
-                    >
-                      {fmtHash(transaction.txHash, 16)}
-                    </a>
-                  </div>
-                </div>
-
-                {/* Networks */}
-                <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
-                  <div className="flex items-center justify-between">
-                    {/* From Network - Left */}
-                    <div className="flex items-center gap-2">
-                      {transaction.fromChain === 'Arbitrum One' ? (
-                        <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
-                      ) : (
-                        <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                      )}
-                      <span className="text-lightgreen-100 text-sm font-mono">{transaction.fromChain}</span>
-                    </div>
-
-                    {/* Long Arrow - Center */}
-                    <svg
-                      className="w-12 h-4 text-white/60 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 48 16"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2 8h40m-6-4l6 4-6 4" />
-                    </svg>
-
-                    {/* To Network - Right */}
-                    <div className="flex items-center gap-2">
-                      {transaction.toChain === 'Arbitrum One' ? (
-                        <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
-                      ) : (
-                        <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                      )}
-                      <span className="text-lightgreen-100 text-sm font-mono">{transaction.toChain}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Full Timeline */}
-                <div className="bg-black border-2 border-lightgreen-100 p-4">
-                  <h3 className="text-lightgreen-100 font-ocrx mb-3 uppercase">Transaction Progress</h3>
-                  <TransactionTimeline type={transaction.type} currentStage={transaction.stage} />
-                </div>
-
-                {/* Warning for bridge transactions */}
-                {transaction.type.includes('bridge') && (
-                  <div className="mt-4 bg-black border-2 border-lightgreen-100 p-3">
-                    <div className="flex items-start gap-2">
-                      <svg
-                        className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-400"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <div className="text-white text-sm font-maison-neue">
-                        {transaction.type === 'bridge-reverse'
-                          ? 'Withdrawal may take up to 7 days to complete on Arbitrum network.'
-                          : 'Bridge transfer may take up to 15 minutes to complete.'}
-                        <br />
-                        <a
-                          href="https://bitlazer.bridge.caldera.xyz/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lightgreen-100 underline hover:text-lightgreen-200 mt-1 inline-block"
-                        >
-                          Track status on Caldera →
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {/* Transaction Details Modal */}
+      <TransactionDetailsModal transaction={transaction} isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
   )
 }

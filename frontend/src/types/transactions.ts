@@ -27,6 +27,11 @@ export interface PendingTransaction {
   fromChainId: number
   toChainId?: number
   explorerUrl: string
+  // Enhanced transaction details (populated when confirmed)
+  blockNumber?: number
+  blockTimestamp?: number
+  gasUsed?: number
+  gasLimit?: number
 }
 
 export interface TransactionStageInfo {

@@ -68,10 +68,11 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
     [pendingTransactions, savePendingTransactions],
   )
 
-  // Update transaction stage
+  // Update transaction stage with optional enhanced details
   const updateTransactionStage = useCallback(
-    (txHash: string, stage: TransactionStage) => {
-      const updated = pendingTransactions.map((tx) =>
+    (txHash: string, stage: TransactionStage, enhancedDetails?: any) => {
+      // Update pending transactions
+      const updatedPending = pendingTransactions.map((tx) =>
         tx.txHash === txHash
           ? {
               ...tx,
@@ -82,12 +83,41 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
                   : stage === 'failed'
                     ? ('failed' as const)
                     : ('pending' as const),
+              // Merge enhanced details if provided
+              ...(enhancedDetails && {
+                blockNumber: enhancedDetails.blockNumber,
+                blockTimestamp: enhancedDetails.blockTimestamp,
+                gasUsed: enhancedDetails.gasUsed,
+                gasLimit: enhancedDetails.gasLimit,
+              }),
             }
           : tx,
       )
-      savePendingTransactions(updated)
+
+      const foundInPending = updatedPending.some((tx) => tx.txHash === txHash)
+
+      // Also update historical transaction if it matches and enhanced details are provided
+      if (!foundInPending && historicalTransaction?.txHash === txHash && enhancedDetails) {
+        const updatedHistorical = {
+          ...historicalTransaction,
+          stage,
+          status:
+            stage === 'completed'
+              ? ('completed' as const)
+              : stage === 'failed'
+                ? ('failed' as const)
+                : ('pending' as const),
+          blockNumber: enhancedDetails.blockNumber,
+          blockTimestamp: enhancedDetails.blockTimestamp,
+          gasUsed: enhancedDetails.gasUsed,
+          gasLimit: enhancedDetails.gasLimit,
+        }
+        setHistoricalTransaction(updatedHistorical)
+      }
+
+      savePendingTransactions(updatedPending)
     },
-    [pendingTransactions, savePendingTransactions],
+    [pendingTransactions, historicalTransaction, savePendingTransactions],
   )
 
   // Remove a pending transaction
@@ -99,24 +129,29 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
     [pendingTransactions, savePendingTransactions],
   )
 
-  // Check transaction status on chain
+  // Check transaction status on chain with detailed information
   const checkTransactionStatus = useCallback(async (txHash: string, chainId: number) => {
     try {
       const client = chainId === arbitrum.id ? arbitrumClient : bitlazerClient
 
       try {
-        const receipt = await client.getTransactionReceipt({
-          hash: txHash as `0x${string}`,
-        })
+        const [receipt, transaction] = await Promise.all([
+          client.getTransactionReceipt({ hash: txHash as `0x${string}` }),
+          client.getTransaction({ hash: txHash as `0x${string}` }),
+        ])
 
-        if (receipt) {
-          const currentBlock = await client.getBlockNumber()
-          const confirmations = Math.max(0, Number(currentBlock - receipt.blockNumber))
+        if (receipt && transaction) {
+          const block = await client.getBlock({ blockHash: receipt.blockHash! })
+
+          const gasUsed = Number(receipt.gasUsed)
+          const gasLimit = Number(transaction.gas)
 
           return {
             status: receipt.status === 'success' ? 'success' : 'failure',
-            confirmations,
             blockNumber: Number(receipt.blockNumber),
+            blockTimestamp: Number(block.timestamp),
+            gasUsed,
+            gasLimit,
           }
         }
       } catch (receiptError) {
@@ -130,7 +165,7 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
           if (transaction) {
             return {
               status: 'pending',
-              confirmations: 0,
+              gasLimit: Number(transaction.gas),
             }
           }
         } catch (txError) {
@@ -167,17 +202,14 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
           if (timeElapsed > 10080) return 'completed'
           return 'finalizing'
         } else {
-          if (receipt.confirmations >= 1) {
-            if (timeElapsed > 15) {
-              return 'completed'
-            }
-            return 'bridging'
-          } else {
-            return 'confirming'
-          }
+          // Use time-based logic instead of confirmations
+          if (timeElapsed < 2) return 'confirming'
+          if (timeElapsed > 15) return 'completed'
+          return 'bridging'
         }
       } else {
-        return receipt.confirmations >= 3 ? 'completed' : 'confirming'
+        // Use time-based logic for other transaction types
+        return timeElapsed >= 5 ? 'completed' : 'confirming'
       }
     }
 

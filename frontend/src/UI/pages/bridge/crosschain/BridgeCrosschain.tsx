@@ -83,29 +83,30 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
   // Fetch BTC price
   useEffect(() => {
-    const fetchBTCPrice = async () => {
+    const fetchPrices = async () => {
       try {
-        const data = await fetchWithCache(
+        const btcData = await fetchWithCache(
           CACHE_KEYS.BTC_PRICE,
           async () => {
             return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
               const response = await fetch(
                 'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
               )
-              if (!response.ok) throw new Error('Failed to fetch price')
+              if (!response.ok) throw new Error('Failed to fetch BTC price')
               return response.json()
             })
           },
           { ttl: CACHE_TTL.PRICE },
         )
-        setBtcPrice(data['wrapped-bitcoin']?.usd || 0)
+
+        setBtcPrice(btcData['wrapped-bitcoin']?.usd || 0)
       } catch (error) {
-        console.error('Error fetching BTC price:', error)
+        console.error('Error fetching prices:', error)
       }
     }
 
-    fetchBTCPrice()
-    const interval = setInterval(fetchBTCPrice, 30000)
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -121,9 +122,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       if (receipt) {
         const newStage = determineTransactionStage(latestBridgeTransaction, receipt)
 
-        // Update transaction stage if it has changed
-        if (newStage !== latestBridgeTransaction.stage) {
-          updateTransactionStage(latestBridgeTransaction.txHash, newStage)
+        // Update transaction stage if it has changed OR if we have new enhanced details
+        const hasEnhancedDetails = receipt && (receipt.blockNumber || receipt.gasUsed)
+        const needsUpdate =
+          newStage !== latestBridgeTransaction.stage || (hasEnhancedDetails && !latestBridgeTransaction.blockNumber)
+
+        if (needsUpdate) {
+          updateTransactionStage(latestBridgeTransaction.txHash, newStage, receipt)
         }
       }
     }
@@ -135,13 +140,24 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     const statusInterval = setInterval(monitorTransaction, 30000)
 
     return () => clearInterval(statusInterval)
-  }, [
-    isPendingTransaction,
-    latestBridgeTransaction,
-    checkTransactionStatus,
-    determineTransactionStage,
-    updateTransactionStage,
-  ])
+  }, [isPendingTransaction, latestBridgeTransaction?.txHash])
+
+  // Add enhanced details to historical transactions (one-time check)
+  useEffect(() => {
+    if (!latestBridgeTransaction || isPendingTransaction || latestBridgeTransaction.blockNumber) {
+      return // Skip if no transaction, it's pending, or already has enhanced details
+    }
+
+    const addEnhancedDetails = async () => {
+      const receipt = await checkTransactionStatus(latestBridgeTransaction.txHash, latestBridgeTransaction.fromChainId)
+
+      if (receipt && (receipt.blockNumber || receipt.gasUsed)) {
+        updateTransactionStage(latestBridgeTransaction.txHash, latestBridgeTransaction.stage, receipt)
+      }
+    }
+
+    addEnhancedDetails()
+  }, [latestBridgeTransaction?.txHash, latestBridgeTransaction?.blockNumber])
 
   const { address, chainId } = useAccount()
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)

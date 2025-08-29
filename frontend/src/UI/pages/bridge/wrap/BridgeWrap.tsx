@@ -1,4 +1,4 @@
-import { Button, TXToast, TokenCard } from '@components/index'
+import { Button, TXToast, TokenCard, WBTCInfoCard } from '@components/index'
 import Loading from '@components/loading/Loading'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -483,6 +483,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
       {/* Main Swap Container */}
       <div className="relative w-full">
+        {/* Show WBTC info card when user has 0 WBTC balance in wrap mode */}
+        {isWrapMode && balanceData && parseFloat(balanceData.formatted) === 0 && <WBTCInfoCard />}
+
         {/* From Card */}
         <TokenCard
           type="from"
