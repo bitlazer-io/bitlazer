@@ -668,15 +668,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
               <div className="h-px bg-lightgreen-100/10"></div>
 
               <div className="flex justify-between items-center">
-                <span className="text-white/50 text-xs font-maison-neue">Network Fee</span>
-                <span className="text-white text-xs font-maison-neue">
-                  {bridgeDetails.isLoading ? '...' : bridgeDetails.networkFee}
-                </span>
-              </div>
-
-              <div className="h-px bg-lightgreen-100/10"></div>
-
-              <div className="flex justify-between items-center">
                 <span className="text-white/50 text-xs font-maison-neue">Route</span>
                 <div className="flex items-center gap-1">
                   <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Arbitrum' : 'Bitlazer'}</span>

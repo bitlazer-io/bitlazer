@@ -696,22 +696,13 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
               <div className="h-px bg-lightgreen-100/10"></div>
 
               <div className="flex justify-between items-center">
-                <span className="text-white/50 text-xs font-maison-neue">Network Fee</span>
-                <span className="text-white text-xs font-maison-neue">
-                  {wrapDetails.isLoading ? '...' : wrapDetails.networkFee}
-                </span>
-              </div>
-
-              <div className="h-px bg-lightgreen-100/10"></div>
-
-              <div className="flex justify-between items-center">
                 <span className="text-white/50 text-xs font-maison-neue">Route</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white text-xs font-ocrx">{isWrapMode ? 'WBTC' : 'lzrBTC'}</span>
+                  <span className="text-white text-xs font-maison-neue">{isWrapMode ? 'WBTC' : 'lzrBTC'}</span>
                   <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="text-white text-xs font-ocrx">{isWrapMode ? 'lzrBTC' : 'WBTC'}</span>
+                  <span className="text-white text-xs font-maison-neue">{isWrapMode ? 'lzrBTC' : 'WBTC'}</span>
                 </div>
               </div>
 
