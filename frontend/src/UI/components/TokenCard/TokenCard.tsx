@@ -105,11 +105,7 @@ const TokenCard: FC<TokenCardProps> = ({
           <div className="flex items-center justify-between">
             {/* Token Display */}
             <div className="flex items-center gap-2">
-              <img
-                src={tokenInfo.icon}
-                alt={tokenInfo.symbol}
-                className={clsx('w-8 h-8 flex-shrink-0', isFrom && 'transition-transform duration-300 hover:rotate-12')}
-              />
+              <img src={tokenInfo.icon} alt={tokenInfo.symbol} className="w-8 h-8 flex-shrink-0" />
               <div className="flex flex-col">
                 <span className={clsx('text-white font-bold text-base', isFrom && 'transition-colors duration-200')}>
                   {tokenInfo.symbol}

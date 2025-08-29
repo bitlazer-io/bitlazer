@@ -492,7 +492,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           type="from"
           tokenInfo={{
             symbol: isWrapMode ? 'WBTC' : 'lzrBTC',
-            icon: '/icons/crypto/bitcoin.svg',
+            icon: isWrapMode ? '/icons/crypto/wbtc.svg' : '/icons/crypto/bitcoin.svg',
             chain: 'Arbitrum One',
           }}
           balance={isWrapMode ? balanceData?.formatted : lzrBTCBalanceData?.formatted}
@@ -543,7 +543,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           type="to"
           tokenInfo={{
             symbol: isWrapMode ? 'lzrBTC' : 'WBTC',
-            icon: '/icons/crypto/bitcoin.svg',
+            icon: isWrapMode ? '/icons/crypto/bitcoin.svg' : '/icons/crypto/wbtc.svg',
             chain: 'Arbitrum One',
           }}
           balance={isWrapMode ? lzrBTCBalanceData?.formatted : balanceData?.formatted}
