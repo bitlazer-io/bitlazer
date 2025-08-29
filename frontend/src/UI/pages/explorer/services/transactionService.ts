@@ -130,34 +130,48 @@ const fetchAllTransactions = async (): Promise<Transaction[]> => {
     }
 
     // 4. FETCH BRIDGE TRANSACTIONS (Bitlazer -> Arbitrum)
-    const bridgeFromL3Logs = await bitlazerClient.getLogs({
-      address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-      event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-      args: {
-        to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-      },
-      fromBlock: l3FromBlock,
-      toBlock: l3CurrentBlock,
-    })
+    // On Bitlazer, bridge transactions emit WithdrawalInitiated events from the bridge contract at 0x64
+    let bridgeFromL3Logs: any[] = []
 
+    try {
+      // Fetch all logs from the bridge contract
+      const allBridgeLogs = await bitlazerClient.getLogs({
+        address: '0x0000000000000000000000000000000000000064' as `0x${string}`,
+        fromBlock: 0n, // Start from 0 since chain is very new (only ~130 blocks)
+        toBlock: l3CurrentBlock,
+      })
+
+      // Filter for WithdrawalInitiated events (signature: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc)
+      const withdrawalInitiatedSignature = '0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc'
+      bridgeFromL3Logs = allBridgeLogs.filter((log) => log.topics[0] === withdrawalInitiatedSignature)
+    } catch (error) {
+      console.error('Failed to fetch bridge logs from Bitlazer:', error)
+    }
+
+    // Process each bridge transaction log
     for (const log of bridgeFromL3Logs) {
-      if (log.args && 'from' in log.args && 'value' in log.args) {
-        const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-        allTransactions.push({
-          id: log.transactionHash!,
-          hash: log.transactionHash!,
-          type: TransactionType.BRIDGE,
-          status: TransactionStatus.CONFIRMED,
-          from: log.args.from as string,
-          to: '0x0000000000000000000000000000000000000000',
-          amount: formatUnits(log.args.value as bigint, 18),
-          asset: 'lzrBTC',
-          sourceNetwork: NetworkType.BITLAZER,
-          destinationNetwork: NetworkType.ARBITRUM,
-          timestamp: Number(block.timestamp),
-          blockNumber: Number(log.blockNumber),
-          explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-        })
+      try {
+        const tx = await bitlazerClient.getTransaction({ hash: log.transactionHash as `0x${string}` })
+        if (tx && tx.from && tx.value) {
+          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
+          allTransactions.push({
+            id: log.transactionHash!,
+            hash: log.transactionHash!,
+            type: TransactionType.BRIDGE,
+            status: TransactionStatus.PENDING,
+            from: tx.from,
+            to: '0x0000000000000000000000000000000000000064',
+            amount: formatUnits(tx.value, 18),
+            asset: 'lzrBTC',
+            sourceNetwork: NetworkType.BITLAZER,
+            destinationNetwork: NetworkType.ARBITRUM,
+            timestamp: Number(block.timestamp),
+            blockNumber: Number(log.blockNumber),
+            explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+          })
+        }
+      } catch (error) {
+        console.error('Error processing bridge transaction:', error)
       }
     }
 

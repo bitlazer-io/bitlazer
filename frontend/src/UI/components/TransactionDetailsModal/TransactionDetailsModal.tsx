@@ -1,0 +1,228 @@
+import React, { FC, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transactions'
+import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
+import { fmtHash } from '../../../utils/fmt'
+
+interface TransactionDetailsModalProps {
+  transaction: PendingTransaction
+  isOpen: boolean
+  onClose: () => void
+}
+
+const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction, isOpen, onClose }) => {
+  const [timeElapsed, setTimeElapsed] = useState(0)
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+  // Update time elapsed every minute
+  useEffect(() => {
+    if (!isOpen) return
+
+    const updateTimeElapsed = () => {
+      const elapsed = Math.floor((Date.now() - transaction.timestamp) / (1000 * 60))
+      setTimeElapsed(elapsed)
+    }
+
+    updateTimeElapsed()
+    const interval = setInterval(updateTimeElapsed, 60000)
+
+    return () => clearInterval(interval)
+  }, [isOpen, transaction.timestamp])
+
+  if (!isOpen) return null
+
+  const formatElapsedTime = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+  }
+
+  const getActionLabel = () => {
+    switch (transaction.type) {
+      case 'bridge':
+        return `Bridging to ${transaction.toChain}`
+      case 'bridge-reverse':
+        return `Withdrawing to ${transaction.toChain}`
+      case 'wrap':
+        return 'Wrapping'
+      case 'unwrap':
+        return 'Unwrapping'
+      case 'stake':
+        return 'Staking'
+      case 'unstake':
+        return 'Unstaking'
+      default:
+        return 'Processing'
+    }
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/80" onClick={onClose} />
+      <div className="relative bg-darkslategray-200 border-4 border-lightgreen-100 max-w-xl w-full shadow-[0_0_0_2px_rgba(102,213,96,0.4)] my-8 max-h-[90vh] flex flex-col">
+        {/* Header Bar with Close Button - Fixed at top */}
+        <div className="bg-darkslategray-200 px-3 py-1.5 flex items-center justify-between border-b border-lightgreen-100/30 flex-shrink-0">
+          <h2 className="text-lightgreen-100 text-base font-ocrx uppercase">Transaction Details</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-lightgreen-100 hover:bg-lightgreen-100 hover:text-black transition-colors w-6 h-6 flex items-center justify-center font-bold text-lg"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="p-5 overflow-y-auto flex-1">
+          {/* Transaction Info Card */}
+          <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
+            <div className="flex justify-between items-center">
+              <span className="text-lightgreen-100 text-lg font-ocrx uppercase">{getActionLabel()}</span>
+              <div className="text-right">
+                <div className="text-lightgreen-100 text-lg font-ocrx">
+                  {transaction.amount} {transaction.fromToken}
+                </div>
+                <div className="text-white text-sm font-mono mt-1">{formatElapsedTime(timeElapsed)} ago</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Transaction Hash */}
+          <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <span className="text-white text-sm uppercase font-maison-neue">Transaction Hash</span>
+              <a
+                href={transaction.explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-lightgreen-100 font-mono text-sm hover:text-lightgreen-200 underline"
+              >
+                {fmtHash(transaction.txHash, 16)}
+              </a>
+            </div>
+          </div>
+
+          {/* Networks */}
+          <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
+            <div className="flex items-center justify-between">
+              {/* From Network - Left */}
+              <div className="flex items-center gap-2">
+                {transaction.fromChain === 'Arbitrum One' ? (
+                  <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
+                ) : (
+                  <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
+                )}
+                <span className="text-lightgreen-100 text-sm font-mono">{transaction.fromChain}</span>
+              </div>
+
+              {/* Long Arrow - Center */}
+              <svg
+                className="w-12 h-4 text-white/60 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 48 16"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2 8h40m-6-4l6 4-6 4" />
+              </svg>
+
+              {/* To Network - Right */}
+              <div className="flex items-center gap-2">
+                {transaction.toChain === 'Arbitrum One' ? (
+                  <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
+                ) : (
+                  <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
+                )}
+                <span className="text-lightgreen-100 text-sm font-mono">{transaction.toChain}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Full Timeline */}
+          <div className="bg-black border-2 border-lightgreen-100 p-4 mb-4">
+            <h3 className="text-lightgreen-100 font-ocrx mb-3 uppercase">Transaction Progress</h3>
+            <TransactionTimeline type={transaction.type} currentStage={transaction.stage} />
+          </div>
+
+          {/* Transaction Details Section */}
+          {(transaction.blockNumber || transaction.gasUsed) && (
+            <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-white text-sm font-maison-neue">Block Number</span>
+                  <span className="text-lightgreen-100 text-sm font-mono">#{transaction.blockNumber || 'Unknown'}</span>
+                </div>
+                {transaction.blockTimestamp && (
+                  <>
+                    <div className="h-px bg-lightgreen-100/20"></div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white text-sm font-maison-neue">Block Timestamp</span>
+                      <span className="text-lightgreen-100 text-sm font-mono">
+                        {new Date(transaction.blockTimestamp * 1000).toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
+                {transaction.gasUsed && (
+                  <>
+                    <div className="h-px bg-lightgreen-100/20"></div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white text-sm font-maison-neue">Gas Used</span>
+                      <span className="text-lightgreen-100 text-sm font-mono">
+                        {(transaction.gasUsed || 0).toLocaleString()} / {(transaction.gasLimit || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Warning for bridge transactions */}
+          {transaction.type.includes('bridge') && (
+            <div className="mt-4 bg-black border-2 border-lightgreen-100 p-3">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div className="text-white text-sm font-maison-neue">
+                  {transaction.type === 'bridge-reverse'
+                    ? 'Withdrawal may take up to 7 days to complete on Arbitrum network.'
+                    : 'Bridge transfer may take up to 15 minutes to complete.'}
+                  <br />
+                  <a
+                    href="https://bitlazer.bridge.caldera.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lightgreen-100 underline hover:text-lightgreen-200 mt-1 inline-block"
+                  >
+                    Track status on Caldera →
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+export default TransactionDetailsModal

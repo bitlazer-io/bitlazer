@@ -1,7 +1,7 @@
-import { Button, InputField, TXToast } from '@components/index'
+import { Button, TXToast, TokenCard, WBTCInfoCard } from '@components/index'
 import Loading from '@components/loading/Loading'
 import React, { FC, useEffect, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { erc20Abi } from 'viem'
 import { waitForTransactionReceipt, writeContract, simulateContract } from '@wagmi/core'
@@ -13,12 +13,31 @@ import { toast } from 'react-toastify'
 import { parseUnits } from 'viem'
 import Cookies from 'universal-cookie'
 import { handleChainSwitch } from 'src/web3/functions'
+import clsx from 'clsx'
+import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
+import { useNavigate } from 'react-router-dom'
+import { useWrapDetails } from 'src/hooks/useWrapDetails'
 
 interface IBridgeWrap {}
 
 const BridgeWrap: FC<IBridgeWrap> = () => {
+  const navigate = useNavigate()
+
+  // Helper to safely parse amounts with proper decimal truncation
+  const safeParseUnits = (amount: string, decimals: number) => {
+    const truncatedAmount = parseFloat(amount).toFixed(decimals)
+    return parseUnits(truncatedAmount, decimals)
+  }
   const [selectedToken] = useState<TokenKeys>('wbtc')
   const [selectedTokenUnwrap] = useState<TokenKeys>('wbtc')
+  const [isWrapMode, setIsWrapMode] = useState(true)
+  const [showDetails, setShowDetails] = useState(false)
+  const [btcPrice, setBtcPrice] = useState(0)
+  const [isInputFocused, setIsInputFocused] = useState(false)
+
+  // Dynamic wrap details
+  const wrapDetails = useWrapDetails()
+
   const { address, chainId } = useAccount()
   const [approval, setApproval] = useState<boolean>(false)
   const [refresh, setRefresh] = useState<boolean>(false)
@@ -44,6 +63,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
   const {
     control: unwrapControl,
+    handleSubmit: handleSubmitUnwrap,
     setValue: unwrapSetValue,
     watch: unwrapWatch,
     getValues: unwrapGetValues,
@@ -55,6 +75,36 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     },
     mode: 'onChange',
   })
+
+  // Fetch BTC price from CoinGecko
+  useEffect(() => {
+    const fetchBTCPrice = async () => {
+      try {
+        const data = await fetchWithCache(
+          CACHE_KEYS.BTC_PRICE,
+          async () => {
+            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
+              const response = await fetch(
+                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
+              )
+              if (!response.ok) throw new Error('Failed to fetch price')
+              return response.json()
+            })
+          },
+          { ttl: CACHE_TTL.PRICE },
+        )
+
+        const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
+        setBtcPrice(wbtcPrice)
+      } catch (error) {
+        console.error('Error fetching BTC price:', error)
+      }
+    }
+
+    fetchBTCPrice()
+    const interval = setInterval(fetchBTCPrice, 30000) // Update every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     address,
@@ -176,9 +226,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       try {
         if (selectedToken === 'wbtc') {
           // Contract expects 8 decimals for WBTC
-          requiredApproval = parseUnits(amount, 8)
+          requiredApproval = safeParseUnits(amount, 8)
         } else {
-          requiredApproval = parseUnits(amount, 18)
+          requiredApproval = safeParseUnits(amount, 18)
         }
 
         // approvalData is already a bigint from the contract read
@@ -200,9 +250,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
     let amountForApproval: bigint
     if (selectedToken === 'wbtc') {
-      amountForApproval = parseUnits(amount, 8)
+      amountForApproval = safeParseUnits(amount, 8)
     } else {
-      amountForApproval = parseUnits(amount, 18)
+      amountForApproval = safeParseUnits(amount, 18)
     }
 
     const approvalArgs = {
@@ -247,9 +297,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     const amount = getValues('amount')
     let amountToSend: bigint
     if (selectedToken === 'wbtc') {
-      amountToSend = parseUnits(amount, 8)
+      amountToSend = safeParseUnits(amount, 8)
     } else {
-      amountToSend = parseUnits(amount, 18)
+      amountToSend = safeParseUnits(amount, 18)
     }
 
     const args = {
@@ -305,6 +355,12 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
         setApproval(false)
         // Single refresh after successful transaction
         setRefresh((prev) => !prev)
+
+        // Only redirect to crosschain after wrapping WBTC to lzrBTC
+        // This is wrap mode and we just successfully wrapped
+        setTimeout(() => {
+          navigate('/bridge/crosschain')
+        }, 1500)
       } else {
         toast(<TXToast {...{ message: 'Wrap failed' }} />, { autoClose: 7000 })
       }
@@ -325,9 +381,9 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     let amountToSend: bigint
 
     if (selectedTokenUnwrap === 'wbtc') {
-      amountToSend = parseUnits(amount, 18)
+      amountToSend = safeParseUnits(amount, 18)
     } else {
-      amountToSend = parseUnits(amount, 18)
+      amountToSend = safeParseUnits(amount, 18)
     }
 
     const args = {
@@ -365,116 +421,201 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
   }
 
   const onSubmit = async () => {
-    approval ? handleDeposit() : handleApprove()
+    if (isWrapMode) {
+      approval ? handleDeposit() : handleApprove()
+    } else {
+      handleUnwrap()
+    }
+  }
+
+  const handleSwitch = () => {
+    setIsWrapMode(!isWrapMode)
+    // Clear forms when switching
+    setValue('amount', '')
+    unwrapSetValue('amount', '')
+    setIsInputFocused(false)
+  }
+
+  // Calculate expected output (1:1 ratio)
+  const expectedOutput = isWrapMode ? watch('amount') : unwrapWatch('amount')
+
+  // Format USD value
+  const formatUSDValue = (amount: string | undefined) => {
+    if (!amount || !btcPrice) return '$0.00'
+    const value = parseFloat(amount) * btcPrice
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
+  // Handle percentage buttons
+  const handlePercentage = (percentage: number) => {
+    const balance = isWrapMode ? balanceData?.formatted : lzrBTCBalanceData?.formatted
+    if (balance) {
+      // For MAX (100%), reduce slightly to avoid validation issues
+      const multiplier = percentage === 100 ? 0.999999 : percentage / 100
+      const value = (parseFloat(balance) * multiplier).toString()
+      if (isWrapMode) {
+        setValue('amount', value)
+        trigger('amount')
+      } else {
+        unwrapSetValue('amount', value)
+        unwrapTrigger('amount')
+      }
+    }
   }
 
   return (
-    <div className="flex flex-col gap-7">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
-        <div className="flex flex-col relative gap-[0.75rem]">
-          <label className="text-lightgreen-100">## WRAP {selectedToken.toUpperCase()} TO lzrBTC</label>
-          <div className="font-ocrx w-full pt-3 rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
-            <div className="flex-1 flex items-center justify-center h-full">
-              <span className="text-lightgreen-100">WBTC</span>
-            </div>
-            <div className="flex items-center justify-center h-full">
-              <span className="text-lightgreen-100 mx-2">→</span>
-            </div>
-
-            <div className="flex-1 flex items-center justify-center h-full">
-              <span className="text-lightgreen-100">lzrBTC</span>
-            </div>
-          </div>
+    <form onSubmit={isWrapMode ? handleSubmit(onSubmit) : handleSubmitUnwrap(onSubmit)} className="flex flex-col">
+      {/* Title & Description - Match exact styling from HOW IT WORKS section */}
+      <div className="flex flex-col gap-4 mb-6 text-2xl font-ocrx">
+        <div className="text-2xl">
+          <span>[ </span>
+          <span className="text-lightgreen-100">{isWrapMode ? 'Step 1' : 'Step 6'}</span>
+          <span> | </span>
+          <span className="text-fuchsia">{isWrapMode ? 'Convert WBTC to lzrBTC' : 'Unwrap lzrBTC to WBTC'}</span>
+          <span> ] </span>
         </div>
+        <div className="tracking-[-0.06em] leading-[1.313rem]">
+          {isWrapMode
+            ? 'Wrap your WBTC to lzrBTC on Arbitrum to be able to start staking and earning.'
+            : 'Convert your lzrBTC back to WBTC. This includes your lzrBTC staking rewards.'}
+        </div>
+      </div>
 
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <Controller
-            name="amount"
-            control={control}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-              max: {
-                value: balanceData?.formatted || '0',
-                message: 'Insufficient balance',
-              },
-            }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={errors.amount ? errors.amount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
-            )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance:{' '}
-              {balanceLoading ? 'Loading...' : `${balanceData?.formatted || '0'} ${selectedToken.toUpperCase()}`}
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                setValue('amount', balanceData?.formatted || '0')
-                trigger('amount')
-              }}
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
+      {/* Main Swap Container */}
+      <div className="relative w-full">
+        {/* Show WBTC info card when user has 0 WBTC balance in wrap mode */}
+        {isWrapMode && balanceData && parseFloat(balanceData.formatted) === 0 && <WBTCInfoCard />}
+
+        {/* From Card */}
+        <TokenCard
+          type="from"
+          tokenInfo={{
+            symbol: isWrapMode ? 'WBTC' : 'lzrBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: 'Arbitrum One',
+          }}
+          balance={isWrapMode ? balanceData?.formatted : lzrBTCBalanceData?.formatted}
+          isBalanceLoading={isWrapMode ? balanceLoading : lzrBTCBalanceLoading}
+          isInputFocused={isInputFocused}
+          onInputFocus={() => setIsInputFocused(true)}
+          onInputBlur={() => setIsInputFocused(false)}
+          onPercentageClick={handlePercentage}
+          control={isWrapMode ? control : unwrapControl}
+          amount={isWrapMode ? watch('amount') : unwrapWatch('amount')}
+          rules={{
+            required: 'Amount is required',
+            min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+            max: {
+              value: parseFloat(isWrapMode ? balanceData?.formatted || '0' : lzrBTCBalanceData?.formatted || '0'),
+              message: 'Insufficient balance',
+            },
+          }}
+          usdValue={formatUSDValue(isWrapMode ? watch('amount') : unwrapWatch('amount'))}
+        />
+
+        {/* Switch Button */}
+        <div className="flex justify-center -my-4 relative z-10">
+          <button
+            type="button"
+            onClick={handleSwitch}
+            className="bg-darkslategray-200 border-4 border-[#0a0a0a] rounded-[.115rem] p-0.5 hover:bg-darkslategray-100 transition-colors group shadow-lg"
+          >
+            <svg
+              className="w-5 h-5 text-lightgreen-100 group-hover:rotate-180 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
-              </span>
-            </button>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+              />
+            </svg>
+          </button>
         </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          {chainId === arbitrum.id ? (
-            <>
-              {/* Only show reset if allowance is wrong and NOT due to decimals conversion */}
-              {approvalData &&
-                selectedToken === 'wbtc' &&
-                !decimalsConversion && // Only show reset if conversion is NOT enabled
-                BigInt(approvalData) > BigInt(balanceData?.value || 0) && (
-                  <Button
-                    type="button"
-                    onClick={async (e) => {
-                      e.preventDefault()
-                      console.log('Resetting WBTC allowance to 0...')
-                      try {
-                        const resetTx = await writeContract(config, {
-                          abi: erc20Abi,
-                          address: ERC20_CONTRACT_ADDRESS[selectedToken] as `0x${string}`,
-                          functionName: 'approve' as const,
-                          args: [WRAP_CONTRACT as `0x${string}`, BigInt(0)] as const,
-                        })
-                        await waitForTransactionReceipt(config, { hash: resetTx })
-                        toast(<TXToast {...{ message: 'Allowance reset to 0. Now approve the correct amount.' }} />, {
-                          autoClose: 7000,
-                        })
-                        setRefresh((prev) => !prev)
-                      } catch (error) {
-                        console.error('Reset failed:', error)
-                      }
-                    }}
-                    className="bg-red-600"
-                  >
-                    RESET ALLOWANCE (Required)
-                  </Button>
-                )}
-              <Button
-                type="submit"
-                disabled={
-                  !isValid ||
-                  !watch('amount') ||
-                  watch('amount') === '' ||
-                  isLoadingApproval ||
-                  isApproving ||
-                  isWrapping
-                }
-              >
-                {approval ? (
+
+        {/* To Card */}
+        <TokenCard
+          type="to"
+          tokenInfo={{
+            symbol: isWrapMode ? 'lzrBTC' : 'WBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: 'Arbitrum One',
+          }}
+          balance={isWrapMode ? lzrBTCBalanceData?.formatted : balanceData?.formatted}
+          isBalanceLoading={isWrapMode ? lzrBTCBalanceLoading : balanceLoading}
+          amount={expectedOutput}
+          usdValue={formatUSDValue(expectedOutput)}
+          showPercentageButtons={false}
+        />
+      </div>
+
+      {/* Error message after all cards */}
+      {(isWrapMode ? errors.amount : unwrapErrors.amount) && (
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">
+          {isWrapMode ? errors.amount?.message : unwrapErrors.amount?.message}
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="w-full mt-3">
+        {chainId === arbitrum.id ? (
+          <>
+            {/* Reset allowance button (only shown when needed) */}
+            {approvalData &&
+              selectedToken === 'wbtc' &&
+              !decimalsConversion &&
+              BigInt(approvalData) > BigInt(balanceData?.value || 0) &&
+              isWrapMode && (
+                <Button
+                  type="button"
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    console.log('Resetting WBTC allowance to 0...')
+                    try {
+                      const resetTx = await writeContract(config, {
+                        abi: erc20Abi,
+                        address: ERC20_CONTRACT_ADDRESS[selectedToken] as `0x${string}`,
+                        functionName: 'approve' as const,
+                        args: [WRAP_CONTRACT as `0x${string}`, BigInt(0)] as const,
+                      })
+                      await waitForTransactionReceipt(config, { hash: resetTx })
+                      toast(<TXToast {...{ message: 'Allowance reset to 0. Now approve the correct amount.' }} />, {
+                        autoClose: 7000,
+                      })
+                      setRefresh((prev) => !prev)
+                    } catch (error) {
+                      console.error('Reset failed:', error)
+                    }
+                  }}
+                  className="bg-red-600 mb-3"
+                >
+                  RESET ALLOWANCE (Required)
+                </Button>
+              )}
+
+            <Button
+              type="submit"
+              disabled={
+                isWrapMode
+                  ? !isValid ||
+                    !watch('amount') ||
+                    watch('amount') === '' ||
+                    isLoadingApproval ||
+                    isApproving ||
+                    isWrapping
+                  : !isUnwrapValid ||
+                    !unwrapWatch('amount') ||
+                    unwrapWatch('amount') === '' ||
+                    !lzrBTCBalanceData?.value ||
+                    lzrBTCBalanceData.value === 0n ||
+                    isUnwrapping
+              }
+            >
+              {isWrapMode ? (
+                approval ? (
                   isWrapping ? (
                     <Loading text="WRAPPING" />
                   ) : (
@@ -484,141 +625,116 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
                   <Loading text="APPROVING" />
                 ) : (
                   'APPROVE'
-                )}
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(false)
-              }}
-            >
-              SWITCH TO ARBITRUM
+                )
+              ) : isUnwrapping ? (
+                <Loading text="UNWRAPPING" />
+              ) : (
+                'UNWRAP'
+              )}
             </Button>
-          )}
-        </div>
-      </form>
-
-      <div className="h-px w-full bg-[#6c6c6c]"></div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleUnwrap()
-        }}
-        className="flex flex-col gap-7"
-      >
-        <div className="flex flex-col relative gap-[0.75rem]">
-          <label className="text-lightgreen-100">## UNWRAP lzrBTC TO {selectedTokenUnwrap.toUpperCase()}</label>
-          <div className="font-ocrx w-full pt-3 rounded-[.115rem] h-[2.875rem] text-lightgreen-100 text-[1.25rem] whitespace-nowrap bg-darkslategray-200 flex border border-solid border-lightgreen-100 ">
-            <div className="flex-1 flex items-center justify-center h-full">
-              <span className="text-lightgreen-100">lzrBTC</span>
-            </div>
-            <div className="flex items-center justify-center h-full">
-              <span className="text-lightgreen-100 mx-2">→</span>
-            </div>
-
-            <div className="flex-1 flex items-center justify-center h-full">
-              <span className="text-lightgreen-100">WBTC</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <Controller
-            name="amount"
-            control={unwrapControl}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-              max: {
-                value: parseFloat(lzrBTCBalanceData?.formatted || '0'),
-                message: 'Insufficient balance',
-              },
+          </>
+        ) : (
+          <Button
+            type="submit"
+            onClick={(e) => {
+              e.preventDefault()
+              handleChainSwitch(false)
             }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={unwrapErrors.amount ? unwrapErrors.amount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
-            )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance: {lzrBTCBalanceLoading ? 'Loading...' : `${lzrBTCBalanceData?.formatted || '0'} lzrBTC`}
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                unwrapSetValue('amount', lzrBTCBalanceData?.formatted || '0')
-                unwrapTrigger('amount')
-              }}
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
-            >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
+          >
+            SWITCH TO ARBITRUM
+          </Button>
+        )}
+      </div>
+
+      {/* Expandable Details Section - Keep gradient */}
+      <div className="relative group w-full mt-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-[.115rem]" />
+        <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-transparent backdrop-blur-sm border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all duration-300 rounded-[.115rem]">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowDetails(!showDetails)
+            }}
+            className="w-full px-4 py-3 flex justify-between items-center text-white/70 hover:text-white transition-colors"
+          >
+            <div className="flex items-center gap-2 text-left">
+              <span className="text-sm font-maison-neue text-left">
+                1 {isWrapMode ? 'WBTC' : 'lzrBTC'} = 1 {isWrapMode ? 'lzrBTC' : 'WBTC'}
+                {btcPrice > 0 &&
+                  ` ($${btcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
               </span>
-            </button>
+            </div>
+            <svg
+              className={clsx('w-4 h-4 transition-transform duration-300', showDetails && 'rotate-180')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Collapsible Details */}
+          <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
+            <div className="px-4 pb-3 space-y-1.5 border-t border-lightgreen-100/20">
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-white/50 text-xs font-maison-neue">Expected Output</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {expectedOutput || '0'} {isWrapMode ? 'lzrBTC' : 'WBTC'}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Price Impact</span>
+                <span className="text-lightgreen-100 text-xs font-maison-neue">0.00%</span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Network Fee</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {wrapDetails.isLoading ? '...' : wrapDetails.networkFee}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Route</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-white text-xs font-ocrx">{isWrapMode ? 'WBTC' : 'lzrBTC'}</span>
+                  <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="text-white text-xs font-ocrx">{isWrapMode ? 'lzrBTC' : 'WBTC'}</span>
+                </div>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Minimum Received</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {expectedOutput || '0'} {isWrapMode ? 'lzrBTC' : 'WBTC'}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Exchange Rate</span>
+                <span className="text-white text-xs font-maison-neue">1:1</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          {/* <div className="flex flex-row items-center justify-between gap-[1.25rem]">
-          <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">GAS FEE</div>
-          <div className="w-[2.75rem] relative tracking-[-0.06em] leading-[1.25rem] text-right inline-block">00.00</div>
-        </div> */}
-          {chainId === arbitrum.id ? (
-            <Button
-              type="submit"
-              disabled={
-                !isUnwrapValid ||
-                !unwrapWatch('amount') ||
-                unwrapWatch('amount') === '' ||
-                !lzrBTCBalanceData?.value ||
-                lzrBTCBalanceData.value === 0n ||
-                isUnwrapping
-              }
-            >
-              {isUnwrapping ? <Loading text="UNWRAPPING" /> : 'UNWRAP'}
-            </Button>
-          ) : (
-            // <>
-            //   {
-            //     (selectedToken === 'abtc' && BigNumber.from(abtcUnwrapAllowance).gte(unwrapGetValues("amount")))
-            //       || (selectedToken === 'tbtc' && BigNumber.from(tbtcUnwrapAllowance).gte(unwrapGetValues("amount")))
-            //       || (selectedToken === 'wbtc' && BigNumber.from(wbtcUnwrapAllowance).gte(unwrapGetValues("amount")))
-            //       ? (
-            //         <Button type="submit" disabled={!isValid}>
-            //           UNWRAP
-            //         </Button>
-            //       ) : (
-            //         <Button type="submit">
-            //           APPROVE
-            //         </Button>
-            //       )
-            //   }
-            // </>
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(false)
-              }}
-            >
-              SWITCH TO ARBITRUM
-            </Button>
-          )}
-          {/* <div className="h-[0.688rem] relative tracking-[-0.06em] leading-[1.25rem] text-gray-200 inline-block">
-          Transaction number
-        </div> */}
-        </div>
-      </form>
-    </div>
+      </div>
+    </form>
   )
 }
 

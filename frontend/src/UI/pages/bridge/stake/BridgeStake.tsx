@@ -1,4 +1,4 @@
-import { Button, InputField, TXToast } from '@components/index'
+import { Button, TXToast } from '@components/index'
 import Loading from '@components/loading/Loading'
 import React, { FC, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
@@ -12,6 +12,7 @@ import { handleChainSwitch } from 'src/web3/functions'
 import { config } from 'src/web3/config'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
 import { parseUnits } from 'viem'
+import clsx from 'clsx'
 
 interface IBridgeStake {}
 
@@ -20,6 +21,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
   const [isStaking, setIsStaking] = useState(false)
   const [isUnstaking, setIsUnstaking] = useState(false)
   const [refreshData, setRefreshData] = useState(0)
+  const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake')
+  const [showDetails, setShowDetails] = useState(true)
+  const [isInputFocused, setIsInputFocused] = useState(false)
 
   // Get user's wallet balance (native lzrBTC on Bitlazer)
   const { data: walletBalance, refetch: refetchWalletBalance } = useBalance({
@@ -279,90 +283,249 @@ const BridgeStake: FC<IBridgeStake> = () => {
     }
   }
 
-  return (
-    <div className="flex flex-col gap-7">
-      {/* Staking Stats Section */}
-      <div className="flex flex-col gap-[0.687rem]">
-        <label className="text-lightgreen-100">## STAKING OVERVIEW</label>
-        <div className="p-3 bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem]">
-          <div className="flex flex-col gap-2.5">
-            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
-              <span className="tracking-[-0.04em]">YOUR STAKE</span>
-              <span className="font-mono text-lightgreen-100">{formatStakedAmount(stakedBalance)} lzrBTC</span>
+  const handlePercentage = (percentage: number) => {
+    const balance =
+      activeTab === 'stake'
+        ? walletBalance
+          ? formatEther(walletBalance.value.toString())
+          : '0'
+        : formatStakedAmount(stakedBalance)
+
+    const amount =
+      percentage === 100
+        ? (parseFloat(balance) * 0.999999).toString()
+        : (parseFloat(balance) * (percentage / 100)).toString()
+
+    if (activeTab === 'stake') {
+      stakeSetValue('stakeAmount', amount)
+      stakeTrigger('stakeAmount')
+    } else {
+      unstakeSetValue('unstakeAmount', amount)
+      unstakeTrigger('unstakeAmount')
+    }
+  }
+
+  // Render Stake Tab
+  const renderStakeTab = () => (
+    <div className="space-y-6 w-full">
+      {/* Mini Tabs - Full width, stuck to main card */}
+      <div className="w-full">
+        <div className="grid grid-cols-2 relative z-10">
+          <button
+            onClick={() => setActiveTab('stake')}
+            className={clsx(
+              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
+              activeTab === 'stake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
+            )}
+          >
+            <span
+              className={clsx(
+                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
+                activeTab === 'stake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+              )}
+            >
+              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
+                1
+              </div>
+              STAKE
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('unstake')}
+            className={clsx(
+              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
+              activeTab === 'unstake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
+            )}
+          >
+            <span
+              className={clsx(
+                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
+                activeTab === 'unstake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+              )}
+            >
+              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
+                2
+              </div>
+              UNSTAKE
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Big Card */}
+      <div className="w-full -mt-6">
+        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-white/70 text-sm font-maison-neue">Available Amount</span>
+            {/* Percentage buttons and Balance */}
+            <div className="relative h-6 flex items-center justify-end">
+              {isInputFocused ? (
+                <div className="flex items-center gap-1 animate-fadeIn">
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(25)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    25%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(50)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(100)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    MAX
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handlePercentage(100)}
+                  className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
+                >
+                  {/* Wallet icon */}
+                  <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                  </svg>
+                  <span className="text-white/50 text-xs font-maison-neue">
+                    {walletBalance ? formatEther(walletBalance.value.toString()) : '0'}
+                  </span>
+                </button>
+              )}
             </div>
-            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px] gap-2">
-              <span className="tracking-[-0.04em] whitespace-nowrap">PENDING REWARDS</span>
-              <span className="font-mono text-lightgreen-100 text-right break-all">
-                {formatRewardAmount(pendingRewards)} lzrBTC
-              </span>
+          </div>
+
+          {/* Token and Amount container */}
+          <div
+            className={clsx(
+              'bg-black/40 rounded-lg p-3 border transition-all duration-150',
+              isInputFocused
+                ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
+                : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
+            )}
+          >
+            <div className="flex items-center justify-between">
+              {/* Token Display */}
+              <div className="flex items-center gap-2">
+                <img
+                  src="/icons/crypto/bitcoin.svg"
+                  alt="lzrBTC"
+                  className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
+                />
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-base transition-colors duration-200">lzrBTC</span>
+                  <span className="text-white/50 text-xs">Bitlazer L3</span>
+                </div>
+              </div>
+
+              {/* Amount Input */}
+              <div className="flex flex-col items-end flex-1 min-w-0">
+                <Controller
+                  key="stake-amount"
+                  name="stakeAmount"
+                  control={stakeControl}
+                  rules={{
+                    required: 'Amount is required',
+                    min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+                    max: {
+                      value: parseFloat(walletBalance ? formatEther(walletBalance.value.toString()) : '0'),
+                      message: 'Insufficient balance',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="number"
+                      placeholder="0"
+                      className={clsx(
+                        'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
+                        'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
+                      )}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    />
+                  )}
+                />
+                <div className="text-white/40 text-xs mt-1 truncate w-full text-right">APR: {formatAPR()}</div>
+              </div>
             </div>
-            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
-              <span className="tracking-[-0.04em]">APR</span>
-              <span className="font-mono text-lightgreen-100">{formatAPR()}</span>
-            </div>
-            <div className="flex flex-row items-center justify-between text-gray-200 text-[14px]">
-              <span className="tracking-[-0.04em]">TOTAL POOL SIZE</span>
-              <span className="font-mono text-lightgreen-100">{formatStakedAmount(totalStaked)} lzrBTC</span>
+          </div>
+
+          {/* Staking Overview Dropdown - Inside the main card */}
+          <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
+            <button
+              type="button"
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full flex items-center justify-between transition-all duration-200"
+            >
+              <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
+              <svg
+                className={clsx(
+                  'w-4 h-4 text-white/50 transition-transform duration-200',
+                  showDetails ? 'rotate-180' : '',
+                )}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Collapsible Details with smooth transition like Bridge Details */}
+            <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
+              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {formatStakedAmount(stakedBalance)} lzrBTC
+                  </span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {formatRewardAmount(pendingRewards)} lzrBTC
+                  </span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">APR</span>
+                  <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
+                  <span className="text-white text-xs font-maison-neue">{formatStakedAmount(totalStaked)} lzrBTC</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="h-px w-full bg-gray-600" />
+      {/* Error message */}
+      {stakeErrors.stakeAmount && (
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">{stakeErrors.stakeAmount?.message}</div>
+      )}
 
-      {/* Stake Form */}
-      <form onSubmit={handleStakeSubmit(onStakeSubmit)} className="flex flex-col gap-7">
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <label className="text-lightgreen-100">## STAKE lzrBTC</label>
-          <Controller
-            name="stakeAmount"
-            control={stakeControl}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-              max: {
-                value: walletBalance?.formatted || '0',
-                message: 'Insufficient balance',
-              },
-            }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={stakeErrors.stakeAmount ? stakeErrors.stakeAmount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
-            )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance: {walletBalance ? formatEther(walletBalance.value.toString()) : '0'} lzrBTC
-            </div>
-            <button
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
-              onClick={(e) => {
-                e.preventDefault()
-                if (walletBalance) {
-                  stakeSetValue('stakeAmount', formatEther(walletBalance.value.toString()))
-                  stakeTrigger('stakeAmount')
-                }
-              }}
-            >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
-              </span>
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          <div className="flex flex-row items-center justify-between gap-[1.25rem]">
-            <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem]">
-              APR {formatAPR()}
-            </div>
-          </div>
-          {chainId === mainnet.id ? (
+      {/* Action Button */}
+      <div className="w-full">
+        {chainId === mainnet.id ? (
+          <form onSubmit={handleStakeSubmit(onStakeSubmit)}>
             <Button
               type="submit"
               disabled={!isStakeValid || !stakeWatch('stakeAmount') || isStaking}
@@ -370,75 +533,243 @@ const BridgeStake: FC<IBridgeStake> = () => {
             >
               {isStaking ? <Loading text="STAKING" /> : 'STAKE'}
             </Button>
-          ) : (
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(true)
-              }}
-            >
-              SWITCH TO BITLAZER
-            </Button>
-          )}
-        </div>
-      </form>
-
-      {/* Divider */}
-      {(<div className="h-px w-full bg-gray-600" />) as any}
-
-      <form onSubmit={handleUnstakeSubmit(onUnstakeSubmit)} className="flex flex-col gap-7">
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <label className="text-lightgreen-100">## UNSTAKE lzrBTC</label>
-          <Controller
-            name="unstakeAmount"
-            control={unstakeControl}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
-              max: {
-                value: formatStakedAmount(stakedBalance),
-                message: 'Insufficient staked balance',
-              },
+          </form>
+        ) : (
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              handleChainSwitch(true)
             }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={unstakeErrors.unstakeAmount ? unstakeErrors.unstakeAmount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
+          >
+            SWITCH TO BITLAZER
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
+  // Render Unstake Tab
+  const renderUnstakeTab = () => (
+    <div className="space-y-6 w-full">
+      {/* Mini Tabs - Full width, stuck to main card */}
+      <div className="w-full">
+        <div className="grid grid-cols-2 relative z-10">
+          <button
+            onClick={() => setActiveTab('stake')}
+            className={clsx(
+              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
+              activeTab === 'stake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
             )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Staked: {formatStakedAmount(stakedBalance)} lzrBTC
-            </div>
-            <button
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
-              onClick={(e) => {
-                e.preventDefault()
-                if (stakedBalance) {
-                  unstakeSetValue('unstakeAmount', formatStakedAmount(stakedBalance))
-                  unstakeTrigger('unstakeAmount')
-                }
-              }}
+          >
+            <span
+              className={clsx(
+                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
+                activeTab === 'stake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+              )}
             >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
-              </span>
+              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
+                1
+              </div>
+              STAKE
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('unstake')}
+            className={clsx(
+              'font-ocrx w-full cursor-pointer rounded-[.115rem] h-10 text-lightgreen-100 text-[1.25rem] whitespace-nowrap flex py-[0.187rem] px-[0.125rem] transition-all duration-300 group',
+              activeTab === 'unstake' ? 'bg-forestgreen pointer-events-none touch-none' : 'bg-darkslategray-200',
+            )}
+          >
+            <span
+              className={clsx(
+                'px-[0.875rem] h-full leading-[50%] pt-3 shadow-[-1.8px_-0.9px_3.69px_rgba(215,_215,_215,_0.18)_inset,_1.8px_1.8px_1.84px_rgba(0,_0,_0,_0.91)_inset] rounded-[.115rem] flex items-center justify-center text-center transition-all duration-300 w-full gap-2',
+                activeTab === 'unstake' ? 'bg-darkolivegreen-200' : 'bg-black group-hover:bg-dimgray-200',
+              )}
+            >
+              <div className="w-4 h-4 bg-lightgreen-100 rounded-full flex items-center justify-center text-sm font-bold text-black">
+                2
+              </div>
+              UNSTAKE
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Big Card */}
+      <div className="w-full -mt-6">
+        <div className="relative bg-darkslategray-200 border border-lightgreen-100 rounded-b-[.115rem] rounded-t-none border-t-0 p-4">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-white/70 text-sm font-maison-neue">Staked Amount</span>
+            {/* Percentage buttons and Balance */}
+            <div className="relative h-6 flex items-center justify-end">
+              {isInputFocused ? (
+                <div className="flex items-center gap-1 animate-fadeIn">
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(25)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    25%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(50)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePercentage(100)}
+                    className="px-2 py-1 text-xs font-bold text-lightgreen-100 hover:bg-lightgreen-100/10 rounded transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    MAX
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handlePercentage(100)}
+                  className="flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer animate-fadeIn"
+                >
+                  {/* Wallet icon */}
+                  <svg className="w-4 h-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                  </svg>
+                  <span className="text-white/50 text-xs font-maison-neue">{formatStakedAmount(stakedBalance)}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Token and Amount container */}
+          <div
+            className={clsx(
+              'bg-black/40 rounded-lg p-3 border transition-all duration-150',
+              isInputFocused
+                ? 'border-lightgreen-100 shadow-[0_0_12px_rgba(102,213,96,0.25)] scale-[1.01]'
+                : 'border-lightgreen-100/20 hover:border-lightgreen-100/40',
+            )}
+          >
+            <div className="flex items-center justify-between">
+              {/* Token Display */}
+              <div className="flex items-center gap-2">
+                <img
+                  src="/icons/crypto/bitcoin.svg"
+                  alt="Staked lzrBTC"
+                  className="w-8 h-8 flex-shrink-0 transition-transform duration-300 hover:rotate-12"
+                />
+                <div className="flex flex-col">
+                  <span className="text-white font-bold text-base transition-colors duration-200">Staked lzrBTC</span>
+                  <span className="text-white/50 text-xs">Bitlazer L3</span>
+                </div>
+              </div>
+
+              {/* Amount Input */}
+              <div className="flex flex-col items-end flex-1 min-w-0">
+                <Controller
+                  key="unstake-amount"
+                  name="unstakeAmount"
+                  control={unstakeControl}
+                  rules={{
+                    required: 'Amount is required',
+                    min: { value: 0.00001, message: 'Amount must be greater than 0.00001' },
+                    max: {
+                      value: parseFloat(formatStakedAmount(stakedBalance)),
+                      message: 'Insufficient staked balance',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="number"
+                      placeholder="0"
+                      className={clsx(
+                        'bg-transparent text-white text-xl font-bold placeholder:text-white/30',
+                        'focus:outline-none text-right w-full overflow-hidden text-ellipsis',
+                      )}
+                      onFocus={() => setIsInputFocused(true)}
+                      onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    />
+                  )}
+                />
+                <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
+                  Rewards: {formatRewardAmount(pendingRewards)} lzrBTC
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Staking Overview Dropdown - Inside the main card */}
+          <div className="mt-4 pt-3 border-t border-lightgreen-100/20">
+            <button
+              type="button"
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full flex items-center justify-between transition-all duration-200"
+            >
+              <span className="text-white/70 text-sm font-maison-neue">Staking Overview</span>
+              <svg
+                className={clsx(
+                  'w-4 h-4 text-white/50 transition-transform duration-200',
+                  showDetails ? 'rotate-180' : '',
+                )}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
+
+            {/* Collapsible Details with smooth transition like Bridge Details */}
+            <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
+              <div className="pt-2 space-y-1.5 border-t border-lightgreen-100/20">
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-white/50 text-xs font-maison-neue">Your Stake</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {formatStakedAmount(stakedBalance)} lzrBTC
+                  </span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {formatRewardAmount(pendingRewards)} lzrBTC
+                  </span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">APR</span>
+                  <span className="text-white text-xs font-maison-neue">{formatAPR()}</span>
+                </div>
+
+                <div className="h-px bg-lightgreen-100/10"></div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-xs font-maison-neue">Total Pool Size</span>
+                  <span className="text-white text-xs font-maison-neue">{formatStakedAmount(totalStaked)} lzrBTC</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          <div className="flex flex-row items-center justify-between gap-[1.25rem]">
-            <div className="relative tracking-[-0.06em] leading-[1.25rem] inline-block min-w-[4.188rem] text-gray-200">
-              * Unstaking will automatically claim your rewards
-            </div>
-          </div>
-          {chainId === mainnet.id ? (
+      </div>
+
+      {/* Error message */}
+      {unstakeErrors.unstakeAmount && (
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">{unstakeErrors.unstakeAmount?.message}</div>
+      )}
+
+      {/* Action Button */}
+      <div className="w-full">
+        {chainId === mainnet.id ? (
+          <form onSubmit={handleUnstakeSubmit(onUnstakeSubmit)}>
             <Button
               type="submit"
               disabled={!isUnstakeValid || !unstakeWatch('unstakeAmount') || isUnstaking}
@@ -446,19 +777,46 @@ const BridgeStake: FC<IBridgeStake> = () => {
             >
               {isUnstaking ? <Loading text="UNSTAKING" /> : 'UNSTAKE'}
             </Button>
-          ) : (
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(true)
-              }}
-            >
-              SWITCH TO BITLAZER
-            </Button>
-          )}
+          </form>
+        ) : (
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              handleChainSwitch(true)
+            }}
+          >
+            SWITCH TO BITLAZER
+          </Button>
+        )}
+
+        <p className="text-gray-200 text-sm text-left mt-2">* Unstaking will automatically claim your rewards</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      {/* Title & Description - Always visible */}
+      <div className="flex flex-col gap-4 mb-6 text-2xl font-ocrx">
+        <div className="text-2xl">
+          <span>[ </span>
+          <span className="text-lightgreen-100">{activeTab === 'stake' ? 'Step 3' : 'Step 4'}</span>
+          <span> | </span>
+          <span className="text-fuchsia">
+            {activeTab === 'stake' ? 'Stake and Earn Yield' : 'Unstake and Collect Rewards'}
+          </span>
+          <span> ] </span>
         </div>
-      </form>
+        <div className="tracking-[-0.06em] leading-[1.313rem]">
+          {activeTab === 'stake'
+            ? 'Stake your lzrBTC on Bitlazer to earn dual yield: native Bitcoin gas rewards + LZR tokens.'
+            : 'Unstake anytime to claim your lzrBTC + rewards. Bridge back and unwrap to WBTC.'}
+        </div>
+      </div>
+
+      {/* Tab Content with integrated mini tabs */}
+      {activeTab === 'stake' ? renderStakeTab() : renderUnstakeTab()}
     </div>
   )
 }

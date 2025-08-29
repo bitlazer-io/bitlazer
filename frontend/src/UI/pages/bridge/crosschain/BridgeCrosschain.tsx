@@ -1,8 +1,9 @@
-import { Button, InputField, TXToast } from '@components/index'
+import { Button, TXToast, TokenCard, TransactionStatusCard } from '@components/index'
+import { Skeleton } from '@components/skeleton/Skeleton'
 import Loading from '@components/loading/Loading'
 import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
@@ -15,10 +16,41 @@ import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import Cookies from 'universal-cookie'
 import { mainnet } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
+import clsx from 'clsx'
+import { useNavigate } from 'react-router-dom'
+import { fetchWithCache, debouncedFetch, CACHE_KEYS, CACHE_TTL } from 'src/utils/cache'
+import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
+import { useLastTransaction } from 'src/hooks/useLastTransaction'
 
 interface IBridgeCrosschain {}
 
 const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
+  const navigate = useNavigate()
+  const [isBridgeMode, setIsBridgeMode] = useState(true)
+  const [isInputFocused, setIsInputFocused] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [btcPrice, setBtcPrice] = useState<number>(0)
+
+  // Dynamic bridge details
+  const bridgeDetails = useBridgeDetails(isBridgeMode)
+
+  // Transaction tracking
+  const {
+    getLatestTransactionByType,
+    getLatestBridgeTransaction,
+    addPendingTransaction,
+    updateTransactionStage,
+    removePendingTransaction,
+    checkTransactionStatus,
+    determineTransactionStage,
+    isLoading: isLoadingTransactions,
+  } = useLastTransaction(isBridgeMode ? 'arbitrum-to-bitlazer' : 'bitlazer-to-arbitrum')
+
+  // Get latest bridge transaction for display (only bridge types)
+  const latestBridgeTransaction = getLatestBridgeTransaction()
+  // Check if it's a pending transaction (not historical)
+  const isPendingTransaction = latestBridgeTransaction && latestBridgeTransaction.status !== 'completed'
+
   const {
     handleSubmit,
     control,
@@ -49,19 +81,97 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     mode: 'onChange',
   })
 
-  const { address, chainId, connector } = useAccount()
-  const [approval, setApproval] = useState<boolean>(false)
-  const [refreshApproval, setRefreshApproval] = useState(false)
+  // Fetch BTC price
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const btcData = await fetchWithCache(
+          CACHE_KEYS.BTC_PRICE,
+          async () => {
+            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
+              const response = await fetch(
+                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
+              )
+              if (!response.ok) throw new Error('Failed to fetch BTC price')
+              return response.json()
+            })
+          },
+          { ttl: CACHE_TTL.PRICE },
+        )
+
+        setBtcPrice(btcData['wrapped-bitcoin']?.usd || 0)
+      } catch (error) {
+        console.error('Error fetching prices:', error)
+      }
+    }
+
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Monitor pending bridge transaction status (only for actual pending transactions)
+  useEffect(() => {
+    if (!isPendingTransaction) {
+      return
+    }
+
+    const monitorTransaction = async () => {
+      const receipt = await checkTransactionStatus(latestBridgeTransaction.txHash, latestBridgeTransaction.fromChainId)
+
+      if (receipt) {
+        const newStage = determineTransactionStage(latestBridgeTransaction, receipt)
+
+        // Update transaction stage if it has changed OR if we have new enhanced details
+        const hasEnhancedDetails = receipt && (receipt.blockNumber || receipt.gasUsed)
+        const needsUpdate =
+          newStage !== latestBridgeTransaction.stage || (hasEnhancedDetails && !latestBridgeTransaction.blockNumber)
+
+        if (needsUpdate) {
+          updateTransactionStage(latestBridgeTransaction.txHash, newStage, receipt)
+        }
+      }
+    }
+
+    // Check immediately
+    monitorTransaction()
+
+    // Set up polling every 30 seconds for active transactions
+    const statusInterval = setInterval(monitorTransaction, 30000)
+
+    return () => clearInterval(statusInterval)
+  }, [isPendingTransaction, latestBridgeTransaction?.txHash])
+
+  // Add enhanced details to historical transactions (one-time check)
+  useEffect(() => {
+    if (!latestBridgeTransaction || isPendingTransaction || latestBridgeTransaction.blockNumber) {
+      return // Skip if no transaction, it's pending, or already has enhanced details
+    }
+
+    const addEnhancedDetails = async () => {
+      const receipt = await checkTransactionStatus(latestBridgeTransaction.txHash, latestBridgeTransaction.fromChainId)
+
+      if (receipt && (receipt.blockNumber || receipt.gasUsed)) {
+        updateTransactionStage(latestBridgeTransaction.txHash, latestBridgeTransaction.stage, receipt)
+      }
+    }
+
+    addEnhancedDetails()
+  }, [latestBridgeTransaction?.txHash, latestBridgeTransaction?.blockNumber])
+
+  const { address, chainId } = useAccount()
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)
-  const [isApproving, setIsApproving] = useState<boolean>(false)
-  const [isBridging, setIsBridging] = useState<boolean>(false)
-  const [isBridgingReverse, setIsBridgingReverse] = useState<boolean>(false)
+  const [approval, setApproval] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [isBridging, setIsBridging] = useState(false)
+  const [isBridgingReverse, setIsBridgingReverse] = useState(false)
+  const [refreshApproval, setRefreshApproval] = useState(false)
   const [bridgeSuccessInfo, setBridgeSuccessInfo] = useState<{ txHash: string } | null>(null)
   const [bridgeReverseSuccessInfo, setBridgeReverseSuccessInfo] = useState<{ txHash: string } | null>(null)
 
   const { data: approvalData } = useReadContract({
-    abi: lzrBTC_abi,
     address: ERC20_CONTRACT_ADDRESS['lzrBTC'],
+    abi: lzrBTC_abi,
     functionName: 'allowance',
     args: [address, L2_GATEWAY_ROUTER],
     chainId: arbitrum.id,
@@ -69,148 +179,172 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   })
 
   useEffect(() => {
-    const fetchApprovalData = () => {
-      const amount = getValues('amount')
-
-      // If no amount entered, always show APPROVE
-      if (!amount || amount === '0' || amount === '') {
+    if (approvalData) {
+      const _allowance = BigNumber.from(approvalData)
+      const _amountRequested = watch('amount')
+      if (_amountRequested && _allowance.gte(ethers.utils.parseEther(_amountRequested))) {
+        setApproval(true)
+      } else {
         setApproval(false)
-        return
-      }
-
-      if (approvalData !== undefined) {
-        try {
-          const approvalAmount = approvalData as unknown as string
-          if (BigNumber.from(approvalAmount).gte(parseEther(amount))) {
-            setApproval(true)
-          } else {
-            setApproval(false)
-          }
-        } catch (error) {
-          // Invalid amount format - show APPROVE
-          setApproval(false)
-        }
       }
     }
-    fetchApprovalData()
-  }, [approvalData, watch('amount'), refreshApproval])
+  }, [approvalData, watch('amount')])
 
   const handleApprove = async () => {
-    setIsApproving(true)
-    const approvalArgs = {
-      abi: lzrBTC_abi,
-      address: ERC20_CONTRACT_ADDRESS['lzrBTC'],
-      functionName: 'approve',
-      args: [L2_GATEWAY_ROUTER, parseEther(getValues('amount'))],
-    }
-
-    let approvalTransactionHash
-    try {
-      approvalTransactionHash = await writeContract(config, approvalArgs)
-    } catch (error: any) {
-      // Check if user rejected the transaction
-      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
-        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
-      } else {
-        toast(<TXToast {...{ message: 'Approval failed', error }} />, { autoClose: 7000 })
-      }
-      setIsApproving(false)
+    if (!address) return
+    const amount = getValues('amount')
+    if (!amount || amount === '' || parseFloat(amount) <= 0) {
+      toast(<TXToast {...{ message: 'Invalid amount' }} />, { autoClose: 7000 })
       return
     }
-    const approvalReceipt = await waitForTransactionReceipt(config, {
-      hash: approvalTransactionHash,
-    })
-    if (approvalReceipt.status === 'success') {
-      const txHash = approvalReceipt.transactionHash
+
+    setIsApproving(true)
+    try {
+      // Fix: Truncate to 18 decimals to avoid parseEther overflow
+      const truncatedAmount = parseFloat(amount).toFixed(18)
+      const parsedAmount = parseEther(truncatedAmount)
+      const data = await writeContract(config, {
+        abi: lzrBTC_abi,
+        address: ERC20_CONTRACT_ADDRESS['lzrBTC'],
+        functionName: 'approve',
+        args: [L2_GATEWAY_ROUTER, parsedAmount],
+        chainId: arbitrum.id,
+      })
+
+      const receipt = await waitForTransactionReceipt(config, { hash: data })
+      setApproval(true)
+      const txHash = receipt.transactionHash
       toast(<TXToast {...{ message: 'Approval successful', txHash }} />, { autoClose: 7000 })
-      setTimeout(() => {
-        setRefreshApproval((prev) => !prev)
-      }, 1000)
-    } else {
-      toast(<TXToast {...{ message: 'Approval failed' }} />, { autoClose: 7000 })
+      setRefreshApproval((prev) => !prev)
+    } catch (error: any) {
+      console.error('🚨 Approval Error Details:', {
+        amount,
+        contractAddress: ERC20_CONTRACT_ADDRESS['lzrBTC'],
+        spender: L2_GATEWAY_ROUTER,
+        userAddress: address,
+        error: error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorStack: error?.stack,
+      })
+
+      if (!error.message.includes('User rejected the request.')) {
+        toast(<TXToast {...{ message: 'Failed to approve' }} />, { autoClose: 7000 })
+      }
+    } finally {
+      setIsApproving(false)
     }
-    setIsApproving(false)
   }
 
   const handleDeposit = async (toL3: boolean) => {
+    if (!address) return
+    const amount = toL3 ? getValues('amount') : getValuesReverse('amount')
+    if (!amount || amount === '' || parseFloat(amount) <= 0) {
+      toast(<TXToast {...{ message: 'Invalid amount' }} />, { autoClose: 7000 })
+      return
+    }
+
+    setIsWaitingForBridgeTx(true)
     if (toL3) {
       setIsBridging(true)
     } else {
       setIsBridgingReverse(true)
     }
-    if (!connector) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingReverse(false)
-      }
-      return
-    }
-    const provider = await connector.getProvider()
-    if (!provider) {
-      if (toL3) {
-        setIsBridging(false)
-      } else {
-        setIsBridgingReverse(false)
-      }
-      return
-    }
-    const web3Provider = new ethers.providers.Web3Provider(provider)
-    const signer = web3Provider.getSigner()
-    const L2GatewayRouterABI = toL3
-      ? ['function depositERC20(uint256 amount)']
-      : ['function withdrawEth(address destination)']
-    const l2GatewayRouterContract = new ethers.Contract(
-      toL3 ? L2_GATEWAY_ROUTER : L2_GATEWAY_ROUTER_BACK,
-      L2GatewayRouterABI,
-      signer,
-    )
-    try {
-      // Perform the outbound transfer via L2 Gateway Router
-      const amount = toL3 ? getValues('amount') : getValuesReverse('amount')
 
+    try {
+      // Fix: Truncate to 18 decimals to avoid parseEther overflow
+      const truncatedAmount = parseFloat(amount).toFixed(18)
+      const parsedAmount = parseEther(truncatedAmount)
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const signer = provider.getSigner()
+
+      // Restore original bridge contract logic
+      const L2GatewayRouterABI = toL3
+        ? ['function depositERC20(uint256 amount)']
+        : ['function withdrawEth(address destination)']
+      const l2GatewayRouterContract = new ethers.Contract(
+        toL3 ? L2_GATEWAY_ROUTER : L2_GATEWAY_ROUTER_BACK,
+        L2GatewayRouterABI,
+        signer,
+      )
+
+      // Perform the outbound transfer via L2 Gateway Router
       const tx = toL3
-        ? await l2GatewayRouterContract.depositERC20(parseEther(amount))
+        ? await l2GatewayRouterContract.depositERC20(parsedAmount)
         : await signer.sendTransaction({
             to: L2_GATEWAY_ROUTER_BACK,
             data: l2GatewayRouterContract.interface.encodeFunctionData('withdrawEth', [address]),
-            value: parseEther(amount),
+            value: parsedAmount,
           })
+
       setIsWaitingForBridgeTx(true)
       const receipt = await tx.wait()
       setIsWaitingForBridgeTx(false)
+      const txHash = receipt.transactionHash
 
       if (receipt.status === 1) {
-        const txHash = receipt.transactionHash
         toast(<TXToast {...{ message: 'Bridge successful', txHash }} />, { autoClose: 7000 })
         const cookies = new Cookies()
         cookies.set('hasBridged', 'true', { path: '/' })
-        // Clear input and refresh balances
+
+        // Add transaction to pending tracking
+        addPendingTransaction({
+          type: toL3 ? 'bridge' : 'bridge-reverse',
+          status: 'pending',
+          stage: 'submitted',
+          fromChain: toL3 ? 'Arbitrum One' : 'Bitlazer L3',
+          toChain: toL3 ? 'Bitlazer L3' : 'Arbitrum One',
+          fromToken: 'lzrBTC',
+          toToken: 'lzrBTC',
+          amount: amount,
+          estimatedTime: toL3 ? 15 : 10080, // 15 minutes or 7 days
+          txHash: txHash,
+          fromChainId: toL3 ? arbitrum.id : mainnet.id,
+          toChainId: toL3 ? mainnet.id : arbitrum.id,
+          explorerUrl: toL3 ? `https://arbiscan.io/tx/${txHash}` : `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
+        })
+
         if (toL3) {
           setValue('amount', '')
           trigger('amount')
           setApproval(false)
           setBridgeSuccessInfo({ txHash })
+          // Redirect to stake page after successful bridge to Bitlazer
+          setTimeout(() => {
+            navigate('/bridge/stake')
+          }, 1500)
         } else {
           setValueReverse('amount', '')
           triggerReverse('amount')
           setBridgeReverseSuccessInfo({ txHash })
         }
-        // Single refresh after successful transaction
+
         setRefreshApproval((prev) => !prev)
         refetchBalance()
-        refetchBalanceL3()
       } else {
-        toast(<TXToast {...{ message: 'Bridge failed' }} />, { autoClose: 7000 })
+        throw new Error('Transaction failed')
       }
     } catch (error: any) {
-      // Check if user rejected the transaction
-      if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
-        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
-      } else {
-        toast(<TXToast {...{ message: `Failed to Bridge tokens: ${error.reason || error.message}` }} />, {
+      console.error('🚨 Bridge Error Details:', {
+        bridgeDirection: toL3 ? 'Arbitrum → Bitlazer' : 'Bitlazer → Arbitrum',
+        amount,
+        targetAddress: toL3 ? L2_GATEWAY_ROUTER : L2_GATEWAY_ROUTER_BACK,
+        chainId: toL3 ? arbitrum.id : mainnet.id,
+        userAddress: address,
+        error: error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorStack: error?.stack,
+      })
+
+      if (error.message.includes('insufficient funds')) {
+        toast(<TXToast {...{ message: 'Insufficient gas funds. You need ETH to pay for gas.' }} />, {
           autoClose: 7000,
         })
+      } else if (error.message.includes('user rejected transaction')) {
+        toast(<TXToast {...{ message: 'Transaction rejected.' }} />, { autoClose: 7000 })
+      } else {
+        toast(<TXToast {...{ message: 'Failed to Bridge' }} />, { autoClose: 7000 })
       }
     } finally {
       setIsWaitingForBridgeTx(false)
@@ -226,12 +360,40 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     approval ? handleDeposit(true) : handleApprove()
   }
 
-  const handleBridgeBack = async () => {
+  const onSubmitReverse = async () => {
     await handleDeposit(false)
   }
 
-  const onSubmitReverse = async () => {
-    await handleBridgeBack()
+  const handleSwitch = () => {
+    setIsBridgeMode(!isBridgeMode)
+    setValue('amount', '')
+    setValueReverse('amount', '')
+    setIsInputFocused(false)
+  }
+
+  const handlePercentage = (percentage: number) => {
+    const balance = isBridgeMode
+      ? formatEther(data?.value.toString() || '0')
+      : formatEther(l3Data?.value.toString() || '0')
+
+    if (balance) {
+      // For MAX (100%), reduce slightly to avoid validation issues
+      const multiplier = percentage === 100 ? 0.999999 : percentage / 100
+      const value = (parseFloat(balance) * multiplier).toString()
+      if (isBridgeMode) {
+        setValue('amount', value)
+        trigger('amount')
+      } else {
+        setValueReverse('amount', value)
+        triggerReverse('amount')
+      }
+    }
+  }
+
+  const formatUSDValue = (amount: string | undefined) => {
+    if (!amount || !btcPrice) return '$0.00'
+    const value = parseFloat(amount) * btcPrice
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   const {
@@ -244,259 +406,333 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     chainId: arbitrum.id,
   })
 
-  const {
-    data: l3Data,
-    isLoading: l3isLoading,
-    refetch: refetchBalanceL3,
-  } = useBalance({
+  const { data: l3Data, isLoading: l3isLoading } = useBalance({
     address,
     chainId: mainnet.id,
   })
 
+  // Calculate expected output (1:1 ratio minus gas)
+  const expectedOutput = isBridgeMode ? watch('amount') : watchReverse('amount')
+
+  // Get the current chain requirement
+  const requiredChainId = isBridgeMode ? arbitrum.id : mainnet.id
+  const isCorrectChain = chainId === requiredChainId
+
   return (
-    <div className="flex flex-col gap-7">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-7">
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO BITLAZER</label>
-          <Controller
-            name="amount"
-            control={control}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
-              max: {
-                value: data?.formatted || '0',
-                message: 'Insufficient balance',
-              },
-            }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={errors.amount ? errors.amount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
-            )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance: {isLoading ? 'Loading...' : `${formatEther(data?.value.toString() || '0')} lzrBTC`}
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                setValue('amount', formatEther(data?.value.toString() || '0'))
-                trigger('amount')
-              }}
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
-            >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
-              </span>
-            </button>
-          </div>
+    <form
+      onSubmit={isBridgeMode ? handleSubmit(onSubmit) : handleSubmitReverse(onSubmitReverse)}
+      className="flex flex-col"
+    >
+      {/* Title & Description - Match exact styling from BridgeWrap */}
+      <div className="flex flex-col gap-4 mb-6 text-2xl font-ocrx">
+        <div className="text-2xl">
+          <span>[ </span>
+          <span className="text-lightgreen-100">{isBridgeMode ? 'Step 2' : 'Step 5'}</span>
+          <span> | </span>
+          <span className="text-fuchsia">
+            {isBridgeMode ? 'Bridge lzrBTC to Bitlazer' : 'Bridge lzrBTC to Arbitrum'}
+          </span>
+          <span> ] </span>
         </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          {chainId === arbitrum.id ? (
-            <>
-              <Button
-                type="submit"
-                disabled={
-                  !isValid ||
+        <div className="tracking-[-0.06em] leading-[1.313rem]">
+          {isBridgeMode
+            ? 'Bridge your lzrBTC from Arbitrum to Bitlazer L3 securely. Your lzrBTC will then be ready for staking!'
+            : 'Bridge your lzrBTC back from Bitlazer to Arbitrum. Get ready to enjoy your staking rewards!'}
+        </div>
+      </div>
+
+      {/* Transaction Status Card - Show latest transaction (pending or recent) */}
+      {(latestBridgeTransaction || isLoadingTransactions) && (
+        <div className="mb-6">
+          {isLoadingTransactions && !latestBridgeTransaction ? (
+            <div className="w-full">
+              <div className="relative overflow-hidden rounded-[.115rem] border transition-all duration-300 bg-gradient-to-r from-darkslategray-200/95 to-darkslategray-200/80 backdrop-blur-sm border-lightgreen-100/30">
+                <div className="p-3">
+                  {/* Row 1: Title */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base text-white font-ocrx">Loading last transaction...</span>
+                  </div>
+
+                  {/* Horizontal Separator */}
+                  <div className="h-px bg-lightgreen-100/10 mb-2"></div>
+
+                  {/* Row 2: Full width skeletons */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-2 w-full">
+                      {/* TX Hash skeleton - full width */}
+                      <Skeleton className="h-3 w-full" />
+
+                      {/* Value badge skeleton */}
+                      <Skeleton className="h-6 w-24" />
+
+                      {/* Timeline skeleton */}
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                        <Skeleton className="h-2 w-8" />
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            latestBridgeTransaction && (
+              <TransactionStatusCard
+                transaction={latestBridgeTransaction}
+                onClose={
+                  isPendingTransaction ? () => removePendingTransaction(latestBridgeTransaction.txHash) : undefined
+                }
+              />
+            )
+          )}
+        </div>
+      )}
+
+      {/* Main Bridge Container */}
+      <div className="relative w-full">
+        {/* From Card */}
+        <TokenCard
+          key={isBridgeMode ? 'bridge-amount' : 'reverse-amount'}
+          type="from"
+          tokenInfo={{
+            symbol: 'lzrBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: isBridgeMode ? 'Arbitrum One' : 'Bitlazer L3',
+          }}
+          balance={
+            isBridgeMode ? formatEther(data?.value.toString() || '0') : formatEther(l3Data?.value.toString() || '0')
+          }
+          isBalanceLoading={isBridgeMode ? isLoading : l3isLoading}
+          isInputFocused={isInputFocused}
+          onInputFocus={() => setIsInputFocused(true)}
+          onInputBlur={() => setIsInputFocused(false)}
+          onPercentageClick={handlePercentage}
+          control={isBridgeMode ? control : controlReverse}
+          amount={isBridgeMode ? watch('amount') : watchReverse('amount')}
+          rules={{
+            required: 'Amount is required',
+            min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
+            max: {
+              value: isBridgeMode
+                ? formatEther(data?.value.toString() || '0')
+                : formatEther(l3Data?.value.toString() || '0'),
+              message: 'Insufficient balance',
+            },
+          }}
+          usdValue={formatUSDValue(isBridgeMode ? watch('amount') : watchReverse('amount'))}
+        />
+
+        {/* Switch Button */}
+        <div className="flex justify-center -my-4 relative z-10">
+          <button
+            type="button"
+            onClick={handleSwitch}
+            className="bg-darkslategray-200 border-4 border-[#0a0a0a] rounded-[.115rem] p-0.5 hover:bg-darkslategray-100 transition-colors group shadow-lg"
+          >
+            <svg
+              className="w-5 h-5 text-lightgreen-100 group-hover:rotate-180 transition-transform duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* To Card */}
+        <TokenCard
+          type="to"
+          tokenInfo={{
+            symbol: 'lzrBTC',
+            icon: '/icons/crypto/bitcoin.svg',
+            chain: isBridgeMode ? 'Bitlazer L3' : 'Arbitrum One',
+          }}
+          balance={
+            isBridgeMode ? formatEther(l3Data?.value.toString() || '0') : formatEther(data?.value.toString() || '0')
+          }
+          isBalanceLoading={isBridgeMode ? l3isLoading : isLoading}
+          amount={expectedOutput}
+          customBottomText={isBridgeMode ? 'Native gas token' : 'ERC-20 token'}
+          showPercentageButtons={false}
+        />
+      </div>
+
+      {/* Error message after all cards */}
+      {(isBridgeMode ? errors.amount : errorsReverse.amount) && (
+        <div className="text-red-500 text-sm w-full mt-2 mb-2">
+          {isBridgeMode ? errors.amount?.message : errorsReverse.amount?.message}
+        </div>
+      )}
+
+      {/* Action Button */}
+      <div className="w-full mt-3">
+        {isCorrectChain ? (
+          <Button
+            type="submit"
+            disabled={
+              isBridgeMode
+                ? !isValid ||
                   !watch('amount') ||
                   watch('amount') === '' ||
                   isWaitingForBridgeTx ||
                   isApproving ||
                   isBridging
-                }
-                aria-busy={isWaitingForBridgeTx || isApproving || isBridging}
-              >
-                {approval ? (
-                  isBridging ? (
-                    <Loading text="BRIDGING" />
-                  ) : (
-                    'BRIDGE'
-                  )
-                ) : isApproving ? (
-                  <Loading text="APPROVING" />
-                ) : (
-                  'APPROVE'
-                )}
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(false)
-              }}
-            >
-              SWITCH TO ARBITRUM
-            </Button>
-          )}
-        </div>
-        {bridgeSuccessInfo && (
-          <div className="mt-4 p-2.5 bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] text-gray-200 text-[13px]">
-            <div className="mb-1.5">
-              <span className="text-lightgreen-100">Transaction: </span>
-              <a
-                href={`https://arbiscan.io/tx/${bridgeSuccessInfo.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-lightgreen-100 underline hover:text-lightgreen-200"
-              >
-                {fmtHash(bridgeSuccessInfo.txHash)}
-              </a>
-            </div>
-            <div className="mb-1.5 flex items-start">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="mr-1.5 mt-0.5 flex-shrink-0"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="8" cy="8" r="7" stroke="#66d560" strokeWidth="1.5" />
-                <path d="M8 7V11" stroke="#66d560" strokeWidth="1.5" strokeLinecap="round" />
-                <circle cx="8" cy="5" r="0.5" fill="#66d560" />
-              </svg>
-              <span>Balance may take a while to be confirmed on Bitlazer network.</span>
-            </div>
-            <div>
-              Track status{' '}
-              <a
-                href="https://bitlazer.bridge.caldera.xyz/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-lightgreen-100 underline hover:text-lightgreen-200"
-              >
-                here
-              </a>
-            </div>
-          </div>
-        )}
-      </form>
-      <div className="h-px w-full bg-[#6c6c6c]"></div>
-      <form onSubmit={handleSubmitReverse(onSubmitReverse)} className="flex flex-col gap-7">
-        <div className="flex flex-col gap-[0.687rem] max-w-full">
-          <label className="text-lightgreen-100">## BRIDGE lzrBTC TO ARBITRUM</label>
-          <Controller
-            name="amount"
-            control={controlReverse}
-            rules={{
-              required: 'Amount is required',
-              min: { value: 0.00000001, message: 'Amount must be greater than 0.00000001' },
-              max: {
-                value: formatEther(l3Data?.value.toString() || '0'),
-                message: 'Insufficient balance',
-              },
-            }}
-            render={({ field }) => (
-              <InputField
-                placeholder="0.00"
-                label="ENTER AMOUNT"
-                type="number"
-                {...field}
-                error={errorsReverse.amount ? errorsReverse.amount.message : null}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-              />
-            )}
-          />
-          <div className="flex flex-row items-center justify-between gap-[1.25rem] text-gray-200">
-            <div className="tracking-[-0.06em] leading-[1.25rem] inline-block">
-              Balance:{' '}
-              {l3isLoading ? 'Loading...' : `${formatEther(l3Data?.value.toString() || '0')} ${l3Data?.symbol}`}
-            </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                setValueReverse('amount', formatEther(l3Data?.value.toString() || '0'))
-                triggerReverse('amount')
-              }}
-              className="shadow-[1.8px_1.8px_1.84px_#66d560_inset] rounded-[.115rem] bg-darkolivegreen-200 flex flex-row items-start justify-start pt-[0.287rem] pb-[0.225rem] pl-[0.437rem] pr-[0.187rem] shrink-0 text-[0.813rem] text-lightgreen-100 disabled:opacity-40 disabled:pointer-events-none disabled:touch-none"
-            >
-              <span className="relative tracking-[-0.06em] leading-[0.563rem] inline-block [text-shadow:0.2px_0_0_#66d560,_0_0.2px_0_#66d560,_-0.2px_0_0_#66d560,_0_-0.2px_0_#66d560] min-w-[1.75rem]">
-                MAX
-              </span>
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-col gap-[0.687rem]">
-          {chainId === mainnet.id ? (
-            <>
-              <Button
-                type="submit"
-                disabled={
-                  !isValidReverse ||
+                : !isValidReverse ||
                   !watchReverse('amount') ||
                   watchReverse('amount') === '' ||
                   isWaitingForBridgeTx ||
                   isBridgingReverse
-                }
-                aria-busy={isWaitingForBridgeTx || isBridgingReverse}
-              >
-                {isBridgingReverse ? <Loading text="BRIDGING" /> : 'BRIDGE'}
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="submit"
-              onClick={(e) => {
-                e.preventDefault()
-                handleChainSwitch(true)
-              }}
+            }
+          >
+            {isBridgeMode ? (
+              approval ? (
+                isBridging || isWaitingForBridgeTx ? (
+                  <Loading text="BRIDGING" />
+                ) : (
+                  'BRIDGE'
+                )
+              ) : isApproving ? (
+                <Loading text="APPROVING" />
+              ) : (
+                'APPROVE'
+              )
+            ) : isBridgingReverse || isWaitingForBridgeTx ? (
+              <Loading text="BRIDGING" />
+            ) : (
+              'BRIDGE'
+            )}
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            onClick={(e) => {
+              e.preventDefault()
+              handleChainSwitch(requiredChainId === mainnet.id)
+            }}
+          >
+            SWITCH TO {requiredChainId === mainnet.id ? 'BITLAZER' : 'ARBITRUM'}
+          </Button>
+        )}
+      </div>
+
+      {/* Expandable Details Section */}
+      <div className="relative group w-full mt-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-lightgreen-100/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-[.115rem]" />
+        <div className="relative bg-gradient-to-br from-darkslategray-200/90 via-darkslategray-200/80 to-transparent backdrop-blur-sm border border-lightgreen-100/30 hover:border-lightgreen-100/50 transition-all duration-300 rounded-[.115rem]">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowDetails(!showDetails)
+            }}
+            className="w-full px-4 py-3 flex justify-between items-center text-white/70 hover:text-white transition-colors"
+          >
+            <div className="flex items-center gap-2 text-left">
+              <span className="text-sm font-maison-neue text-left">Bridge Details</span>
+            </div>
+            <svg
+              className={clsx('w-4 h-4 transition-transform duration-300', showDetails && 'rotate-180')}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              SWITCH TO BITLAZER
-            </Button>
-          )}
-        </div>
-        {bridgeReverseSuccessInfo && (
-          <div className="mt-4 p-2.5 bg-darkslategray-200 border border-lightgreen-100 rounded-[.115rem] text-gray-200 text-[13px]">
-            <div className="mb-1.5">
-              <span className="text-lightgreen-100">Transaction: </span>
-              <a
-                href={`https://bitlazer.calderaexplorer.xyz/tx/${bridgeReverseSuccessInfo.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-lightgreen-100 underline hover:text-lightgreen-200"
-              >
-                {fmtHash(bridgeReverseSuccessInfo.txHash)}
-              </a>
-            </div>
-            <div className="mb-1.5 flex items-start">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="mr-1.5 mt-0.5 flex-shrink-0"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="8" cy="8" r="7" stroke="#66d560" strokeWidth="1.5" />
-                <path d="M8 7V11" stroke="#66d560" strokeWidth="1.5" strokeLinecap="round" />
-                <circle cx="8" cy="5" r="0.5" fill="#66d560" />
-              </svg>
-              <span>Balance may take a while to be confirmed on Arbitrum network.</span>
-            </div>
-            <div>
-              Track status{' '}
-              <a
-                href="https://bitlazer.bridge.caldera.xyz/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-lightgreen-100 underline hover:text-lightgreen-200"
-              >
-                here
-              </a>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Collapsible Details */}
+          <div className={clsx('overflow-hidden transition-all duration-300', showDetails ? 'max-h-96' : 'max-h-0')}>
+            <div className="px-4 pb-3 space-y-1.5 border-t border-lightgreen-100/20">
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-white/50 text-xs font-maison-neue">Expected Output</span>
+                <span className="text-white text-xs font-maison-neue">{expectedOutput || '0'} lzrBTC</span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Bridge Time</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {bridgeDetails.isLoading ? '...' : bridgeDetails.bridgeTime}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Network Fee</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {bridgeDetails.isLoading ? '...' : bridgeDetails.networkFee}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Route</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Arbitrum' : 'Bitlazer'}</span>
+                  <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Bitlazer' : 'Arbitrum'}</span>
+                </div>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Bridge Method</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-lightgreen-100/20 text-lightgreen-100 px-2 py-0.5 rounded font-maison-neue">
+                    Native
+                  </span>
+                  <span className="text-white/50 text-xs font-maison-neue">•</span>
+                  <a
+                    href="https://bitlazer.bridge.caldera.xyz/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lightgreen-100 text-xs font-maison-neue hover:text-lightgreen-200 underline"
+                  >
+                    Caldera Infrastructure
+                  </a>
+                </div>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Bridge Protocol</span>
+                <span className="text-white text-xs font-maison-neue">{bridgeDetails.protocol}</span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10"></div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-white/50 text-xs font-maison-neue">Token Type</span>
+                <span className="text-white text-xs font-maison-neue">
+                  {isBridgeMode ? 'ERC-20 → Native' : 'Native → ERC-20'}
+                </span>
+              </div>
+
+              <div className="h-px bg-lightgreen-100/10 mt-3"></div>
+
+              <div className="text-lightgreen-100 text-xs font-maison-neue mt-2 text-center">
+                More bridge options coming soon
+              </div>
             </div>
           </div>
-        )}
-      </form>
-    </div>
+        </div>
+      </div>
+    </form>
   )
 }
 

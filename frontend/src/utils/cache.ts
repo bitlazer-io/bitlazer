@@ -224,6 +224,7 @@ export const CACHE_KEYS = {
   NETWORK_STATS: 'network_stats',
   WRAP_STATS: 'wrap_stats',
   BRIDGE_STATS: 'bridge_stats',
+  BRIDGE_TRANSACTIONS: 'bridge_transactions',
 } as const
 
 /**

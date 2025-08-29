@@ -237,54 +237,50 @@ export const WrapStats: React.FC = () => {
           </div>
         </div>
 
-        <div>
-          <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
-          <div className="space-y-1">
-            {loadingRecentActivity ? (
-              // Show 3 skeleton placeholders while loading
-              Array.from({ length: 3 }, (_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                  <Skeleton className="h-4 w-12" />
-                </div>
-              ))
-            ) : stats.recentWraps.length > 0 ? (
-              stats.recentWraps.slice(0, 3).map((wrap, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                      {formatAmount(Number(wrap.amount))} BTC
-                    </span>
-                    <a
-                      href={`https://arbiscan.io/tx/${wrap.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+        {(loadingRecentActivity || stats.recentWraps.length > 0) && (
+          <div>
+            <PrimaryLabel className="mb-2">RECENT ACTIVITY</PrimaryLabel>
+            <div className="space-y-1">
+              {loadingRecentActivity
+                ? // Show 3 skeleton placeholders while loading
+                  Array.from({ length: 3 }, (_, index) => (
+                    <div
+                      key={`skeleton-${index}`}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem]"
                     >
-                      {formatTxHash(wrap.txHash)}
-                    </a>
-                  </div>
-                  <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
-                    {formatTime(wrap.timestamp)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="p-2 bg-black/60 border border-lightgreen-100/20 rounded-[.115rem] text-center">
-                <span className="text-sm md:text-base text-white/70 font-ocrx">No recent activity</span>
-              </div>
-            )}
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-5 w-16" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  ))
+                : stats.recentWraps.slice(0, 3).map((wrap, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-black/60 border border-lightgreen-100/20 hover:border-lightgreen-100/40 transition-all group/item rounded-[.115rem]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
+                          {formatAmount(Number(wrap.amount))} BTC
+                        </span>
+                        <a
+                          href={`https://arbiscan.io/tx/${wrap.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+                        >
+                          {formatTxHash(wrap.txHash)}
+                        </a>
+                      </div>
+                      <span className="text-sm md:text-base text-white/70 font-ocrx uppercase">
+                        {formatTime(wrap.timestamp)}
+                      </span>
+                    </div>
+                  ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
