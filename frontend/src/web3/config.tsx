@@ -1,7 +1,6 @@
-import { arbitrum } from 'viem/chains'
-import { mainnet } from './chains'
 import { createConfig, CreateConnectorFn, http } from 'wagmi'
 import { walletConnect } from 'wagmi/connectors'
+import { arbitrumOne, bitlazerL3 } from './chains'
 
 // 1. Get projectId from https://cloud.walletconnect.com
 const projectId = 'ae140b2d150397e3e8c039cc1debc614'
@@ -14,15 +13,15 @@ const metadata = {
   icons: [],
 }
 
-const chains = [mainnet, arbitrum] as const
+const chains = [bitlazerL3, arbitrumOne] as const
 const connectors: CreateConnectorFn[] = []
 connectors.push(walletConnect({ projectId, metadata, showQrModal: true }))
 
 export const config = createConfig({
   chains,
   transports: {
-    [mainnet.id]: http(),
-    [arbitrum.id]: http(),
+    [bitlazerL3.id]: http(),
+    [arbitrumOne.id]: http(),
     // [testnet.id]: http(),
     // [arbitrumSepolia.id]: http(),
   },

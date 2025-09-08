@@ -7,7 +7,7 @@ import { useBalance, useAccount, useReadContract } from 'wagmi'
 import { waitForTransactionReceipt, writeContract } from '@wagmi/core'
 import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
 import { formatEther } from 'ethers/lib/utils'
-import { mainnet } from 'src/web3/chains'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
 import { config } from 'src/web3/config'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
@@ -34,7 +34,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
   // Get user's wallet balance (native lzrBTC on Bitlazer)
   const { data: walletBalance, refetch: refetchWalletBalance } = useBalance({
     address: address,
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
   })
 
   // Get user's staked balance (StakeAdapter balance - represents staked tokens)
@@ -43,7 +43,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
     functionName: 'balanceOf',
     args: address ? [address] : ['0x0000000000000000000000000000000000000000'],
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
     scopeKey: refreshData.toString(),
   })
 
@@ -53,7 +53,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
     functionName: 'pendingReward',
     args: address ? [address] : ['0x0000000000000000000000000000000000000000'],
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
     scopeKey: refreshData.toString(),
   })
 
@@ -63,7 +63,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
     functionName: 'getApy',
     args: [],
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
   })
 
   // Get total staked (total supply of adapter tokens)
@@ -71,7 +71,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     abi: stakeAdapter_abi,
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
     functionName: 'totalSupply',
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
     scopeKey: refreshData.toString(),
   })
 
@@ -152,7 +152,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
         functionName: 'stake',
         args: [amountToStake],
         value: amountToStake, // For native token staking
-        chainId: mainnet.id,
+        chainId: SUPPORTED_CHAINS.bitlazerL3.id,
         account: address as `0x${string}`,
         gas: 300000n, // Provide explicit gas limit to bypass estimation
       } as any)
@@ -219,7 +219,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
         functionName: 'unstake',
         args: [amountToUnstake],
         value: 0n, // Explicitly set value to 0 for payable function
-        chainId: mainnet.id,
+        chainId: SUPPORTED_CHAINS.bitlazerL3.id,
         account: address as `0x${string}`,
         gas: 300000n, // Provide explicit gas limit to bypass estimation
       } as any)
@@ -457,7 +457,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
                   />
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-base transition-colors duration-200">lzrBTC</span>
-                    <span className="text-white/50 text-xs">Bitlazer L3</span>
+                    <span className="text-white/50 text-xs">{SUPPORTED_CHAINS.bitlazerL3.name}</span>
                   </div>
                 </div>
 
@@ -567,7 +567,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
       {/* Action Button */}
       <div className="w-full">
-        {chainId === mainnet.id ? (
+        {chainId === SUPPORTED_CHAINS.bitlazerL3.id ? (
           <form onSubmit={handleStakeSubmit(onStakeSubmit)}>
             <Button
               type="submit"
@@ -699,7 +699,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
                   />
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-base transition-colors duration-200">Staked lzrBTC</span>
-                    <span className="text-white/50 text-xs">Bitlazer L3</span>
+                    <span className="text-white/50 text-xs">{SUPPORTED_CHAINS.bitlazerL3.name}</span>
                   </div>
                 </div>
 
@@ -811,7 +811,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
       {/* Action Button */}
       <div className="w-full">
-        {chainId === mainnet.id ? (
+        {chainId === SUPPORTED_CHAINS.bitlazerL3.id ? (
           <form onSubmit={handleUnstakeSubmit(onUnstakeSubmit)}>
             <Button
               type="submit"

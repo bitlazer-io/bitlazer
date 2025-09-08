@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { usePublicClient, useReadContract } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
-import { mainnet } from 'src/web3/chains'
+import { mainnet, SUPPORTED_CHAINS } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { formatUnits, parseAbiItem } from 'viem'
@@ -76,8 +76,8 @@ export const BridgeStats: React.FC = () => {
             const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
             recentBridges.push({
               amount: formatUnits(log.args.value as bigint, 18),
-              from: 'Arbitrum',
-              to: 'Bitlazer L3',
+              from: SUPPORTED_CHAINS.arbitrumOne.name,
+              to: SUPPORTED_CHAINS.bitlazerL3.name,
               txHash: log.transactionHash!,
               timestamp: Number(block.timestamp),
             })
@@ -105,8 +105,8 @@ export const BridgeStats: React.FC = () => {
             const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
             recentBridges.push({
               amount: formatUnits(log.args.value as bigint, 18),
-              from: 'Bitlazer L3',
-              to: 'Arbitrum',
+              from: SUPPORTED_CHAINS.bitlazerL3.name,
+              to: SUPPORTED_CHAINS.arbitrumOne.name,
               txHash: log.transactionHash!,
               timestamp: Number(block.timestamp),
             })
@@ -379,7 +379,7 @@ export const BridgeStats: React.FC = () => {
                         </span>
                         <a
                           href={
-                            bridge.from === 'Bitlazer L3'
+                            bridge.from === SUPPORTED_CHAINS.bitlazerL3.name
                               ? `https://bitlazer.calderaexplorer.xyz/tx/${bridge.txHash}`
                               : `https://arbiscan.io/tx/${bridge.txHash}`
                           }

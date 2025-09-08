@@ -1,6 +1,7 @@
 import React, { FC } from 'react'
 import clsx from 'clsx'
 import { TransactionType, NetworkType } from '../types'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 
 interface TransactionFiltersProps {
   selectedType: TransactionType | 'all'
@@ -26,8 +27,8 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
 
   const networkOptions: Array<{ value: NetworkType | 'all'; label: string }> = [
     { value: 'all', label: 'All Networks' },
-    { value: NetworkType.ARBITRUM, label: 'Arbitrum' },
-    { value: NetworkType.BITLAZER, label: 'Bitlazer L3' },
+    { value: NetworkType.ARBITRUM, label: SUPPORTED_CHAINS.arbitrumOne.name },
+    { value: NetworkType.BITLAZER, label: SUPPORTED_CHAINS.bitlazerL3.name },
   ]
 
   return (
@@ -69,12 +70,16 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
               )}
             >
               {option.value === NetworkType.ARBITRUM && (
-                <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-4 h-4" />
+                <img
+                  src={SUPPORTED_CHAINS.arbitrumOne.icon}
+                  alt={SUPPORTED_CHAINS.arbitrumOne.name}
+                  className="w-4 h-4"
+                />
               )}
               {option.value === NetworkType.BITLAZER && (
                 <img
-                  src="/images/bitlazer-icon.svg"
-                  alt="Bitlazer"
+                  src={SUPPORTED_CHAINS.bitlazerL3.icon}
+                  alt={SUPPORTED_CHAINS.bitlazerL3.name}
                   className={clsx('w-4 h-4', selectedNetwork === option.value ? 'opacity-100' : 'opacity-70')}
                 />
               )}

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { erc20Abi } from 'viem'
 import { waitForTransactionReceipt, writeContract, simulateContract } from '@wagmi/core'
-import { arbitrum } from 'wagmi/chains'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { config } from 'src/web3/config'
 import { ERC20_CONTRACT_ADDRESS, TokenKeys, WRAP_CONTRACT } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
@@ -119,21 +119,21 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS[selectedToken],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
   const { data: lzrBTCBalanceData, isLoading: lzrBTCBalanceLoading } = useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS['lzrBTC'],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
   useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS['wbtc'],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
@@ -142,7 +142,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     address: ERC20_CONTRACT_ADDRESS[selectedToken],
     functionName: 'allowance',
     args: [address || '0x', WRAP_CONTRACT],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
@@ -152,7 +152,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     address: WRAP_CONTRACT,
     functionName: 'allowance',
     args: [address || '0x', ERC20_CONTRACT_ADDRESS[selectedToken]],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
@@ -163,7 +163,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     address: WRAP_CONTRACT,
     functionName: 'getHolderBalance',
     args: [address || '0x', ERC20_CONTRACT_ADDRESS['wbtc']],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refresh.toString(),
   })
 
@@ -180,7 +180,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     ],
     address: WRAP_CONTRACT,
     functionName: 'paused',
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
   })
 
   // Check decimals conversion flag
@@ -196,7 +196,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     ],
     address: WRAP_CONTRACT,
     functionName: '__apply8To18DecimalsConversion',
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
   })
 
   // Check if WBTC is set as supported wrapper (not used in UI currently)
@@ -213,7 +213,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     address: WRAP_CONTRACT,
     functionName: 'supportedWrappers',
     args: [ERC20_CONTRACT_ADDRESS['wbtc'] as `0x${string}`],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
   })
 
   useEffect(() => {
@@ -503,7 +503,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           tokenInfo={{
             symbol: isWrapMode ? 'WBTC' : 'lzrBTC',
             icon: isWrapMode ? '/icons/crypto/wbtc.svg' : '/icons/crypto/bitcoin.svg',
-            chain: 'Arbitrum One',
+            chain: SUPPORTED_CHAINS.arbitrumOne.name,
           }}
           balance={isWrapMode ? balanceData?.formatted : lzrBTCBalanceData?.formatted}
           isBalanceLoading={isWrapMode ? balanceLoading : lzrBTCBalanceLoading}
@@ -554,7 +554,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
           tokenInfo={{
             symbol: isWrapMode ? 'lzrBTC' : 'WBTC',
             icon: isWrapMode ? '/icons/crypto/bitcoin.svg' : '/icons/crypto/wbtc.svg',
-            chain: 'Arbitrum One',
+            chain: SUPPORTED_CHAINS.arbitrumOne.name,
           }}
           balance={isWrapMode ? lzrBTCBalanceData?.formatted : balanceData?.formatted}
           isBalanceLoading={isWrapMode ? lzrBTCBalanceLoading : balanceLoading}
@@ -573,7 +573,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
 
       {/* Action Button */}
       <div className="w-full mt-3">
-        {chainId === arbitrum.id ? (
+        {chainId === SUPPORTED_CHAINS.arbitrumOne.id ? (
           <>
             {/* Reset allowance button (only shown when needed) */}
             {approvalData &&

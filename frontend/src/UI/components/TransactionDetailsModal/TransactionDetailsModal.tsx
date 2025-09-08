@@ -4,6 +4,7 @@ import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transacti
 import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
+import { SUPPORTED_CHAINS, getChainByName } from 'src/web3/chains'
 
 interface TransactionDetailsModalProps {
   transaction: PendingTransaction
@@ -120,14 +121,16 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
                 <div className="flex items-center justify-between">
                   {/* From Network - Left */}
                   <div className="flex items-center gap-2">
-                    {transaction.fromChain === 'Arbitrum One' ? (
-                      <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
-                    ) : transaction.fromChain.includes('Bitlazer') ? (
-                      <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                    ) : (
-                      <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                    )}
-                    <span className="text-lightgreen-100 text-sm font-mono">{transaction.fromChain}</span>
+                    {(() => {
+                      const chain = getChainByName(transaction.fromChain)
+                      const metadata = chain || SUPPORTED_CHAINS.bitlazerL3
+                      return (
+                        <>
+                          <img src={metadata.icon} alt={metadata.name} className="w-5 h-5" />
+                          <span className="text-lightgreen-100 text-sm font-mono">{transaction.fromChain}</span>
+                        </>
+                      )
+                    })()}
                   </div>
 
                   {/* Long Arrow - Center */}
@@ -142,14 +145,16 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
 
                   {/* To Network - Right */}
                   <div className="flex items-center gap-2">
-                    {transaction.toChain === 'Arbitrum One' ? (
-                      <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5" />
-                    ) : transaction.toChain.includes('Bitlazer') ? (
-                      <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                    ) : (
-                      <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5" />
-                    )}
-                    <span className="text-lightgreen-100 text-sm font-mono">{transaction.toChain}</span>
+                    {(() => {
+                      const chain = getChainByName(transaction.toChain)
+                      const metadata = chain || SUPPORTED_CHAINS.bitlazerL3
+                      return (
+                        <>
+                          <img src={metadata.icon} alt={metadata.name} className="w-5 h-5" />
+                          <span className="text-lightgreen-100 text-sm font-mono">{transaction.toChain}</span>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
@@ -214,7 +219,7 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
                     </svg>
                     <div className="text-white text-sm font-maison-neue">
                       {transaction.type === 'bridge-reverse'
-                        ? 'Withdrawal may take up to 7 days to complete on Arbitrum network.'
+                        ? `Withdrawal may take up to 7 days to complete on ${SUPPORTED_CHAINS.arbitrumOne.name} network.`
                         : 'Bridge transfer may take up to 15 minutes to complete.'}
                       <br />
                       <a

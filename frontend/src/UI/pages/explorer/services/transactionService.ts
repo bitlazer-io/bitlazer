@@ -7,18 +7,17 @@ import {
   NetworkType,
 } from '../types'
 import { parseAbiItem, formatUnits, createPublicClient, http } from 'viem'
-import { arbitrum } from 'wagmi/chains'
-import { mainnet } from 'src/web3/chains'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS, STAKING_CONTRACTS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
 
 // Create public clients for fetching blockchain data
 const arbitrumClient = createPublicClient({
-  chain: arbitrum,
+  chain: SUPPORTED_CHAINS.arbitrumOne.chain,
   transport: http(),
 })
 
 const bitlazerClient = createPublicClient({
-  chain: mainnet,
+  chain: SUPPORTED_CHAINS.bitlazerL3.chain,
   transport: http(),
 })
 

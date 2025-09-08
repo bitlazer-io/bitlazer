@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import { createPublicClient, http, parseAbiItem, parseEventLogs } from 'viem'
 import { arbitrum } from 'wagmi/chains'
-import { mainnet } from '../web3/chains'
+import { mainnet, SUPPORTED_CHAINS } from '../web3/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER } from '../web3/contracts'
 import { PendingTransaction, TransactionType, TransactionStage } from '../types/transactions'
 import { fetchWithCache, CACHE_KEYS, CACHE_TTL } from '../utils/cache'
@@ -267,8 +267,8 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
                     type: 'bridge',
                     status: 'completed',
                     stage: 'completed',
-                    fromChain: 'Arbitrum One',
-                    toChain: 'Bitlazer L3',
+                    fromChain: SUPPORTED_CHAINS.arbitrumOne.name,
+                    toChain: SUPPORTED_CHAINS.bitlazerL3.name,
                     fromToken: 'lzrBTC',
                     toToken: 'lzrBTC',
                     amount: (Number(log.args.value) / 1e18).toFixed(8),
@@ -328,8 +328,8 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
                     type: 'bridge-reverse',
                     status: 'pending',
                     stage: 'finalizing',
-                    fromChain: 'Bitlazer L3',
-                    toChain: 'Arbitrum One',
+                    fromChain: SUPPORTED_CHAINS.bitlazerL3.name,
+                    toChain: SUPPORTED_CHAINS.arbitrumOne.name,
                     fromToken: 'lzrBTC',
                     toToken: 'lzrBTC',
                     amount: amount,
