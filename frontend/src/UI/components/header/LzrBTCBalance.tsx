@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
 import { arbitrum } from 'wagmi/chains'
-import { mainnet } from 'src/web3/chains'
+import { mainnet, SUPPORTED_CHAINS } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS, STAKING_CONTRACTS } from 'src/web3/contracts'
 import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
 import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
@@ -170,7 +170,9 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
                         <div className="flex items-center gap-4">
                           <img src="/icons/crypto/arbitrum-color.svg" alt="ARB" className="w-10 h-10 flex-shrink-0" />
                           <div>
-                            <div className="text-lightgreen-100 text-lg font-ocrx">Arbitrum</div>
+                            <div className="text-lightgreen-100 text-lg font-ocrx">
+                              {SUPPORTED_CHAINS.arbitrumOne.name}
+                            </div>
                             <div className="text-white text-xs">Layer 2</div>
                           </div>
                         </div>
@@ -195,7 +197,9 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
                         <div className="flex items-center gap-4">
                           <img src="/images/bitlazer-icon.svg" alt="BLZ" className="w-10 h-10 flex-shrink-0" />
                           <div>
-                            <div className="text-lightgreen-100 text-lg font-ocrx">Bitlazer</div>
+                            <div className="text-lightgreen-100 text-lg font-ocrx">
+                              {SUPPORTED_CHAINS.bitlazerL3.name}
+                            </div>
                             <div className="text-white text-xs">Native Network</div>
                           </div>
                         </div>

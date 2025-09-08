@@ -4,7 +4,6 @@ import Loading from '@components/loading/Loading'
 import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { writeContract, waitForTransactionReceipt } from '@wagmi/core'
@@ -14,7 +13,7 @@ import { formatEther, parseEther } from 'ethers/lib/utils'
 import { config } from 'src/web3/config'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import Cookies from 'universal-cookie'
-import { mainnet } from 'src/web3/chains'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
@@ -185,7 +184,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     abi: lzrBTC_abi,
     functionName: 'allowance',
     args: [address, L2_GATEWAY_ROUTER],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
     scopeKey: refreshApproval.toString(),
   })
 
@@ -219,7 +218,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         address: ERC20_CONTRACT_ADDRESS['lzrBTC'],
         functionName: 'approve',
         args: [L2_GATEWAY_ROUTER, parsedAmount],
-        chainId: arbitrum.id,
+        chainId: SUPPORTED_CHAINS.arbitrumOne.id as 42161,
       })
 
       const receipt = await waitForTransactionReceipt(config, { hash: data })
@@ -303,15 +302,15 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           type: toL3 ? 'bridge' : 'bridge-reverse',
           status: 'pending',
           stage: 'submitted',
-          fromChain: toL3 ? 'Arbitrum One' : 'Bitlazer L3',
-          toChain: toL3 ? 'Bitlazer L3' : 'Arbitrum One',
+          fromChain: toL3 ? SUPPORTED_CHAINS.arbitrumOne.name : SUPPORTED_CHAINS.bitlazerL3.name,
+          toChain: toL3 ? SUPPORTED_CHAINS.bitlazerL3.name : SUPPORTED_CHAINS.arbitrumOne.name,
           fromToken: 'lzrBTC',
           toToken: 'lzrBTC',
           amount: amount,
           estimatedTime: toL3 ? 15 : 10080, // 15 minutes or 7 days
           txHash: txHash,
-          fromChainId: toL3 ? arbitrum.id : mainnet.id,
-          toChainId: toL3 ? mainnet.id : arbitrum.id,
+          fromChainId: toL3 ? SUPPORTED_CHAINS.arbitrumOne.id : SUPPORTED_CHAINS.bitlazerL3.id,
+          toChainId: toL3 ? SUPPORTED_CHAINS.bitlazerL3.id : SUPPORTED_CHAINS.arbitrumOne.id,
           explorerUrl: toL3 ? `https://arbiscan.io/tx/${txHash}` : `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
         })
 
@@ -337,10 +336,12 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       }
     } catch (error: any) {
       console.error('🚨 Bridge Error Details:', {
-        bridgeDirection: toL3 ? 'Arbitrum → Bitlazer' : 'Bitlazer → Arbitrum',
+        bridgeDirection: toL3
+          ? `${SUPPORTED_CHAINS.arbitrumOne.name} → ${SUPPORTED_CHAINS.bitlazerL3.name}`
+          : `${SUPPORTED_CHAINS.bitlazerL3.name} → ${SUPPORTED_CHAINS.arbitrumOne.name}`,
         amount,
         targetAddress: toL3 ? L2_GATEWAY_ROUTER : L2_GATEWAY_ROUTER_BACK,
-        chainId: toL3 ? arbitrum.id : mainnet.id,
+        chainId: toL3 ? SUPPORTED_CHAINS.arbitrumOne.id : SUPPORTED_CHAINS.bitlazerL3.id,
         userAddress: address,
         error: error,
         errorMessage: error?.message,
@@ -414,19 +415,19 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   } = useBalance({
     address,
     token: ERC20_CONTRACT_ADDRESS['lzrBTC'],
-    chainId: arbitrum.id,
+    chainId: SUPPORTED_CHAINS.arbitrumOne.id,
   })
 
   const { data: l3Data, isLoading: l3isLoading } = useBalance({
     address,
-    chainId: mainnet.id,
+    chainId: SUPPORTED_CHAINS.bitlazerL3.id,
   })
 
   // Calculate expected output (1:1 ratio minus gas)
   const expectedOutput = isBridgeMode ? watch('amount') : watchReverse('amount')
 
   // Get the current chain requirement
-  const requiredChainId = isBridgeMode ? arbitrum.id : mainnet.id
+  const requiredChainId = isBridgeMode ? SUPPORTED_CHAINS.arbitrumOne.id : SUPPORTED_CHAINS.bitlazerL3.id
   const isCorrectChain = chainId === requiredChainId
 
   return (
@@ -441,14 +442,16 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           <span className="text-lightgreen-100">{isBridgeMode ? 'Step 2' : 'Step 5'}</span>
           <span> | </span>
           <span className="text-fuchsia">
-            {isBridgeMode ? 'Bridge lzrBTC to Bitlazer' : 'Bridge lzrBTC to Arbitrum'}
+            {isBridgeMode
+              ? `Bridge lzrBTC to ${SUPPORTED_CHAINS.bitlazerL3.name}`
+              : `Bridge lzrBTC to ${SUPPORTED_CHAINS.arbitrumOne.name}`}
           </span>
           <span> ] </span>
         </div>
         <div className="tracking-[-0.06em] leading-[1.313rem]">
           {isBridgeMode
-            ? 'Bridge your lzrBTC from Arbitrum to Bitlazer L3 securely. Your lzrBTC will then be ready for staking!'
-            : 'Bridge your lzrBTC back from Bitlazer to Arbitrum. Get ready to enjoy your staking rewards!'}
+            ? `Bridge your lzrBTC from ${SUPPORTED_CHAINS.arbitrumOne.name} to ${SUPPORTED_CHAINS.bitlazerL3.name} securely. Your lzrBTC will then be ready for staking!`
+            : `Bridge your lzrBTC back from ${SUPPORTED_CHAINS.bitlazerL3.name} to ${SUPPORTED_CHAINS.arbitrumOne.name}. Get ready to enjoy your staking rewards!`}
         </div>
       </div>
 
@@ -509,7 +512,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           tokenInfo={{
             symbol: 'lzrBTC',
             icon: '/icons/crypto/bitcoin.svg',
-            chain: isBridgeMode ? 'Arbitrum One' : 'Bitlazer L3',
+            chain: isBridgeMode ? SUPPORTED_CHAINS.arbitrumOne.name : SUPPORTED_CHAINS.bitlazerL3.name,
           }}
           balance={
             isBridgeMode ? formatEther(data?.value.toString() || '0') : formatEther(l3Data?.value.toString() || '0')
@@ -563,7 +566,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           tokenInfo={{
             symbol: 'lzrBTC',
             icon: '/icons/crypto/bitcoin.svg',
-            chain: isBridgeMode ? 'Bitlazer L3' : 'Arbitrum One',
+            chain: isBridgeMode ? SUPPORTED_CHAINS.bitlazerL3.name : SUPPORTED_CHAINS.arbitrumOne.name,
           }}
           balance={
             isBridgeMode ? formatEther(l3Data?.value.toString() || '0') : formatEther(data?.value.toString() || '0')
@@ -625,10 +628,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
             type="submit"
             onClick={(e) => {
               e.preventDefault()
-              handleChainSwitch(requiredChainId === mainnet.id)
+              handleChainSwitch(requiredChainId === SUPPORTED_CHAINS.bitlazerL3.id)
             }}
           >
-            SWITCH TO {requiredChainId === mainnet.id ? 'BITLAZER' : 'ARBITRUM'}
+            SWITCH TO{' '}
+            {requiredChainId === SUPPORTED_CHAINS.bitlazerL3.id
+              ? SUPPORTED_CHAINS.bitlazerL3.name.toUpperCase()
+              : SUPPORTED_CHAINS.arbitrumOne.name.toUpperCase()}
           </Button>
         )}
       </div>
@@ -681,11 +687,15 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
               <div className="flex justify-between items-center">
                 <span className="text-white/50 text-xs font-maison-neue">Route</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Arbitrum' : 'Bitlazer'}</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {isBridgeMode ? SUPPORTED_CHAINS.arbitrumOne.name : SUPPORTED_CHAINS.bitlazerL3.name}
+                  </span>
                   <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="text-white text-xs font-maison-neue">{isBridgeMode ? 'Bitlazer' : 'Arbitrum'}</span>
+                  <span className="text-white text-xs font-maison-neue">
+                    {isBridgeMode ? SUPPORTED_CHAINS.bitlazerL3.name : SUPPORTED_CHAINS.arbitrumOne.name}
+                  </span>
                 </div>
               </div>
 

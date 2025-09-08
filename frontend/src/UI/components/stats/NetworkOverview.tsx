@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { usePublicClient } from 'wagmi'
-import { arbitrum } from 'wagmi/chains'
-import { mainnet } from 'src/web3/chains'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 
 interface NetworkStats {
@@ -20,8 +19,8 @@ export const NetworkOverview: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
 
-  const arbitrumClient = usePublicClient({ chainId: arbitrum.id })
-  const bitlazerClient = usePublicClient({ chainId: mainnet.id })
+  const arbitrumClient = usePublicClient({ chainId: SUPPORTED_CHAINS.arbitrumOne.id })
+  const bitlazerClient = usePublicClient({ chainId: SUPPORTED_CHAINS.bitlazerL3.id })
 
   useEffect(() => {
     const fetchNetworkStats = async () => {
@@ -36,6 +35,7 @@ export const NetworkOverview: React.FC = () => {
           bitlazerBlock = await bitlazerClient?.getBlockNumber()
         } catch (error) {
           // Bitlazer L3 connection error
+          console.error(`${SUPPORTED_CHAINS.bitlazerL3.name} connection error:`, error)
         }
 
         setStats({

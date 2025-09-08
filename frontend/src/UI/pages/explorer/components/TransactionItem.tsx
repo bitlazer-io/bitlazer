@@ -2,6 +2,7 @@ import React, { FC } from 'react'
 import clsx from 'clsx'
 import { Transaction, TransactionType, TransactionStatus, NetworkType } from '../types'
 import { formatTxHash, formatAddress } from 'src/utils/formatters'
+import { SUPPORTED_CHAINS } from 'src/web3/chains'
 
 interface TransactionItemProps {
   transaction: Transaction
@@ -61,10 +62,9 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
   }
 
   const getNetworkIcon = (network: NetworkType) => {
-    if (network === NetworkType.ARBITRUM) {
-      return <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5 inline-block mr-1" />
-    }
-    return <img src="/images/bitlazer-icon.svg" alt="Bitlazer" className="w-5 h-5 inline-block mr-1" />
+    const chainMetadata = network === NetworkType.ARBITRUM ? SUPPORTED_CHAINS.arbitrumOne : SUPPORTED_CHAINS.bitlazerL3
+
+    return <img src={chainMetadata.icon} alt={chainMetadata.name} className="w-5 h-5 inline-block mr-1" />
   }
 
   return (
