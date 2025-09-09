@@ -59,6 +59,10 @@ export default defineConfig({
   define: {
     'process.env': {
       VITE_NODE_ENV: process.env.VITE_NODE_ENV,
+      VITE_ARBISCAN_API_KEY: process.env.VITE_ARBISCAN_API_KEY || '',
+      VITE_ARBISCAN_API_URL: process.env.VITE_ARBISCAN_API_URL || 'https://api.arbiscan.io/api',
+      VITE_BITLAZER_EXPLORER_API_URL:
+        process.env.VITE_BITLAZER_EXPLORER_API_URL || 'https://bitlazer.calderaexplorer.xyz/api',
     },
   },
   server: {

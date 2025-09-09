@@ -89,9 +89,7 @@ const Explorer: FC<IExplorer> = () => {
 
     // Apply network filter
     if (selectedNetwork !== 'all') {
-      filtered = filtered.filter(
-        (tx) => tx.sourceNetwork === selectedNetwork || tx.destinationNetwork === selectedNetwork,
-      )
+      filtered = filtered.filter((tx) => tx.sourceNetwork === selectedNetwork)
     }
 
     setFilteredTransactions(filtered)

@@ -86,19 +86,6 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
           </span>
         </div>
 
-        {/* Hash */}
-        <div className="col-span-2">
-          <a
-            href={transaction.explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white/70 hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-base cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {formatTxHash(transaction.hash)}
-          </a>
-        </div>
-
         {/* From Address */}
         <div className="col-span-2">
           <a
@@ -110,6 +97,19 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {formatAddress(transaction.from)}
+          </a>
+        </div>
+
+        {/* Hash */}
+        <div className="col-span-2">
+          <a
+            href={transaction.explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/70 hover:text-lightgreen-100 hover:underline transition-colors font-maison-neue text-base cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {formatTxHash(transaction.hash)}
           </a>
         </div>
 
