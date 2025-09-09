@@ -11,11 +11,12 @@ const bitlazerAPI = new BitlazerAPI()
 
 // Cache configuration
 const CACHE_CONFIG = {
-  TTL: EXPLORER_CONFIG.cacheTimeout,
+  TTL: 12 * 60 * 60 * 1000, // 12 hours for main cache
+  SHORT_TTL: 30 * 1000, // 30 seconds for refresh cache to prevent spam
   KEYS: {
-    ALL_TRANSACTIONS: 'explorer_all_transactions_v2',
-    ARBISCAN_TRANSACTIONS: 'explorer_arbiscan_transactions',
-    BITLAZER_TRANSACTIONS: 'explorer_bitlazer_transactions',
+    ALL_TRANSACTIONS: 'explorer_all_transactions_v5', // Changed version to clear old cache
+    ARBISCAN_TRANSACTIONS: 'explorer_arbiscan_transactions_v5',
+    BITLAZER_TRANSACTIONS: 'explorer_bitlazer_transactions_v5',
   },
 }
 
@@ -37,13 +38,15 @@ async function fetchAllTransactions(params: FetchAllTransactionsParams = {}): Pr
     maxTransactionsPerNetwork = 1000,
   } = params
 
+  // For forced refresh, still use short-term cache to prevent API spam
+  const cacheKey = forceRefresh ? `${CACHE_CONFIG.KEYS.ALL_TRANSACTIONS}_refresh` : CACHE_CONFIG.KEYS.ALL_TRANSACTIONS
+  const cacheTTL = forceRefresh ? CACHE_CONFIG.SHORT_TTL : CACHE_CONFIG.TTL
+
   // Check cache first
-  if (!forceRefresh) {
-    const cachedData = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
-    if (cachedData) {
-      console.log('Using cached transactions data')
-      return cachedData
-    }
+  const cachedData = cache.get<Transaction[]>(cacheKey)
+  if (cachedData && cachedData.length > 0) {
+    console.log('Using cached transactions data')
+    return cachedData
   }
 
   console.log('Fetching fresh transactions from explorer APIs...')
@@ -56,11 +59,13 @@ async function fetchAllTransactions(params: FetchAllTransactionsParams = {}): Pr
         includeTokenTransfers,
         includeInternalTransactions,
         maxTransactions: maxTransactionsPerNetwork,
+        forceRefresh,
       }),
       fetchBitlazerTransactions({
         includeTokenTransfers,
         includeInternalTransactions,
         maxTransactions: maxTransactionsPerNetwork,
+        forceRefresh,
       }),
     ])
 
@@ -77,7 +82,15 @@ async function fetchAllTransactions(params: FetchAllTransactionsParams = {}): Pr
     const sortedTransactions = filteredTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
     // Cache the results
-    cache.set(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS, sortedTransactions, CACHE_CONFIG.TTL)
+    cache.set(cacheKey, sortedTransactions, cacheTTL)
+
+    // Also update the main cache if this was a refresh
+    if (forceRefresh && sortedTransactions.length > 0) {
+      const mainCached = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
+      if (!mainCached || mainCached.length === 0) {
+        cache.set(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS, sortedTransactions, CACHE_CONFIG.TTL)
+      }
+    }
 
     return sortedTransactions
   } catch (error) {
@@ -86,11 +99,11 @@ async function fetchAllTransactions(params: FetchAllTransactionsParams = {}): Pr
     // Try to return cached data even if expired
     const expiredCache = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
     if (expiredCache) {
-      console.log('Using cache due to API error')
+      console.log('Using expired cache due to API error')
       return expiredCache
     }
 
-    throw error
+    return []
   }
 }
 
@@ -101,6 +114,7 @@ async function fetchArbitrumTransactions(params: {
   includeTokenTransfers: boolean
   includeInternalTransactions: boolean
   maxTransactions: number
+  forceRefresh?: boolean
 }): Promise<Transaction[]> {
   const transactions: Transaction[] = []
 
@@ -143,8 +157,9 @@ async function fetchArbitrumTransactions(params: {
       }
     })
 
-    // Cache Arbitrum transactions separately
-    cache.set(CACHE_CONFIG.KEYS.ARBISCAN_TRANSACTIONS, transactions, CACHE_CONFIG.TTL)
+    // Cache Arbitrum transactions separately with appropriate TTL
+    const ttl = params.forceRefresh ? CACHE_CONFIG.SHORT_TTL : CACHE_CONFIG.TTL
+    cache.set(CACHE_CONFIG.KEYS.ARBISCAN_TRANSACTIONS, transactions, ttl)
 
     return transactions
   } catch (error) {
@@ -167,6 +182,7 @@ async function fetchBitlazerTransactions(params: {
   includeTokenTransfers: boolean
   includeInternalTransactions: boolean
   maxTransactions: number
+  forceRefresh?: boolean
 }): Promise<Transaction[]> {
   try {
     // Use the new API that fetches via event logs
@@ -175,8 +191,9 @@ async function fetchBitlazerTransactions(params: {
     // Limit the number of transactions if needed
     const limitedTransactions = transactions.slice(0, params.maxTransactions)
 
-    // Cache Bitlazer transactions
-    cache.set(CACHE_CONFIG.KEYS.BITLAZER_TRANSACTIONS, limitedTransactions, CACHE_CONFIG.TTL)
+    // Cache Bitlazer transactions with appropriate TTL
+    const ttl = params.forceRefresh ? CACHE_CONFIG.SHORT_TTL : CACHE_CONFIG.TTL
+    cache.set(CACHE_CONFIG.KEYS.BITLAZER_TRANSACTIONS, limitedTransactions, ttl)
 
     return limitedTransactions
   } catch (error) {

@@ -1,10 +1,12 @@
-import React, { FC, useState, useEffect } from 'react'
+import React, { FC, useState, useEffect, useRef } from 'react'
 import { TypewriterText } from '@components/common/TypewriterText'
 import { TransactionList } from './components/TransactionList'
 import { TransactionFilters } from './components/TransactionFilters'
 import { fetchTransactions } from './services/transactionService'
 import { Transaction, TransactionType, NetworkType } from './types'
 import { cache } from 'src/utils/cache'
+import { ArbiscanAPI } from './services/arbiscanAPI'
+import { BitlazerAPI } from './services/bitlazerAPI'
 
 interface IExplorer {}
 
@@ -19,17 +21,102 @@ const Explorer: FC<IExplorer> = () => {
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkType | 'all'>('all')
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [nextRefreshIn, setNextRefreshIn] = useState(30)
   const itemsPerPage = 20
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastFetchRef = useRef<number>(0)
 
-  // Fetch all transactions only once on mount
+  // Cache-free auto-refresh function that fetches fresh data directly
+  const refreshRecentTransactions = async () => {
+    const now = Date.now()
+
+    console.log('Auto-refresh: Fetching fresh data from last 1 hour (no cache)...')
+
+    try {
+      // Initialize API clients fresh (no cache)
+      const arbiscanAPI = new ArbiscanAPI()
+      const bitlazerAPI = new BitlazerAPI()
+
+      // Fetch minimal data - only very recent transactions
+      const [freshArbTransactions, freshBitlazerTransactions] = await Promise.all([
+        arbiscanAPI.fetchTokenTransfers({
+          contractAddress: '0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df',
+          offset: 10, // Very small - only last 10 transactions
+          sort: 'desc',
+        }),
+        // Normal fetch but with very small block range for low-volume chain
+        bitlazerAPI.fetchAllTransactions(5), // Only last 5 blocks - sufficient for low-volume Bitlazer
+      ])
+
+      // Combine fresh transactions
+      const allFreshTransactions = [...freshArbTransactions, ...freshBitlazerTransactions]
+
+      // Remove duplicates and filter out TRANSFER type
+      const uniqueFresh = Array.from(new Map(allFreshTransactions.map((tx) => [tx.hash, tx])).values()).filter(
+        (tx) => tx.type !== TransactionType.TRANSFER,
+      )
+
+      // Find NEW transactions that don't exist in current list
+      const existingTxHashes = new Set(allTransactions.map((tx) => tx.hash))
+      const newTransactions = uniqueFresh.filter((tx) => !existingTxHashes.has(tx.hash))
+
+      console.log(
+        `Found ${newTransactions.length} NEW transactions, adding to existing ${allTransactions.length} cached transactions`,
+      )
+
+      // Simply add new transactions to existing cached list
+      const combined = [...newTransactions, ...allTransactions]
+      const sorted = combined.sort((a, b) => b.timestamp - a.timestamp)
+
+      setAllTransactions(sorted)
+
+      // Update the main cache to include new transactions found during auto-refresh
+      cache.set('explorer_all_transactions_12h', sorted, 12 * 60 * 60 * 1000)
+      console.log('Auto-refresh completed - merged fresh 1-hour data with older cached data and updated cache')
+    } catch (error) {
+      console.error('Auto-refresh failed:', error)
+    }
+  }
+
+  // Initial load on mount
   useEffect(() => {
-    loadAllTransactions()
+    loadAllTransactions(false)
+  }, [])
+
+  // Set up auto-refresh countdown (30 seconds)
+  useEffect(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+    }
+
+    let countdown = 30 // 30 seconds
+    setNextRefreshIn(countdown)
+
+    countdownIntervalRef.current = setInterval(() => {
+      countdown -= 1
+      if (countdown <= 0) {
+        countdown = 30
+        // Use cache-free refresh for recent transactions
+        refreshRecentTransactions()
+      }
+      setNextRefreshIn(countdown)
+    }, 1000)
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+      }
+    }
   }, [])
 
   // Apply filters when search/filter criteria change
   useEffect(() => {
-    applyFilters()
-  }, [searchQuery, selectedType, selectedNetwork, allTransactions])
+    applyFilters(false)
+  }, [allTransactions])
+
+  useEffect(() => {
+    applyFilters(true) // Reset page on user filter changes
+  }, [searchQuery, selectedType, selectedNetwork])
 
   // Handle pagination
   useEffect(() => {
@@ -39,28 +126,50 @@ const Explorer: FC<IExplorer> = () => {
     setHasMore(end < filteredTransactions.length)
   }, [page, filteredTransactions])
 
-  const loadAllTransactions = async () => {
-    const CACHE_KEY = 'explorer_transactions'
-    const CACHE_TTL = 60 * 1000 // 1 minute cache
+  const loadAllTransactions = async (refreshRecentOnly = false) => {
+    const CACHE_KEY = 'explorer_all_transactions_12h'
+    const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
+    const now = Date.now()
 
-    // Try to get cached data first
-    const cachedData = cache.get<Transaction[]>(CACHE_KEY)
-    if (cachedData) {
-      setAllTransactions(cachedData)
-      setLoading(false)
+    // Prevent API spam - minimum 25 seconds between fetches
+    if (refreshRecentOnly && now - lastFetchRef.current < 25000) {
+      console.log('Skipping refresh - too soon since last fetch')
       return
     }
 
-    setLoading(true)
-    try {
-      const data = await fetchTransactions({
-        page: 1,
-        limit: 1000, // Fetch all available transactions
-      })
+    // For initial load, try cache first
+    if (!refreshRecentOnly) {
+      const cachedData = cache.get<Transaction[]>(CACHE_KEY)
+      if (cachedData && cachedData.length > 0) {
+        setAllTransactions(cachedData)
+        setLoading(false)
+        return
+      }
+    }
 
-      // Cache the transactions
-      cache.set(CACHE_KEY, data.transactions, CACHE_TTL)
-      setAllTransactions(data.transactions)
+    // Don't show loading spinner on auto-refresh
+    if (!refreshRecentOnly) {
+      setLoading(true)
+    }
+
+    try {
+      lastFetchRef.current = now
+
+      if (refreshRecentOnly) {
+        // This path is no longer used since we have refreshRecentTransactions()
+        console.log('Skipping old refresh logic - using new cache-free refresh')
+        return
+      } else {
+        // Initial load: fetch all and cache
+        const data = await fetchTransactions({
+          page: 1,
+          limit: 1000,
+          forceRefresh: false,
+        })
+
+        setAllTransactions(data.transactions)
+        cache.set(CACHE_KEY, data.transactions, CACHE_TTL)
+      }
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
     } finally {
@@ -68,7 +177,7 @@ const Explorer: FC<IExplorer> = () => {
     }
   }
 
-  const applyFilters = () => {
+  const applyFilters = (resetPage = false) => {
     let filtered = [...allTransactions]
 
     // Apply search filter
@@ -93,7 +202,11 @@ const Explorer: FC<IExplorer> = () => {
     }
 
     setFilteredTransactions(filtered)
-    setPage(1) // Reset to first page when filters change
+
+    // Only reset to first page if explicitly requested (user-initiated filter change)
+    if (resetPage) {
+      setPage(1)
+    }
   }
 
   const handleSearch = (query: string) => {
@@ -133,14 +246,14 @@ const Explorer: FC<IExplorer> = () => {
             <p className="text-base md:text-xl text-white font-maison-neue min-h-[1.5rem] md:min-h-[1.75rem]">
               {titleComplete ? (
                 <TypewriterText
-                  text="Track all Bitlazer ecosystem transactions in real-time"
+                  text="Track all Bitlazer ecosystem transactions"
                   delay={30}
                   initialDelay={100}
                   cursor={true}
                   cursorChar="_"
                 />
               ) : (
-                <span className="opacity-0">Track all Bitlazer ecosystem transactions in real-time</span>
+                <span className="opacity-0">Track all Bitlazer ecosystem transactions</span>
               )}
             </p>
           </div>
@@ -166,6 +279,7 @@ const Explorer: FC<IExplorer> = () => {
             onLoadMore={handleLoadMore}
             onSearch={handleSearch}
             searchQuery={searchQuery}
+            nextRefreshIn={nextRefreshIn}
           />
         </div>
       </div>

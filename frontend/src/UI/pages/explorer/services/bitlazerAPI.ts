@@ -87,24 +87,7 @@ export class BitlazerAPI {
     }
   }
 
-  /**
-   * Check if a transaction hash has staking events
-   */
-  private async checkForStakingEvents(txHash: string): Promise<boolean> {
-    try {
-      const txDetails = await this.fetchTransactionByHash(txHash)
-      if (!txDetails || !txDetails.logs) return false
-
-      // Check if any log has staking event signatures
-      return txDetails.logs.some(
-        (log: any) =>
-          log.topics && (log.topics[0] === EVENT_SIGNATURES.Staked || log.topics[0] === EVENT_SIGNATURES.Unstaked),
-      )
-    } catch (error) {
-      console.error('Error checking for staking events:', error)
-      return false
-    }
-  }
+  // Removed checkForStakingEvents - no longer needed with optimized approach
 
   /**
    * Fetch all Transfer events (mints, burns only - not regular transfers)
@@ -128,18 +111,10 @@ export class BitlazerAPI {
 
     for (const log of logs) {
       if (processedHashes.has(log.transactionHash)) continue
-
-      // Check if this transaction has staking events - if so, skip Transfer parsing
-      // to avoid conflicts with staking transaction parsing
-      const hasStakingEvents = await this.checkForStakingEvents(log.transactionHash)
-      if (hasStakingEvents) {
-        processedHashes.add(log.transactionHash)
-        continue
-      }
-
       processedHashes.add(log.transactionHash)
 
-      const transaction = await this.parseTransferLog(log)
+      // Parse without fetching additional details first
+      const transaction = await this.parseTransferLogOptimized(log)
       // Only include wrap/unwrap transactions, not regular transfers
       if (transaction && transaction.type !== TransactionType.TRANSFER) {
         transactions.push(transaction)
@@ -155,52 +130,66 @@ export class BitlazerAPI {
   async fetchStakingEvents(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
     const transactions: Transaction[] = []
 
-    // Fetch all Unstaked events first (both STAKE and UNSTAKE operations create Unstaked events)
     try {
-      const unstakedUrl = this.buildUrl({
-        module: 'logs',
-        action: 'getLogs',
-        fromBlock,
-        toBlock,
-        topic0: EVENT_SIGNATURES.Unstaked,
-        address: STAKING_CONTRACTS.T3RNStakingAdapter.toLowerCase(),
-      })
+      // Fetch both Staked and Unstaked events in parallel
+      const [stakedResponse, unstakedResponse] = await Promise.all([
+        this.fetchWithRetry(
+          this.buildUrl({
+            module: 'logs',
+            action: 'getLogs',
+            fromBlock,
+            toBlock,
+            topic0: EVENT_SIGNATURES.Staked,
+            address: STAKING_CONTRACTS.T3RNStakingAdapter.toLowerCase(),
+          }),
+        ),
+        this.fetchWithRetry(
+          this.buildUrl({
+            module: 'logs',
+            action: 'getLogs',
+            fromBlock,
+            toBlock,
+            topic0: EVENT_SIGNATURES.Unstaked,
+            address: STAKING_CONTRACTS.T3RNStakingAdapter.toLowerCase(),
+          }),
+        ),
+      ])
 
-      const unstakedResponse = await this.fetchWithRetry(unstakedUrl)
+      const stakedLogs = stakedResponse.result || []
       const unstakedLogs = unstakedResponse.result || []
 
-      // Process each unstaked log to determine if it's part of a STAKE or UNSTAKE transaction
+      // Create a map of tx hashes that have Staked events
+      const stakedTxHashes = new Set(stakedLogs.map((log: any) => log.transactionHash))
       const processedHashes = new Set<string>()
 
-      for (const log of unstakedLogs) {
+      // Process Staked events (STAKE transactions)
+      for (const log of stakedLogs) {
         if (processedHashes.has(log.transactionHash)) continue
         processedHashes.add(log.transactionHash)
 
-        // Get full transaction details to analyze all events
-        const txDetails = await this.fetchTransactionByHash(log.transactionHash)
-        if (!txDetails || !txDetails.logs) continue
-
-        // Check if this transaction also has a Staked event
-        const hasStakedEvent = txDetails.logs.some(
-          (txLog: any) => txLog.topics && txLog.topics[0] === EVENT_SIGNATURES.Staked,
+        const tx = await this.parseStakingTransactionOptimized(
+          log.transactionHash,
+          TransactionType.STAKE,
+          log,
+          parseInt(log.timeStamp, 16),
+          parseInt(log.blockNumber, 16),
         )
+        if (tx) transactions.push(tx)
+      }
 
-        let transactionType: TransactionType
-        let amountLog: any
+      // Process Unstaked events (only pure UNSTAKE, not part of STAKE)
+      for (const log of unstakedLogs) {
+        if (processedHashes.has(log.transactionHash)) continue
+        if (stakedTxHashes.has(log.transactionHash)) continue // Skip if part of STAKE tx
+        processedHashes.add(log.transactionHash)
 
-        if (hasStakedEvent) {
-          // This is a STAKE transaction (has both Unstaked for auto-claim + Staked for new stake)
-          transactionType = TransactionType.STAKE
-          // For STAKE, use the Staked event amount (the new stake amount)
-          amountLog = txDetails.logs.find((txLog: any) => txLog.topics && txLog.topics[0] === EVENT_SIGNATURES.Staked)
-        } else {
-          // This is pure UNSTAKE transaction (only Unstaked event)
-          transactionType = TransactionType.UNSTAKE
-          // For UNSTAKE, use the Unstaked event
-          amountLog = log
-        }
-
-        const tx = await this.parseStakingTransaction(log.transactionHash, transactionType, amountLog, txDetails)
+        const tx = await this.parseStakingTransactionOptimized(
+          log.transactionHash,
+          TransactionType.UNSTAKE,
+          log,
+          parseInt(log.timeStamp, 16),
+          parseInt(log.blockNumber, 16),
+        )
         if (tx) transactions.push(tx)
       }
     } catch (error) {
@@ -229,7 +218,7 @@ export class BitlazerAPI {
 
       const transactions: Transaction[] = []
       for (const log of logs) {
-        const tx = await this.parseBridgeLog(log)
+        const tx = await this.parseBridgeLogOptimized(log)
         if (tx) transactions.push(tx)
       }
 
@@ -259,7 +248,12 @@ export class BitlazerAPI {
     }
   }
 
+  // Keeping parseTransferLog for backward compatibility but not using it
   private async parseTransferLog(log: BitlazerLog): Promise<Transaction | null> {
+    return this.parseTransferLogOptimized(log)
+  }
+
+  private async parseTransferLogOptimized(log: BitlazerLog): Promise<Transaction | null> {
     try {
       let from = '0x' + log.topics[1]?.slice(26) || '0x0'
       const to = '0x' + log.topics[2]?.slice(26) || '0x0'
@@ -274,13 +268,16 @@ export class BitlazerAPI {
       // Check if it's a mint (wrap) or burn (unwrap) based on 0x0 address
       if (from === '0x0000000000000000000000000000000000000000') {
         type = TransactionType.WRAP // Mint operation
-        // For mint transactions, fetch the actual transaction details to get the initiator
+        // For wrap transactions, we need to fetch the actual initiator
         const txDetails = await this.fetchTransactionByHash(log.transactionHash)
         if (txDetails && txDetails.from) {
-          from = txDetails.from // Use the actual transaction initiator
+          from = txDetails.from
+        } else {
+          from = to // Fallback to recipient if fetch fails
         }
       } else if (to === '0x0000000000000000000000000000000000000000') {
         type = TransactionType.UNWRAP // Burn operation
+        // For unwrap, from is already correct (the person burning)
       } else {
         // Regular transfer - we don't want to show these
         return null
@@ -303,7 +300,7 @@ export class BitlazerAPI {
         gasPrice: log.gasPrice,
       }
     } catch (error) {
-      console.error('Error parsing transfer log:', error)
+      console.error('Error parsing transfer log optimized:', error)
       return null
     }
   }
@@ -357,9 +354,15 @@ export class BitlazerAPI {
     }
   }
 
+  // Keeping parseBridgeLog for backward compatibility
   private async parseBridgeLog(log: BitlazerLog): Promise<Transaction | null> {
+    return this.parseBridgeLogOptimized(log)
+  }
+
+  private async parseBridgeLogOptimized(log: BitlazerLog): Promise<Transaction | null> {
     try {
-      // Get transaction details to find sender
+      // For bridge transactions, we need to fetch tx details to get the actual amount
+      // This is necessary because the WithdrawalInitiated event doesn't contain the amount
       const txDetails = await this.fetchTransactionByHash(log.transactionHash)
       if (!txDetails) return null
 
@@ -381,8 +384,98 @@ export class BitlazerAPI {
         gasPrice: txDetails.gasPrice,
       }
     } catch (error) {
-      console.error('Error parsing bridge log:', error)
+      console.error('Error parsing bridge log optimized:', error)
       return null
+    }
+  }
+
+  private async parseStakingTransactionOptimized(
+    txHash: string,
+    type: TransactionType,
+    log: any,
+    timestamp: number,
+    blockNumber: number,
+  ): Promise<Transaction | null> {
+    try {
+      // User address is in topic[1] of the log
+      const user = '0x' + log.topics[1]?.slice(26) || '0x0'
+
+      let amount: bigint
+
+      if (type === TransactionType.STAKE) {
+        // For STAKE: use Staked event data (single value = new stake amount)
+        amount = BigInt(log.data || '0x0')
+      } else {
+        // For UNSTAKE: use Unstaked event data (3 values, we want the middle one)
+        // data format: principal (64 chars) + unstaked amount (64 chars) + rewards (64 chars)
+        const dataHex = log.data || '0x0'
+        const cleanData = dataHex.slice(2)
+        const unstakedAmountHex = '0x' + cleanData.slice(64, 128)
+        amount = BigInt(unstakedAmountHex)
+      }
+
+      const amountInEther = Number(amount) / 1e18
+
+      return {
+        id: txHash,
+        hash: txHash,
+        type,
+        status: TransactionStatus.CONFIRMED,
+        from: user, // Use user address from log instead of fetching tx details
+        to: STAKING_CONTRACTS.T3RNStakingAdapter,
+        amount: amountInEther.toString(),
+        asset: 'lzrBTC',
+        sourceNetwork: NetworkType.BITLAZER,
+        timestamp,
+        blockNumber,
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
+        gasUsed: log.gasUsed,
+        gasPrice: log.gasPrice,
+      }
+    } catch (error) {
+      console.error('Error parsing staking transaction optimized:', error)
+      return null
+    }
+  }
+
+  /**
+   * Fetch all transactions from Bitlazer using event logs (lightweight - no individual API calls)
+   */
+  async fetchAllTransactionsLightweight(maxBlocks = 100): Promise<Transaction[]> {
+    try {
+      // Get current block using RPC endpoint
+      const rpcResponse = await fetch(`${this.baseUrl}/api/eth-rpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_blockNumber',
+          params: [],
+          id: 1,
+        }),
+      })
+      const rpcData = await rpcResponse.json()
+      const currentBlock = parseInt(rpcData.result, 16) || 1000
+      const fromBlock = Math.max(0, currentBlock - maxBlocks)
+
+      console.log(`Fetching Bitlazer transactions (lightweight) from block ${fromBlock} to ${currentBlock}`)
+
+      // Fetch all event types in parallel but use lightweight parsing
+      const [transfers, stakingEvents, bridgeEvents] = await Promise.all([
+        this.fetchTransferEventsLightweight(fromBlock, currentBlock),
+        this.fetchStakingEvents(fromBlock, currentBlock), // This one is already optimized
+        this.fetchBridgeEventsLightweight(fromBlock, currentBlock),
+      ])
+
+      // Combine and deduplicate
+      const allTransactions = [...transfers, ...stakingEvents, ...bridgeEvents]
+      const uniqueTransactions = Array.from(new Map(allTransactions.map((tx) => [tx.hash, tx])).values())
+
+      // Sort by timestamp (newest first)
+      return uniqueTransactions.sort((a, b) => b.timestamp - a.timestamp)
+    } catch (error) {
+      console.error('Error fetching Bitlazer transactions (lightweight):', error)
+      return []
     }
   }
 
@@ -424,6 +517,144 @@ export class BitlazerAPI {
     } catch (error) {
       console.error('Error fetching Bitlazer transactions:', error)
       return []
+    }
+  }
+
+  /**
+   * Fetch transfer events (lightweight - no individual API calls for wrap transactions)
+   */
+  async fetchTransferEventsLightweight(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
+    const url = this.buildUrl({
+      module: 'logs',
+      action: 'getLogs',
+      fromBlock,
+      toBlock,
+      topic0: EVENT_SIGNATURES.Transfer,
+      address: '0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df',
+    })
+
+    const response = await this.fetchWithRetry(url)
+    const logs = response.result || []
+
+    const transactions: Transaction[] = []
+    const processedHashes = new Set<string>()
+
+    for (const log of logs) {
+      if (processedHashes.has(log.transactionHash)) continue
+      processedHashes.add(log.transactionHash)
+
+      const transaction = await this.parseTransferLogLightweight(log)
+      if (transaction && transaction.type !== TransactionType.TRANSFER) {
+        transactions.push(transaction)
+      }
+    }
+
+    return transactions
+  }
+
+  /**
+   * Fetch bridge events (lightweight - no individual API calls)
+   */
+  async fetchBridgeEventsLightweight(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
+    const url = this.buildUrl({
+      module: 'logs',
+      action: 'getLogs',
+      fromBlock,
+      toBlock,
+      topic0: EVENT_SIGNATURES.WithdrawalInitiated,
+      address: '0x0000000000000000000000000000000000000064',
+    })
+
+    try {
+      const response = await this.fetchWithRetry(url)
+      const logs = response.result || []
+
+      const transactions: Transaction[] = []
+      for (const log of logs) {
+        const tx = await this.parseBridgeLogLightweight(log)
+        if (tx) transactions.push(tx)
+      }
+
+      return transactions
+    } catch (error) {
+      console.error('Error fetching bridge events (lightweight):', error)
+      return []
+    }
+  }
+
+  /**
+   * Parse transfer log without making individual API calls (for auto-refresh)
+   */
+  private async parseTransferLogLightweight(log: BitlazerLog): Promise<Transaction | null> {
+    try {
+      let from = '0x' + log.topics[1]?.slice(26) || '0x0'
+      const to = '0x' + log.topics[2]?.slice(26) || '0x0'
+
+      // Parse amount from data (uint256)
+      const amount = BigInt(log.data || '0x0')
+      const amountInEther = Number(amount) / 1e18
+
+      let type = TransactionType.TRANSFER
+
+      // Check if it's a mint (wrap) or burn (unwrap)
+      if (from === '0x0000000000000000000000000000000000000000') {
+        type = TransactionType.WRAP
+        // Don't fetch tx details - use recipient as from address
+        from = to
+      } else if (to === '0x0000000000000000000000000000000000000000') {
+        type = TransactionType.UNWRAP
+      } else {
+        return null // Skip regular transfers
+      }
+
+      return {
+        id: log.transactionHash,
+        hash: log.transactionHash,
+        type,
+        status: TransactionStatus.CONFIRMED,
+        from,
+        to,
+        amount: amountInEther.toString(),
+        asset: 'lzrBTC',
+        sourceNetwork: NetworkType.BITLAZER,
+        timestamp: parseInt(log.timeStamp, 16),
+        blockNumber: parseInt(log.blockNumber, 16),
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+        gasUsed: log.gasUsed,
+        gasPrice: log.gasPrice,
+      }
+    } catch (error) {
+      console.error('Error parsing transfer log (lightweight):', error)
+      return null
+    }
+  }
+
+  /**
+   * Parse bridge log without making individual API calls (for auto-refresh)
+   */
+  private async parseBridgeLogLightweight(log: BitlazerLog): Promise<Transaction | null> {
+    try {
+      // Don't fetch tx details - use placeholder amount
+      return {
+        id: log.transactionHash,
+        hash: log.transactionHash,
+        type: TransactionType.BRIDGE,
+        status: TransactionStatus.PENDING,
+        from: '0x' + log.topics[1]?.slice(26) || '0x0', // Extract from topics
+        to: '0x0000000000000000000000000000000000000064',
+        amount: '0.00000001', // Placeholder - will be updated on full page refresh
+        asset: 'lzrBTC',
+        sourceNetwork: NetworkType.BITLAZER,
+        destinationNetwork: NetworkType.ARBITRUM,
+        timestamp: parseInt(log.timeStamp, 16),
+        blockNumber: parseInt(log.blockNumber, 16),
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+        gasUsed: log.gasUsed,
+        gasPrice: log.gasPrice,
+      }
+    } catch (error) {
+      console.error('Error parsing bridge log (lightweight):', error)
+      return null
     }
   }
 }

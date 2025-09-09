@@ -11,6 +11,7 @@ interface TransactionListProps {
   onLoadMore: () => void
   onSearch?: (query: string) => void
   searchQuery?: string
+  nextRefreshIn?: number
 }
 
 export const TransactionList: FC<TransactionListProps> = ({
@@ -20,6 +21,7 @@ export const TransactionList: FC<TransactionListProps> = ({
   onLoadMore,
   onSearch,
   searchQuery = '',
+  nextRefreshIn,
 }) => {
   const [localSearchQuery, setLocalSearchQuery] = React.useState(searchQuery)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
@@ -158,13 +160,36 @@ export const TransactionList: FC<TransactionListProps> = ({
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase">Block</div>
               <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">Network</div>
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase">Status</div>
-              <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase text-right">Time</div>
+              <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase text-right flex items-center justify-end gap-2">
+                <span>Time</span>
+                {nextRefreshIn !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <svg className="w-3 h-3 -rotate-90 text-white/50" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="6" opacity="0.25" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        fill="none"
+                        style={{
+                          strokeDasharray: `${(nextRefreshIn / 30) * 62.8}px, 62.8px`,
+                          transition: 'stroke-dasharray 1s linear',
+                        }}
+                      />
+                    </svg>
+                    <span className="text-xs font-maison-neue font-bold normal-case">{nextRefreshIn}s</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Transaction Items */}
             <div className="space-y-3">
               {transactions.map((transaction) => (
-                <TransactionItem key={transaction.id} transaction={transaction} />
+                <TransactionItem key={transaction.id} transaction={transaction} nextRefreshIn={nextRefreshIn} />
               ))}
             </div>
 

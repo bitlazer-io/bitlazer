@@ -6,6 +6,7 @@ import { SUPPORTED_CHAINS } from 'src/web3/chains'
 
 interface TransactionItemProps {
   transaction: Transaction
+  nextRefreshIn?: number
 }
 
 export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
