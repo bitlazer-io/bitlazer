@@ -80,7 +80,13 @@ export const TransactionFilters: FC<TransactionFiltersProps> = ({
                 <img
                   src={SUPPORTED_CHAINS.bitlazerL3.icon}
                   alt={SUPPORTED_CHAINS.bitlazerL3.name}
-                  className={clsx('w-4 h-4', selectedNetwork === option.value ? 'opacity-100' : 'opacity-70')}
+                  className="w-4 h-4"
+                  style={{
+                    filter:
+                      selectedNetwork === option.value
+                        ? 'invert(1) sepia(1) saturate(0) hue-rotate(0deg) brightness(0) contrast(100%)'
+                        : 'none',
+                  }}
                 />
               )}
               {option.label}
