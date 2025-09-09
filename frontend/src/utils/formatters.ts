@@ -125,3 +125,28 @@ export function formatAddress(address: string): string {
   }
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
+
+/**
+ * Calculate percentage amount with proper decimal precision handling
+ * @param balance - The balance string to calculate percentage from
+ * @param percentage - Percentage (0-100)
+ * @param decimals - Token decimals (8 for WBTC, 18 for most tokens)
+ * @returns Formatted string amount with proper precision
+ */
+export function calculatePercentageAmount(balance: string, percentage: number, decimals: number = 18): string {
+  if (!balance || parseFloat(balance) === 0) return '0'
+
+  let value: string
+  if (percentage === 100) {
+    // For MAX, use the raw balance but truncate to appropriate decimals
+    const balanceNum = parseFloat(balance)
+    // Reduce by smallest unit to avoid precision issues
+    const adjustment = 1 / Math.pow(10, decimals)
+    value = (balanceNum - adjustment).toFixed(decimals).replace(/\.?0+$/, '')
+  } else {
+    const value_raw = parseFloat(balance) * (percentage / 100)
+    value = value_raw.toFixed(decimals).replace(/\.?0+$/, '')
+  }
+
+  return value
+}

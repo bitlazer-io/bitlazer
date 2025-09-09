@@ -15,6 +15,7 @@ import Cookies from 'universal-cookie'
 import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
 import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
+import { calculatePercentageAmount } from 'src/utils/formatters'
 import { useNavigate } from 'react-router-dom'
 import { useWrapDetails } from 'src/hooks/useWrapDetails'
 
@@ -278,7 +279,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
     } catch (error: any) {
       // Check if user rejected the transaction
       if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
-        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 3000 })
       } else {
         toast(<TXToast {...{ message: 'Approval failed', error }} />, { autoClose: 7000 })
       }
@@ -380,7 +381,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       if (!error.message.includes('User rejected the request.')) {
         toast(<TXToast {...{ message: 'Failed to Wrap.' }} />, { autoClose: 7000 })
       } else {
-        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 3000 })
       }
     }
   }
@@ -425,7 +426,7 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
       if (!error.message.includes('User rejected the request.')) {
         toast(<TXToast {...{ message: 'Failed to Unwrap' }} />, { autoClose: 7000 })
       } else {
-        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction Rejected.' }} />, { autoClose: 3000 })
       }
     }
   }
@@ -460,9 +461,8 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
   const handlePercentage = (percentage: number) => {
     const balance = isWrapMode ? balanceData?.formatted : lzrBTCBalanceData?.formatted
     if (balance) {
-      // For MAX (100%), reduce slightly to avoid validation issues
-      const multiplier = percentage === 100 ? 0.999999 : percentage / 100
-      const value = (parseFloat(balance) * multiplier).toString()
+      const decimals = isWrapMode && selectedToken === 'wbtc' ? 8 : 18
+      const value = calculatePercentageAmount(balance, percentage, decimals)
       if (isWrapMode) {
         setValue('amount', value)
         trigger('amount')

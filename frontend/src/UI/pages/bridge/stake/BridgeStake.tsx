@@ -15,6 +15,7 @@ import { parseUnits } from 'viem'
 import clsx from 'clsx'
 import { useEffect } from 'react'
 import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
+import { calculatePercentageAmount } from 'src/utils/formatters'
 import LZRStake from './LZRStake'
 
 interface IBridgeStake {}
@@ -185,7 +186,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       }
       // Check if user rejected the transaction
       if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
-        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 3000 })
       } else {
         // Extract meaningful error message
         let errorMessage = 'Failed to stake'
@@ -256,7 +257,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
       }
       // Check if user rejected the transaction
       if (error?.message?.includes('User rejected') || error?.message?.includes('User denied')) {
-        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction rejected by user' }} />, { autoClose: 3000 })
       } else if (error?.message?.includes('Insufficient balance for rewards')) {
         // Contract doesn't have enough balance to pay rewards
         toast(
@@ -334,10 +335,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
           : '0'
         : formatStakedAmount(stakedBalance)
 
-    const amount =
-      percentage === 100
-        ? (parseFloat(balance) * 0.999999).toString()
-        : (parseFloat(balance) * (percentage / 100)).toString()
+    const amount = calculatePercentageAmount(balance, percentage, 18)
 
     if (activeTab === 'stake') {
       stakeSetValue('stakeAmount', amount)

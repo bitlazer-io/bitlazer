@@ -18,6 +18,7 @@ import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import { fetchWithCache, debouncedFetch, CACHE_KEYS, CACHE_TTL } from 'src/utils/cache'
+import { calculatePercentageAmount } from 'src/utils/formatters'
 import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
 import { useLastTransaction } from 'src/hooks/useLastTransaction'
 
@@ -354,7 +355,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           autoClose: 7000,
         })
       } else if (error.message.includes('user rejected transaction')) {
-        toast(<TXToast {...{ message: 'Transaction rejected.' }} />, { autoClose: 7000 })
+        toast(<TXToast {...{ message: 'Transaction rejected.' }} />, { autoClose: 3000 })
       } else {
         toast(<TXToast {...{ message: 'Failed to Bridge' }} />, { autoClose: 7000 })
       }
@@ -389,9 +390,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       : formatEther(l3Data?.value.toString() || '0')
 
     if (balance) {
-      // For MAX (100%), reduce slightly to avoid validation issues
-      const multiplier = percentage === 100 ? 0.999999 : percentage / 100
-      const value = (parseFloat(balance) * multiplier).toString()
+      const value = calculatePercentageAmount(balance, percentage, 18)
       if (isBridgeMode) {
         setValue('amount', value)
         trigger('amount')
