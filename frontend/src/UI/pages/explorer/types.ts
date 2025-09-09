@@ -4,6 +4,7 @@ export enum TransactionType {
   BRIDGE = 'bridge',
   STAKE = 'stake',
   UNSTAKE = 'unstake',
+  TRANSFER = 'transfer',
 }
 
 export enum NetworkType {
@@ -34,15 +35,19 @@ export interface Transaction {
   gasPrice?: string
   fee?: string
   explorerUrl: string
+  isInternal?: boolean
 }
 
 export interface TransactionFiltersType {
   query?: string
-  type?: TransactionType
-  network?: NetworkType
+  type?: TransactionType | 'all'
+  network?: NetworkType | 'all'
   status?: TransactionStatus
   page: number
   limit: number
+  startDate?: string
+  endDate?: string
+  forceRefresh?: boolean
 }
 
 export interface TransactionResponse {

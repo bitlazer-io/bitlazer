@@ -152,8 +152,8 @@ export const TransactionList: FC<TransactionListProps> = ({
             {/* Desktop Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-4 pb-4 border-b border-lightgreen-100/30 mb-4">
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase">Type</div>
-              <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">Hash</div>
               <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">From</div>
+              <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">Hash</div>
               <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">Amount</div>
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase">Block</div>
               <div className="col-span-2 font-ocrx text-lightgreen-100 text-base uppercase">Network</div>

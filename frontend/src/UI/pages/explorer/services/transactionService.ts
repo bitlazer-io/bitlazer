@@ -1,298 +1,208 @@
-import {
-  Transaction,
-  TransactionFiltersType,
-  TransactionResponse,
-  TransactionType,
-  TransactionStatus,
-  NetworkType,
-} from '../types'
-import { parseAbiItem, formatUnits, createPublicClient, http } from 'viem'
-import { SUPPORTED_CHAINS } from 'src/web3/chains'
-import { ERC20_CONTRACT_ADDRESS, STAKING_CONTRACTS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
+import { Transaction, TransactionFiltersType, TransactionResponse, NetworkType, TransactionType } from '../types'
+import { ArbiscanAPI } from './arbiscanAPI'
+import { BitlazerAPI } from './bitlazerAPI'
+import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER } from 'src/web3/contracts'
+import { cache } from 'src/utils/cache'
+import { EXPLORER_CONFIG } from 'src/config/explorer'
 
-// Create public clients for fetching blockchain data
-const arbitrumClient = createPublicClient({
-  chain: SUPPORTED_CHAINS.arbitrumOne.chain,
-  transport: http(),
-})
+// Initialize API clients
+const arbiscanAPI = new ArbiscanAPI()
+const bitlazerAPI = new BitlazerAPI()
 
-const bitlazerClient = createPublicClient({
-  chain: SUPPORTED_CHAINS.bitlazerL3.chain,
-  transport: http(),
-})
+// Cache configuration
+const CACHE_CONFIG = {
+  TTL: EXPLORER_CONFIG.cacheTimeout,
+  KEYS: {
+    ALL_TRANSACTIONS: 'explorer_all_transactions_v2',
+    ARBISCAN_TRANSACTIONS: 'explorer_arbiscan_transactions',
+    BITLAZER_TRANSACTIONS: 'explorer_bitlazer_transactions',
+  },
+}
 
-// Fetch all real transactions from blockchain
-const fetchAllTransactions = async (): Promise<Transaction[]> => {
+interface FetchAllTransactionsParams {
+  forceRefresh?: boolean
+  includeTokenTransfers?: boolean
+  includeInternalTransactions?: boolean
+  maxTransactionsPerNetwork?: number
+}
+
+/**
+ * Fetch all transactions from both Arbitrum and Bitlazer networks using explorer APIs
+ */
+async function fetchAllTransactions(params: FetchAllTransactionsParams = {}): Promise<Transaction[]> {
+  const {
+    forceRefresh = false,
+    includeTokenTransfers = true,
+    includeInternalTransactions = false,
+    maxTransactionsPerNetwork = 1000,
+  } = params
+
+  // Check cache first
+  if (!forceRefresh) {
+    const cachedData = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
+    if (cachedData) {
+      console.log('Using cached transactions data')
+      return cachedData
+    }
+  }
+
+  console.log('Fetching fresh transactions from explorer APIs...')
   const allTransactions: Transaction[] = []
 
   try {
-    // Get current blocks
-    const arbCurrentBlock = await arbitrumClient.getBlockNumber()
-    const l3CurrentBlock = await bitlazerClient.getBlockNumber()
+    // Fetch transactions in parallel from both networks
+    const [arbTransactions, bitlazerTransactions] = await Promise.all([
+      fetchArbitrumTransactions({
+        includeTokenTransfers,
+        includeInternalTransactions,
+        maxTransactions: maxTransactionsPerNetwork,
+      }),
+      fetchBitlazerTransactions({
+        includeTokenTransfers,
+        includeInternalTransactions,
+        maxTransactions: maxTransactionsPerNetwork,
+      }),
+    ])
 
-    // Define block ranges (last ~3M blocks to capture more history)
-    const arbFromBlock = arbCurrentBlock > 3000000n ? arbCurrentBlock - 3000000n : 0n
-    const l3FromBlock = l3CurrentBlock > 3000000n ? l3CurrentBlock - 3000000n : 0n
+    allTransactions.push(...arbTransactions, ...bitlazerTransactions)
 
-    // 1. FETCH WRAP TRANSACTIONS (Arbitrum)
-    const wrapLogs = await arbitrumClient.getLogs({
-      address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-      event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-      args: {
-        from: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-      },
-      fromBlock: arbFromBlock,
-      toBlock: arbCurrentBlock,
-    })
+    // Remove duplicates (same tx hash might appear in multiple categories)
+    const uniqueTransactions = Array.from(new Map(allTransactions.map((tx) => [tx.hash, tx])).values())
 
-    for (const log of wrapLogs) {
-      if (log.args && 'to' in log.args && 'value' in log.args) {
-        const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
-        allTransactions.push({
-          id: log.transactionHash!,
-          hash: log.transactionHash!,
-          type: TransactionType.WRAP,
-          status: TransactionStatus.CONFIRMED,
-          from: '0x0000000000000000000000000000000000000000',
-          to: log.args.to as string,
-          amount: formatUnits(log.args.value as bigint, 18),
-          asset: 'lzrBTC',
-          sourceNetwork: NetworkType.ARBITRUM,
-          timestamp: Number(block.timestamp),
-          blockNumber: Number(log.blockNumber),
-          explorerUrl: `https://arbiscan.io/tx/${log.transactionHash}`,
-        })
-      }
-    }
+    // Filter out regular TRANSFER transactions - we only want the main operations
+    // Keep only: WRAP, UNWRAP, BRIDGE, STAKE, UNSTAKE
+    const filteredTransactions = uniqueTransactions.filter((tx) => tx.type !== TransactionType.TRANSFER)
 
-    // 2. FETCH UNWRAP TRANSACTIONS (Arbitrum)
-    const unwrapLogs = await arbitrumClient.getLogs({
-      address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-      event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-      args: {
-        to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-      },
-      fromBlock: arbFromBlock,
-      toBlock: arbCurrentBlock,
-    })
+    // Sort by timestamp (most recent first)
+    const sortedTransactions = filteredTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
-    for (const log of unwrapLogs) {
-      if (log.args && 'from' in log.args && 'value' in log.args) {
-        const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
-        allTransactions.push({
-          id: log.transactionHash!,
-          hash: log.transactionHash!,
-          type: TransactionType.UNWRAP,
-          status: TransactionStatus.CONFIRMED,
-          from: log.args.from as string,
-          to: '0x0000000000000000000000000000000000000000',
-          amount: formatUnits(log.args.value as bigint, 18),
-          asset: 'lzrBTC',
-          sourceNetwork: NetworkType.ARBITRUM,
-          timestamp: Number(block.timestamp),
-          blockNumber: Number(log.blockNumber),
-          explorerUrl: `https://arbiscan.io/tx/${log.transactionHash}`,
-        })
-      }
-    }
+    // Cache the results
+    cache.set(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS, sortedTransactions, CACHE_CONFIG.TTL)
 
-    // 3. FETCH BRIDGE TRANSACTIONS (Arbitrum -> Bitlazer)
-    const bridgeToL3Logs = await arbitrumClient.getLogs({
-      address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-      event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-      args: {
-        to: L2_GATEWAY_ROUTER as `0x${string}`,
-      },
-      fromBlock: arbFromBlock,
-      toBlock: arbCurrentBlock,
-    })
-
-    for (const log of bridgeToL3Logs) {
-      if (log.args && 'from' in log.args && 'value' in log.args) {
-        const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
-        allTransactions.push({
-          id: log.transactionHash!,
-          hash: log.transactionHash!,
-          type: TransactionType.BRIDGE,
-          status: TransactionStatus.CONFIRMED,
-          from: log.args.from as string,
-          to: L2_GATEWAY_ROUTER,
-          amount: formatUnits(log.args.value as bigint, 18),
-          asset: 'lzrBTC',
-          sourceNetwork: NetworkType.ARBITRUM,
-          destinationNetwork: NetworkType.BITLAZER,
-          timestamp: Number(block.timestamp),
-          blockNumber: Number(log.blockNumber),
-          explorerUrl: `https://arbiscan.io/tx/${log.transactionHash}`,
-        })
-      }
-    }
-
-    // 4. FETCH BRIDGE TRANSACTIONS (Bitlazer -> Arbitrum)
-    // On Bitlazer, bridge transactions emit WithdrawalInitiated events from the bridge contract at 0x64
-    let bridgeFromL3Logs: any[] = []
-
-    try {
-      // Fetch all logs from the bridge contract
-      const allBridgeLogs = await bitlazerClient.getLogs({
-        address: '0x0000000000000000000000000000000000000064' as `0x${string}`,
-        fromBlock: 0n, // Start from 0 since chain is very new (only ~130 blocks)
-        toBlock: l3CurrentBlock,
-      })
-
-      // Filter for WithdrawalInitiated events (signature: 0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc)
-      const withdrawalInitiatedSignature = '0x3e7aafa77dbf186b7fd488006beff893744caa3c4f6f299e8a709fa2087374fc'
-      bridgeFromL3Logs = allBridgeLogs.filter((log) => log.topics[0] === withdrawalInitiatedSignature)
-    } catch (error) {
-      console.error('Failed to fetch bridge logs from Bitlazer:', error)
-    }
-
-    // Process each bridge transaction log
-    for (const log of bridgeFromL3Logs) {
-      try {
-        const tx = await bitlazerClient.getTransaction({ hash: log.transactionHash as `0x${string}` })
-        if (tx && tx.from && tx.value) {
-          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          allTransactions.push({
-            id: log.transactionHash!,
-            hash: log.transactionHash!,
-            type: TransactionType.BRIDGE,
-            status: TransactionStatus.PENDING,
-            from: tx.from,
-            to: '0x0000000000000000000000000000000000000064',
-            amount: formatUnits(tx.value, 18),
-            asset: 'lzrBTC',
-            sourceNetwork: NetworkType.BITLAZER,
-            destinationNetwork: NetworkType.ARBITRUM,
-            timestamp: Number(block.timestamp),
-            blockNumber: Number(log.blockNumber),
-            explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-          })
-        }
-      } catch (error) {
-        console.error('Error processing bridge transaction:', error)
-      }
-    }
-
-    // 5. FETCH STAKE TRANSACTIONS (Bitlazer)
-    const stakeLogs = await bitlazerClient.getLogs({
-      address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-      event: parseAbiItem('event Staked(address indexed user, uint256 amount)'),
-      fromBlock: l3FromBlock,
-      toBlock: l3CurrentBlock,
-    })
-
-    for (const log of stakeLogs) {
-      if (log.args && 'user' in log.args && 'amount' in log.args) {
-        const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-        allTransactions.push({
-          id: log.transactionHash!,
-          hash: log.transactionHash!,
-          type: TransactionType.STAKE,
-          status: TransactionStatus.CONFIRMED,
-          from: log.args.user as string,
-          to: STAKING_CONTRACTS.T3RNStakingAdapter,
-          amount: formatUnits(log.args.amount as bigint, 18),
-          asset: 'lzrBTC',
-          sourceNetwork: NetworkType.BITLAZER,
-          timestamp: Number(block.timestamp),
-          blockNumber: Number(log.blockNumber),
-          explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-        })
-      }
-    }
-
-    // 6. FETCH UNSTAKE TRANSACTIONS (Bitlazer)
-    // First try to fetch Unstaked events directly
-    let unstakeProcessed = false
-    try {
-      const unstakedLogs = await bitlazerClient.getLogs({
-        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-        event: parseAbiItem(
-          'event Unstaked(address indexed user, uint256 amount, uint256 rewards, uint256 totalUnstaked)',
-        ),
-        fromBlock: l3FromBlock,
-        toBlock: l3CurrentBlock,
-      })
-
-      for (const log of unstakedLogs) {
-        if (log.args && 'user' in log.args && 'amount' in log.args) {
-          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          allTransactions.push({
-            id: log.transactionHash!,
-            hash: log.transactionHash!,
-            type: TransactionType.UNSTAKE,
-            status: TransactionStatus.CONFIRMED,
-            from: log.args.user as string,
-            to: STAKING_CONTRACTS.T3RNStakingAdapter,
-            amount: formatUnits(log.args.amount as bigint, 18),
-            asset: 'lzrBTC',
-            sourceNetwork: NetworkType.BITLAZER,
-            timestamp: Number(block.timestamp),
-            blockNumber: Number(log.blockNumber),
-            explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-          })
-        }
-      }
-      unstakeProcessed = true
-    } catch (unstakeError) {
-      // If Unstaked event fails, fall back to Transfer events to 0x0 (burns)
-      console.log('Falling back to Transfer events for unstaking:', unstakeError)
-    }
-
-    // If Unstaked events failed, try Transfer events fallback
-    if (!unstakeProcessed) {
-      try {
-        const unstakeLogs = await bitlazerClient.getLogs({
-          address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-          args: {
-            to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-          },
-          fromBlock: l3FromBlock,
-          toBlock: l3CurrentBlock,
-        })
-
-        // Process unstaking events (burns = transfers to 0x0)
-        for (const log of unstakeLogs) {
-          if (log.args && 'from' in log.args && 'value' in log.args) {
-            const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-            allTransactions.push({
-              id: log.transactionHash!,
-              hash: log.transactionHash!,
-              type: TransactionType.UNSTAKE,
-              status: TransactionStatus.CONFIRMED,
-              from: log.args.from as string,
-              to: '0x0000000000000000000000000000000000000000',
-              amount: formatUnits(log.args.value as bigint, 18),
-              asset: 'lzrBTC',
-              sourceNetwork: NetworkType.BITLAZER,
-              timestamp: Number(block.timestamp),
-              blockNumber: Number(log.blockNumber),
-              explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-            })
-          }
-        }
-      } catch (fallbackError) {
-        console.error('Error fetching unstake transactions with fallback:', fallbackError)
-      }
-    }
+    return sortedTransactions
   } catch (error) {
-    console.error('Error fetching blockchain transactions:', error)
+    console.error('Error fetching transactions from explorer APIs:', error)
+
+    // Try to return cached data even if expired
+    const expiredCache = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
+    if (expiredCache) {
+      console.log('Using cache due to API error')
+      return expiredCache
+    }
+
+    throw error
   }
-
-  // Remove any duplicate transactions based on hash
-  const uniqueTransactions = allTransactions.filter(
-    (tx, index, self) => index === self.findIndex((t) => t.hash === tx.hash),
-  )
-
-  // Sort by timestamp (most recent first)
-  return uniqueTransactions.sort((a, b) => b.timestamp - a.timestamp)
 }
 
+/**
+ * Fetch transactions from Arbitrum network
+ */
+async function fetchArbitrumTransactions(params: {
+  includeTokenTransfers: boolean
+  includeInternalTransactions: boolean
+  maxTransactions: number
+}): Promise<Transaction[]> {
+  const transactions: Transaction[] = []
+
+  try {
+    // Fetch different transaction types in parallel
+    const promises: Promise<Transaction[]>[] = []
+
+    // 1. Fetch lzrBTC token transfers (wraps, unwraps)
+    // This will get mint/burn events which are the actual wrap/unwrap operations
+    if (params.includeTokenTransfers) {
+      promises.push(
+        arbiscanAPI.fetchTokenTransfers({
+          contractAddress: ERC20_CONTRACT_ADDRESS.lzrBTC,
+          offset: Math.min(params.maxTransactions, EXPLORER_CONFIG.maxPageSize),
+          sort: 'desc',
+        }),
+      )
+    }
+
+    // 2. Fetch bridge transactions to L2 Gateway Router
+    // These are bridge operations from Arbitrum to Bitlazer
+    promises.push(
+      arbiscanAPI.fetchTransactions({
+        address: L2_GATEWAY_ROUTER,
+        offset: Math.min(params.maxTransactions / 2, EXPLORER_CONFIG.maxPageSize),
+        sort: 'desc',
+      }),
+    )
+
+    // We don't need internal transactions for now
+    // as they don't represent the main user operations
+
+    const results = await Promise.allSettled(promises)
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value) {
+        transactions.push(...result.value)
+      } else if (result.status === 'rejected') {
+        console.error('Failed to fetch Arbitrum transactions:', result.reason)
+      }
+    })
+
+    // Cache Arbitrum transactions separately
+    cache.set(CACHE_CONFIG.KEYS.ARBISCAN_TRANSACTIONS, transactions, CACHE_CONFIG.TTL)
+
+    return transactions
+  } catch (error) {
+    console.error('Error fetching Arbitrum transactions:', error)
+
+    // Try to use cached data
+    const cachedData = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.ARBISCAN_TRANSACTIONS)
+    if (cachedData) {
+      return cachedData
+    }
+
+    return []
+  }
+}
+
+/**
+ * Fetch transactions from Bitlazer network using event logs
+ */
+async function fetchBitlazerTransactions(params: {
+  includeTokenTransfers: boolean
+  includeInternalTransactions: boolean
+  maxTransactions: number
+}): Promise<Transaction[]> {
+  try {
+    // Use the new API that fetches via event logs
+    const transactions = await bitlazerAPI.fetchAllTransactions(10000) // Last 10k blocks
+
+    // Limit the number of transactions if needed
+    const limitedTransactions = transactions.slice(0, params.maxTransactions)
+
+    // Cache Bitlazer transactions
+    cache.set(CACHE_CONFIG.KEYS.BITLAZER_TRANSACTIONS, limitedTransactions, CACHE_CONFIG.TTL)
+
+    return limitedTransactions
+  } catch (error) {
+    console.error('Error fetching Bitlazer transactions:', error)
+
+    // Try to use cached data
+    const cachedData = cache.get<Transaction[]>(CACHE_CONFIG.KEYS.BITLAZER_TRANSACTIONS)
+    if (cachedData) {
+      return cachedData
+    }
+
+    return []
+  }
+}
+
+/**
+ * Main export: Fetch transactions with filters
+ */
 export const fetchTransactions = async (filters: TransactionFiltersType): Promise<TransactionResponse> => {
-  // Fetch real transactions from blockchain
-  const allTransactions = await fetchAllTransactions()
+  // Fetch all transactions (from cache or fresh)
+  const allTransactions = await fetchAllTransactions({
+    forceRefresh: filters.forceRefresh,
+    includeTokenTransfers: true,
+    includeInternalTransactions: false,
+    maxTransactionsPerNetwork: 2000,
+  })
 
   let filtered = [...allTransactions]
 
@@ -307,11 +217,11 @@ export const fetchTransactions = async (filters: TransactionFiltersType): Promis
     )
   }
 
-  if (filters.type) {
+  if (filters.type && filters.type !== 'all') {
     filtered = filtered.filter((tx) => tx.type === filters.type)
   }
 
-  if (filters.network) {
+  if (filters.network && filters.network !== 'all') {
     filtered = filtered.filter(
       (tx) => tx.sourceNetwork === filters.network || tx.destinationNetwork === filters.network,
     )
@@ -319,6 +229,17 @@ export const fetchTransactions = async (filters: TransactionFiltersType): Promis
 
   if (filters.status) {
     filtered = filtered.filter((tx) => tx.status === filters.status)
+  }
+
+  // Apply date range filters if provided
+  if (filters.startDate) {
+    const startTimestamp = new Date(filters.startDate).getTime() / 1000
+    filtered = filtered.filter((tx) => tx.timestamp >= startTimestamp)
+  }
+
+  if (filters.endDate) {
+    const endTimestamp = new Date(filters.endDate).getTime() / 1000
+    filtered = filtered.filter((tx) => tx.timestamp <= endTimestamp)
   }
 
   // Pagination
@@ -331,4 +252,39 @@ export const fetchTransactions = async (filters: TransactionFiltersType): Promis
     total: filtered.length,
     hasMore: end < filtered.length,
   }
+}
+
+/**
+ * Force refresh all cached data
+ */
+export const refreshTransactionCache = async (): Promise<void> => {
+  cache.delete(CACHE_CONFIG.KEYS.ALL_TRANSACTIONS)
+  cache.delete(CACHE_CONFIG.KEYS.ARBISCAN_TRANSACTIONS)
+  cache.delete(CACHE_CONFIG.KEYS.BITLAZER_TRANSACTIONS)
+
+  await fetchAllTransactions({ forceRefresh: true })
+}
+
+/**
+ * Get transaction by hash
+ */
+export const getTransactionByHash = async (hash: string): Promise<Transaction | null> => {
+  const allTransactions = await fetchAllTransactions()
+  return allTransactions.find((tx) => tx.hash.toLowerCase() === hash.toLowerCase()) || null
+}
+
+/**
+ * Get transactions for a specific address
+ */
+export const getTransactionsByAddress = async (address: string, network?: NetworkType): Promise<Transaction[]> => {
+  const allTransactions = await fetchAllTransactions()
+
+  return allTransactions.filter((tx) => {
+    const addressMatch =
+      tx.from.toLowerCase() === address.toLowerCase() || tx.to.toLowerCase() === address.toLowerCase()
+
+    if (!network) return addressMatch
+
+    return addressMatch && (tx.sourceNetwork === network || tx.destinationNetwork === network)
+  })
 }
