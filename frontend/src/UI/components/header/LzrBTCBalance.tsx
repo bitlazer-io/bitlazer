@@ -92,8 +92,8 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
   }, [arbitrumBalance, bitlazerBalance, stakedBalance])
 
   const totalUSDValue = useMemo(() => {
-    return balances.totalWithStaking * btcPrice
-  }, [balances.totalWithStaking, btcPrice])
+    return balances.total * btcPrice
+  }, [balances.total, btcPrice])
 
   // Refresh balances when popup opens
   const handlePopupToggle = () => {
@@ -154,10 +154,10 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-lightgreen-100 text-lg font-ocrx uppercase">Total Balance</span>
                       <div className="text-right">
-                        <div className="text-lightgreen-100 text-lg font-ocrx">
-                          {balances.totalWithStaking.toFixed(6)} lzrBTC
+                        <div className="text-lightgreen-100 text-lg font-ocrx">{balances.total.toFixed(6)} lzrBTC</div>
+                        <div className="text-white text-sm font-mono mt-1">
+                          {USDollar.format(balances.total * btcPrice)}
                         </div>
-                        <div className="text-white text-sm font-mono mt-1">{USDollar.format(totalUSDValue)}</div>
                       </div>
                     </div>
                   </div>
