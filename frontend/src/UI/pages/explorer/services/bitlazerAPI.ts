@@ -37,6 +37,11 @@ interface BitlazerTransaction {
   gasUsed: string
   input: string
   isError?: string
+  logs?: Array<{
+    address: string
+    topics: string[]
+    data: string
+  }>
 }
 
 export class BitlazerAPI {
@@ -83,6 +88,25 @@ export class BitlazerAPI {
   }
 
   /**
+   * Check if a transaction hash has staking events
+   */
+  private async checkForStakingEvents(txHash: string): Promise<boolean> {
+    try {
+      const txDetails = await this.fetchTransactionByHash(txHash)
+      if (!txDetails || !txDetails.logs) return false
+
+      // Check if any log has staking event signatures
+      return txDetails.logs.some(
+        (log: any) =>
+          log.topics && (log.topics[0] === EVENT_SIGNATURES.Staked || log.topics[0] === EVENT_SIGNATURES.Unstaked),
+      )
+    } catch (error) {
+      console.error('Error checking for staking events:', error)
+      return false
+    }
+  }
+
+  /**
    * Fetch all Transfer events (mints, burns only - not regular transfers)
    */
   async fetchTransferEvents(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
@@ -104,6 +128,15 @@ export class BitlazerAPI {
 
     for (const log of logs) {
       if (processedHashes.has(log.transactionHash)) continue
+
+      // Check if this transaction has staking events - if so, skip Transfer parsing
+      // to avoid conflicts with staking transaction parsing
+      const hasStakingEvents = await this.checkForStakingEvents(log.transactionHash)
+      if (hasStakingEvents) {
+        processedHashes.add(log.transactionHash)
+        continue
+      }
+
       processedHashes.add(log.transactionHash)
 
       const transaction = await this.parseTransferLog(log)
@@ -122,29 +155,7 @@ export class BitlazerAPI {
   async fetchStakingEvents(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
     const transactions: Transaction[] = []
 
-    // Fetch Staked events
-    try {
-      const stakedUrl = this.buildUrl({
-        module: 'logs',
-        action: 'getLogs',
-        fromBlock,
-        toBlock,
-        topic0: EVENT_SIGNATURES.Staked,
-        address: STAKING_CONTRACTS.T3RNStakingAdapter.toLowerCase(),
-      })
-
-      const stakedResponse = await this.fetchWithRetry(stakedUrl)
-      const stakedLogs = stakedResponse.result || []
-
-      for (const log of stakedLogs) {
-        const tx = await this.parseStakingLog(log, TransactionType.STAKE)
-        if (tx) transactions.push(tx)
-      }
-    } catch (error) {
-      console.error('Error fetching staked events:', error)
-    }
-
-    // Fetch Unstaked events
+    // Fetch all Unstaked events first (both STAKE and UNSTAKE operations create Unstaked events)
     try {
       const unstakedUrl = this.buildUrl({
         module: 'logs',
@@ -158,12 +169,42 @@ export class BitlazerAPI {
       const unstakedResponse = await this.fetchWithRetry(unstakedUrl)
       const unstakedLogs = unstakedResponse.result || []
 
+      // Process each unstaked log to determine if it's part of a STAKE or UNSTAKE transaction
+      const processedHashes = new Set<string>()
+
       for (const log of unstakedLogs) {
-        const tx = await this.parseStakingLog(log, TransactionType.UNSTAKE)
+        if (processedHashes.has(log.transactionHash)) continue
+        processedHashes.add(log.transactionHash)
+
+        // Get full transaction details to analyze all events
+        const txDetails = await this.fetchTransactionByHash(log.transactionHash)
+        if (!txDetails || !txDetails.logs) continue
+
+        // Check if this transaction also has a Staked event
+        const hasStakedEvent = txDetails.logs.some(
+          (txLog: any) => txLog.topics && txLog.topics[0] === EVENT_SIGNATURES.Staked,
+        )
+
+        let transactionType: TransactionType
+        let amountLog: any
+
+        if (hasStakedEvent) {
+          // This is a STAKE transaction (has both Unstaked for auto-claim + Staked for new stake)
+          transactionType = TransactionType.STAKE
+          // For STAKE, use the Staked event amount (the new stake amount)
+          amountLog = txDetails.logs.find((txLog: any) => txLog.topics && txLog.topics[0] === EVENT_SIGNATURES.Staked)
+        } else {
+          // This is pure UNSTAKE transaction (only Unstaked event)
+          transactionType = TransactionType.UNSTAKE
+          // For UNSTAKE, use the Unstaked event
+          amountLog = log
+        }
+
+        const tx = await this.parseStakingTransaction(log.transactionHash, transactionType, amountLog, txDetails)
         if (tx) transactions.push(tx)
       }
     } catch (error) {
-      console.error('Error fetching unstaked events:', error)
+      console.error('Error fetching staking events:', error)
     }
 
     return transactions
@@ -267,21 +308,26 @@ export class BitlazerAPI {
     }
   }
 
-  private async parseStakingLog(log: BitlazerLog, type: TransactionType): Promise<Transaction | null> {
+  private async parseStakingTransaction(
+    txHash: string,
+    type: TransactionType,
+    amountLog: any,
+    txDetails: any,
+  ): Promise<Transaction | null> {
     try {
-      // For staking events, user address is in topic[1]
-      const user = '0x' + log.topics[1]?.slice(26) || '0x0'
+      // User address is in topic[1] of the amount log
+      const user = '0x' + amountLog.topics[1]?.slice(26) || '0x0'
+      const realFromAddress = txDetails?.from || user
 
       let amount: bigint
 
       if (type === TransactionType.STAKE) {
-        // Staked event: amount is the single value in data
-        amount = BigInt(log.data || '0x0')
+        // For STAKE: use Staked event data (single value = new stake amount)
+        amount = BigInt(amountLog.data || '0x0')
       } else {
-        // Unstaked event: data contains 3 values, we want the middle one (unstaked amount)
-        // data format: principal (96 bytes) + unstaked amount (64 bytes) + rewards (64 bytes)
-        const dataHex = log.data || '0x0'
-        // Remove 0x prefix and extract the middle 64 characters (32 bytes)
+        // For UNSTAKE: use Unstaked event data (3 values, we want the middle one)
+        // data format: principal (64 chars) + unstaked amount (64 chars) + rewards (64 chars)
+        const dataHex = amountLog.data || '0x0'
         const cleanData = dataHex.slice(2)
         const unstakedAmountHex = '0x' + cleanData.slice(64, 128)
         amount = BigInt(unstakedAmountHex)
@@ -290,23 +336,23 @@ export class BitlazerAPI {
       const amountInEther = Number(amount) / 1e18
 
       return {
-        id: log.transactionHash,
-        hash: log.transactionHash,
+        id: txHash,
+        hash: txHash,
         type,
         status: TransactionStatus.CONFIRMED,
-        from: type === TransactionType.STAKE ? user : STAKING_CONTRACTS.T3RNStakingAdapter,
-        to: type === TransactionType.STAKE ? STAKING_CONTRACTS.T3RNStakingAdapter : user,
+        from: realFromAddress,
+        to: STAKING_CONTRACTS.T3RNStakingAdapter,
         amount: amountInEther.toString(),
         asset: 'lzrBTC',
         sourceNetwork: NetworkType.BITLAZER,
-        timestamp: parseInt(log.timeStamp, 16),
-        blockNumber: parseInt(log.blockNumber, 16),
-        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
-        gasUsed: log.gasUsed,
-        gasPrice: log.gasPrice,
+        timestamp: parseInt(txDetails.timeStamp, 10),
+        blockNumber: parseInt(txDetails.blockNumber, 10),
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${txHash}`,
+        gasUsed: txDetails?.gasUsed,
+        gasPrice: txDetails?.gasPrice,
       }
     } catch (error) {
-      console.error('Error parsing staking log:', error)
+      console.error('Error parsing staking transaction:', error)
       return null
     }
   }
