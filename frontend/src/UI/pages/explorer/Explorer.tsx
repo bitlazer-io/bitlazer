@@ -5,6 +5,8 @@ import { TransactionFilters } from './components/TransactionFilters'
 import { fetchTransactions } from './services/transactionService'
 import { Transaction, TransactionType, NetworkType } from './types'
 import { cache } from 'src/utils/cache'
+import { ArbiscanAPI } from './services/arbiscanAPI'
+import { BitlazerAPI } from './services/bitlazerAPI'
 
 interface IExplorer {}
 
@@ -24,6 +26,58 @@ const Explorer: FC<IExplorer> = () => {
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const lastFetchRef = useRef<number>(0)
 
+  // Cache-free auto-refresh function that fetches fresh data directly
+  const refreshRecentTransactions = async () => {
+    const now = Date.now()
+
+    console.log('Auto-refresh: Fetching fresh data from last 1 hour (no cache)...')
+
+    try {
+      // Initialize API clients fresh (no cache)
+      const arbiscanAPI = new ArbiscanAPI()
+      const bitlazerAPI = new BitlazerAPI()
+
+      // Fetch minimal data - only very recent transactions
+      const [freshArbTransactions, freshBitlazerTransactions] = await Promise.all([
+        arbiscanAPI.fetchTokenTransfers({
+          contractAddress: '0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df',
+          offset: 10, // Very small - only last 10 transactions
+          sort: 'desc',
+        }),
+        // Normal fetch but with very small block range for low-volume chain
+        bitlazerAPI.fetchAllTransactions(5), // Only last 5 blocks - sufficient for low-volume Bitlazer
+      ])
+
+      // Combine fresh transactions
+      const allFreshTransactions = [...freshArbTransactions, ...freshBitlazerTransactions]
+
+      // Remove duplicates and filter out TRANSFER type
+      const uniqueFresh = Array.from(new Map(allFreshTransactions.map((tx) => [tx.hash, tx])).values()).filter(
+        (tx) => tx.type !== TransactionType.TRANSFER,
+      )
+
+      // Find NEW transactions that don't exist in current list
+      const existingTxHashes = new Set(allTransactions.map((tx) => tx.hash))
+      const newTransactions = uniqueFresh.filter((tx) => !existingTxHashes.has(tx.hash))
+
+      console.log(
+        `Found ${newTransactions.length} NEW transactions, adding to existing ${allTransactions.length} cached transactions`,
+      )
+
+      // Simply add new transactions to existing cached list
+      const combined = [...newTransactions, ...allTransactions]
+      const sorted = combined.sort((a, b) => b.timestamp - a.timestamp)
+
+      setAllTransactions(sorted)
+
+      // Update the main cache to include new transactions found during auto-refresh
+      cache.set('explorer_all_transactions_12h', sorted, 12 * 60 * 60 * 1000)
+      console.log('Auto-refresh completed - merged fresh 1-hour data with older cached data and updated cache')
+    } catch (error) {
+      console.error('Auto-refresh failed:', error)
+    }
+  }
+
   // Initial load on mount
   useEffect(() => {
     loadAllTransactions(false)
@@ -42,8 +96,8 @@ const Explorer: FC<IExplorer> = () => {
       countdown -= 1
       if (countdown <= 0) {
         countdown = 30
-        // Only refresh recent transactions
-        loadAllTransactions(true)
+        // Use cache-free refresh for recent transactions
+        refreshRecentTransactions()
       }
       setNextRefreshIn(countdown)
     }, 1000)
@@ -73,9 +127,8 @@ const Explorer: FC<IExplorer> = () => {
   }, [page, filteredTransactions])
 
   const loadAllTransactions = async (refreshRecentOnly = false) => {
-    const CACHE_KEY = 'explorer_all_transactions_24h'
-    const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
-    const RECENT_THRESHOLD = 24 * 60 * 60 // 24 hours in seconds
+    const CACHE_KEY = 'explorer_all_transactions_12h'
+    const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
     const now = Date.now()
 
     // Prevent API spam - minimum 25 seconds between fetches
@@ -102,44 +155,10 @@ const Explorer: FC<IExplorer> = () => {
     try {
       lastFetchRef.current = now
 
-      if (refreshRecentOnly && allTransactions.length > 0) {
-        // Store current displayed count before refresh
-        // const currentDisplayedCount = displayedTransactions.length
-
-        // Auto-refresh: only fetch recent transactions
-        const data = await fetchTransactions({
-          page: 1,
-          limit: 100, // Fetch only recent ones
-          forceRefresh: true,
-        })
-
-        const nowSeconds = now / 1000
-
-        // Get only transactions from last 24h from the new fetch
-        const newRecentTxs = data.transactions.filter((tx) => nowSeconds - tx.timestamp < RECENT_THRESHOLD)
-
-        // Keep old transactions (>24h) from existing list
-        const oldTxs = allTransactions.filter((tx) => nowSeconds - tx.timestamp >= RECENT_THRESHOLD)
-
-        // Create a map of new transactions by hash for quick lookup
-        const newTxMap = new Map(newRecentTxs.map((tx) => [tx.hash, tx]))
-
-        // Update existing recent transactions or add new ones
-        const updatedRecentTxs = allTransactions
-          .filter((tx) => nowSeconds - tx.timestamp < RECENT_THRESHOLD)
-          .map((tx) => newTxMap.get(tx.hash) || tx)
-
-        // Add any completely new transactions
-        const existingHashes = new Set(allTransactions.map((tx) => tx.hash))
-        const brandNewTxs = newRecentTxs.filter((tx) => !existingHashes.has(tx.hash))
-
-        // Combine all and sort
-        const combined = [...brandNewTxs, ...updatedRecentTxs, ...oldTxs]
-        const unique = Array.from(new Map(combined.map((tx) => [tx.hash, tx])).values())
-        const sorted = unique.sort((a, b) => b.timestamp - a.timestamp)
-
-        setAllTransactions(sorted)
-        // Don't update cache on auto-refresh
+      if (refreshRecentOnly) {
+        // This path is no longer used since we have refreshRecentTransactions()
+        console.log('Skipping old refresh logic - using new cache-free refresh')
+        return
       } else {
         // Initial load: fetch all and cache
         const data = await fetchTransactions({

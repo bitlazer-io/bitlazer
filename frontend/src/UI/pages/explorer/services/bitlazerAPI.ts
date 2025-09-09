@@ -439,6 +439,47 @@ export class BitlazerAPI {
   }
 
   /**
+   * Fetch all transactions from Bitlazer using event logs (lightweight - no individual API calls)
+   */
+  async fetchAllTransactionsLightweight(maxBlocks = 100): Promise<Transaction[]> {
+    try {
+      // Get current block using RPC endpoint
+      const rpcResponse = await fetch(`${this.baseUrl}/api/eth-rpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_blockNumber',
+          params: [],
+          id: 1,
+        }),
+      })
+      const rpcData = await rpcResponse.json()
+      const currentBlock = parseInt(rpcData.result, 16) || 1000
+      const fromBlock = Math.max(0, currentBlock - maxBlocks)
+
+      console.log(`Fetching Bitlazer transactions (lightweight) from block ${fromBlock} to ${currentBlock}`)
+
+      // Fetch all event types in parallel but use lightweight parsing
+      const [transfers, stakingEvents, bridgeEvents] = await Promise.all([
+        this.fetchTransferEventsLightweight(fromBlock, currentBlock),
+        this.fetchStakingEvents(fromBlock, currentBlock), // This one is already optimized
+        this.fetchBridgeEventsLightweight(fromBlock, currentBlock),
+      ])
+
+      // Combine and deduplicate
+      const allTransactions = [...transfers, ...stakingEvents, ...bridgeEvents]
+      const uniqueTransactions = Array.from(new Map(allTransactions.map((tx) => [tx.hash, tx])).values())
+
+      // Sort by timestamp (newest first)
+      return uniqueTransactions.sort((a, b) => b.timestamp - a.timestamp)
+    } catch (error) {
+      console.error('Error fetching Bitlazer transactions (lightweight):', error)
+      return []
+    }
+  }
+
+  /**
    * Fetch all transactions from Bitlazer using event logs
    */
   async fetchAllTransactions(maxBlocks = 10000): Promise<Transaction[]> {
@@ -476,6 +517,144 @@ export class BitlazerAPI {
     } catch (error) {
       console.error('Error fetching Bitlazer transactions:', error)
       return []
+    }
+  }
+
+  /**
+   * Fetch transfer events (lightweight - no individual API calls for wrap transactions)
+   */
+  async fetchTransferEventsLightweight(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
+    const url = this.buildUrl({
+      module: 'logs',
+      action: 'getLogs',
+      fromBlock,
+      toBlock,
+      topic0: EVENT_SIGNATURES.Transfer,
+      address: '0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df',
+    })
+
+    const response = await this.fetchWithRetry(url)
+    const logs = response.result || []
+
+    const transactions: Transaction[] = []
+    const processedHashes = new Set<string>()
+
+    for (const log of logs) {
+      if (processedHashes.has(log.transactionHash)) continue
+      processedHashes.add(log.transactionHash)
+
+      const transaction = await this.parseTransferLogLightweight(log)
+      if (transaction && transaction.type !== TransactionType.TRANSFER) {
+        transactions.push(transaction)
+      }
+    }
+
+    return transactions
+  }
+
+  /**
+   * Fetch bridge events (lightweight - no individual API calls)
+   */
+  async fetchBridgeEventsLightweight(fromBlock = 0, toBlock: number | 'latest' = 'latest'): Promise<Transaction[]> {
+    const url = this.buildUrl({
+      module: 'logs',
+      action: 'getLogs',
+      fromBlock,
+      toBlock,
+      topic0: EVENT_SIGNATURES.WithdrawalInitiated,
+      address: '0x0000000000000000000000000000000000000064',
+    })
+
+    try {
+      const response = await this.fetchWithRetry(url)
+      const logs = response.result || []
+
+      const transactions: Transaction[] = []
+      for (const log of logs) {
+        const tx = await this.parseBridgeLogLightweight(log)
+        if (tx) transactions.push(tx)
+      }
+
+      return transactions
+    } catch (error) {
+      console.error('Error fetching bridge events (lightweight):', error)
+      return []
+    }
+  }
+
+  /**
+   * Parse transfer log without making individual API calls (for auto-refresh)
+   */
+  private async parseTransferLogLightweight(log: BitlazerLog): Promise<Transaction | null> {
+    try {
+      let from = '0x' + log.topics[1]?.slice(26) || '0x0'
+      const to = '0x' + log.topics[2]?.slice(26) || '0x0'
+
+      // Parse amount from data (uint256)
+      const amount = BigInt(log.data || '0x0')
+      const amountInEther = Number(amount) / 1e18
+
+      let type = TransactionType.TRANSFER
+
+      // Check if it's a mint (wrap) or burn (unwrap)
+      if (from === '0x0000000000000000000000000000000000000000') {
+        type = TransactionType.WRAP
+        // Don't fetch tx details - use recipient as from address
+        from = to
+      } else if (to === '0x0000000000000000000000000000000000000000') {
+        type = TransactionType.UNWRAP
+      } else {
+        return null // Skip regular transfers
+      }
+
+      return {
+        id: log.transactionHash,
+        hash: log.transactionHash,
+        type,
+        status: TransactionStatus.CONFIRMED,
+        from,
+        to,
+        amount: amountInEther.toString(),
+        asset: 'lzrBTC',
+        sourceNetwork: NetworkType.BITLAZER,
+        timestamp: parseInt(log.timeStamp, 16),
+        blockNumber: parseInt(log.blockNumber, 16),
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+        gasUsed: log.gasUsed,
+        gasPrice: log.gasPrice,
+      }
+    } catch (error) {
+      console.error('Error parsing transfer log (lightweight):', error)
+      return null
+    }
+  }
+
+  /**
+   * Parse bridge log without making individual API calls (for auto-refresh)
+   */
+  private async parseBridgeLogLightweight(log: BitlazerLog): Promise<Transaction | null> {
+    try {
+      // Don't fetch tx details - use placeholder amount
+      return {
+        id: log.transactionHash,
+        hash: log.transactionHash,
+        type: TransactionType.BRIDGE,
+        status: TransactionStatus.PENDING,
+        from: '0x' + log.topics[1]?.slice(26) || '0x0', // Extract from topics
+        to: '0x0000000000000000000000000000000000000064',
+        amount: '0.00000001', // Placeholder - will be updated on full page refresh
+        asset: 'lzrBTC',
+        sourceNetwork: NetworkType.BITLAZER,
+        destinationNetwork: NetworkType.ARBITRUM,
+        timestamp: parseInt(log.timeStamp, 16),
+        blockNumber: parseInt(log.blockNumber, 16),
+        explorerUrl: `https://bitlazer.calderaexplorer.xyz/tx/${log.transactionHash}`,
+        gasUsed: log.gasUsed,
+        gasPrice: log.gasPrice,
+      }
+    } catch (error) {
+      console.error('Error parsing bridge log (lightweight):', error)
+      return null
     }
   }
 }

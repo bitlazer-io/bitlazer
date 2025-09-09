@@ -11,12 +11,12 @@ const bitlazerAPI = new BitlazerAPI()
 
 // Cache configuration
 const CACHE_CONFIG = {
-  TTL: 24 * 60 * 60 * 1000, // 24 hours for main cache
-  SHORT_TTL: 5 * 60 * 1000, // 5 minutes for refresh cache to prevent spam
+  TTL: 12 * 60 * 60 * 1000, // 12 hours for main cache
+  SHORT_TTL: 30 * 1000, // 30 seconds for refresh cache to prevent spam
   KEYS: {
-    ALL_TRANSACTIONS: 'explorer_all_transactions_v4',
-    ARBISCAN_TRANSACTIONS: 'explorer_arbiscan_transactions_v4',
-    BITLAZER_TRANSACTIONS: 'explorer_bitlazer_transactions_v4',
+    ALL_TRANSACTIONS: 'explorer_all_transactions_v5', // Changed version to clear old cache
+    ARBISCAN_TRANSACTIONS: 'explorer_arbiscan_transactions_v5',
+    BITLAZER_TRANSACTIONS: 'explorer_bitlazer_transactions_v5',
   },
 }
 
