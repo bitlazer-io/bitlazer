@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
 import { arbitrum } from 'wagmi/chains'
 import { mainnet, SUPPORTED_CHAINS } from 'src/web3/chains'
 import { ERC20_CONTRACT_ADDRESS, STAKING_CONTRACTS } from 'src/web3/contracts'
 import { stakeAdapter_abi } from 'src/assets/abi/stakeAdapter'
-import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
+import { usePriceStore } from 'src/stores/priceStore'
 import { USDollar } from 'src/utils/formatters'
 import Button from '@components/button/Button'
 import { useNavigate } from 'react-router-dom'
@@ -17,9 +17,10 @@ interface LzrBTCBalanceProps {
 export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
   const { address, isConnected } = useAccount()
   const navigate = useNavigate()
-  const [btcPrice, setBtcPrice] = useState(0)
   const [isPopupOpen, setIsPopupOpen] = useState(false)
-  const [priceLoading, setPriceLoading] = useState(true)
+
+  // Get prices from global store
+  const { btcPrice, isLoading: priceLoading } = usePriceStore()
 
   // Fetch lzrBTC balance on Arbitrum
   const { data: arbitrumBalance, refetch: refetchArbitrumBalance } = useBalance({
@@ -42,39 +43,6 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
     args: address ? [address] : ['0x0000000000000000000000000000000000000000'],
     chainId: mainnet.id,
   })
-
-  // Fetch BTC price from CoinGecko
-  useEffect(() => {
-    const fetchBTCPrice = async () => {
-      try {
-        setPriceLoading(true)
-        const data = await fetchWithCache(
-          CACHE_KEYS.BTC_PRICE,
-          async () => {
-            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
-              const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
-              )
-              if (!response.ok) throw new Error('Failed to fetch price')
-              return response.json()
-            })
-          },
-          { ttl: CACHE_TTL.PRICE },
-        )
-
-        const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
-        setBtcPrice(wbtcPrice)
-      } catch (error) {
-        console.error('Error fetching BTC price:', error)
-      } finally {
-        setPriceLoading(false)
-      }
-    }
-
-    fetchBTCPrice()
-    const interval = setInterval(fetchBTCPrice, 30000) // Update every 30s
-    return () => clearInterval(interval)
-  }, [])
 
   // Calculate total balance
   const balances = useMemo(() => {

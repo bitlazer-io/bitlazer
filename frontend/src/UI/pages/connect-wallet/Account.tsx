@@ -14,16 +14,16 @@ export function Account() {
   // }, [isConnected])
 
   return (
-    <div>
+    <>
       {address && (
-        <button
+        <span
           onClick={() => {
             setOpenConnectWalletModal(true)
           }}
-          className="text-white"
+          className="text-white cursor-pointer"
         >
           {address.slice(0, 6) + '...' + address.slice(-4)}
-        </button>
+        </span>
       )}
       <MyModal
         label={'CONNECTED WALLET'}
@@ -33,6 +33,6 @@ export function Account() {
       >
         <ConnectWallet />
       </MyModal>
-    </div>
+    </>
   )
 }

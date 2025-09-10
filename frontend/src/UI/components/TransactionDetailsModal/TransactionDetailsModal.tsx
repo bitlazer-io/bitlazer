@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transactions'
+import { PendingTransaction } from '../../../types/transactions'
 import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
