@@ -41,7 +41,7 @@ const Explorer: FC<IExplorer> = () => {
           offset: 10000, // 10k transactions from Arbitrum (high activity)
           sort: 'desc',
         }),
-        bitlazerAPI.fetchAllTransactions(10), // 10 blocks from Bitlazer L3 (low activity)
+        bitlazerAPI.fetchAllTransactionsLightweight(10), // Use lightweight version for auto-refresh
       ])
 
       // Combine and filter
