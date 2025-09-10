@@ -5,23 +5,12 @@ import { arbitrum } from 'wagmi/chains'
 import { ERC20_CONTRACT_ADDRESS } from 'src/web3/contracts'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
 import { USDollar, formatCompactNumber, formatPercentage } from 'src/utils/formatters'
-import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
-
-interface PriceData {
-  wbtcPrice: number
-  lzrBTCPrice: number
-  priceChange24h: number
-  marketCap: number
-}
+import { usePriceStore } from 'src/stores/priceStore'
 
 export const PriceHeader: React.FC = () => {
-  const [priceData, setPriceData] = useState<PriceData>({
-    wbtcPrice: 0,
-    lzrBTCPrice: 0,
-    priceChange24h: 0,
-    marketCap: 0,
-  })
-  const [loading, setLoading] = useState(true)
+  const { btcPrice, isLoading } = usePriceStore()
+  const [priceChange24h, setPriceChange24h] = useState(0)
+  const [fetchingChange, setFetchingChange] = useState(true)
 
   const { data: totalSupply } = useReadContract({
     address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
@@ -30,65 +19,31 @@ export const PriceHeader: React.FC = () => {
     chainId: arbitrum.id,
   })
 
+  // Fetch 24h price change separately (not needed in global state)
   useEffect(() => {
-    const fetchPrices = async (force = false) => {
+    const fetchPriceChange = async () => {
       try {
-        // Use cache and debouncing to prevent API rate limiting
-        const data = await fetchWithCache(
-          CACHE_KEYS.BTC_PRICE,
-          async () => {
-            // Debounce multiple simultaneous requests
-            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
-              const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
-              )
-              if (!response.ok) throw new Error('Failed to fetch price')
-              return response.json()
-            })
-          },
-          { ttl: CACHE_TTL.PRICE, force },
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
         )
-
-        const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
-        const priceChange = data['wrapped-bitcoin']?.usd_24h_change || 0
-
-        const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
-        const marketCap = supply * wbtcPrice
-
-        setPriceData({
-          wbtcPrice,
-          lzrBTCPrice: wbtcPrice,
-          priceChange24h: priceChange,
-          marketCap,
-        })
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching prices:', error)
-        // Try to use any stale cached data if available
-        const cachedData = await fetchWithCache(CACHE_KEYS.BTC_PRICE, async () => null as any, {
-          ttl: CACHE_TTL.LONG,
-        }).catch(() => null)
-
-        if (cachedData) {
-          const wbtcPrice = cachedData['wrapped-bitcoin']?.usd || 0
-          const priceChange = cachedData['wrapped-bitcoin']?.usd_24h_change || 0
-          const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
-
-          setPriceData({
-            wbtcPrice,
-            lzrBTCPrice: wbtcPrice,
-            priceChange24h: priceChange,
-            marketCap: supply * wbtcPrice,
-          })
+        if (response.ok) {
+          const data = await response.json()
+          setPriceChange24h(data['wrapped-bitcoin']?.usd_24h_change || 0)
         }
-        setLoading(false)
+      } catch (error) {
+        console.error('Error fetching price change:', error)
+      } finally {
+        setFetchingChange(false)
       }
     }
 
-    fetchPrices()
-    const interval = setInterval(() => fetchPrices(true), 30000) // Force refresh every 30s
+    fetchPriceChange()
+    const interval = setInterval(fetchPriceChange, 30000)
     return () => clearInterval(interval)
-  }, [totalSupply])
+  }, [])
+
+  const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
+  const marketCap = supply * btcPrice
 
   const formatPrice = (price: number) => {
     return USDollar.format(price).replace('.00', '')
@@ -119,18 +74,14 @@ export const PriceHeader: React.FC = () => {
                 WBTC Price
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
-                {loading ? (
-                  <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
-                ) : (
-                  formatPrice(priceData.wbtcPrice)
-                )}
+                {isLoading ? <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" /> : formatPrice(btcPrice)}
               </div>
-              {!loading && (
+              {!fetchingChange && (
                 <div
-                  className={`text-sm md:text-base font-ocrx flex items-center gap-1 ${priceData.priceChange24h >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
+                  className={`text-sm md:text-base font-ocrx flex items-center gap-1 ${priceChange24h >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
                 >
-                  <span className="text-lg leading-none">{priceData.priceChange24h >= 0 ? '↑' : '↓'}</span>
-                  <span>{formatPercentage(Math.abs(priceData.priceChange24h))}</span>
+                  <span className="text-lg leading-none">{priceChange24h >= 0 ? '↑' : '↓'}</span>
+                  <span>{formatPercentage(Math.abs(priceChange24h))}</span>
                 </div>
               )}
             </div>
@@ -146,11 +97,7 @@ export const PriceHeader: React.FC = () => {
                 lzrBTC Price
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
-                {loading ? (
-                  <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" />
-                ) : (
-                  formatPrice(priceData.lzrBTCPrice)
-                )}
+                {isLoading ? <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" /> : formatPrice(btcPrice)}
               </div>
               <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">PEGGED 1:1</div>
             </div>
@@ -188,10 +135,10 @@ export const PriceHeader: React.FC = () => {
                 lzrBTC Market Cap
               </div>
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-fuchsia font-maison-neue mb-1 break-all sm:break-normal">
-                {loading ? (
+                {isLoading ? (
                   <div className="h-7 w-20 bg-gray-300/10 animate-pulse rounded" />
                 ) : (
-                  formatMarketCap(priceData.marketCap)
+                  formatMarketCap(marketCap)
                 )}
               </div>
               <div className="text-sm md:text-base lg:text-lg text-white/70 font-ocrx uppercase">USD VALUE</div>

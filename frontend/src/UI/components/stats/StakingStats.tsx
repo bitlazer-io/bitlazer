@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useReadContract, usePublicClient } from 'wagmi'
 import { mainnet } from 'src/web3/chains'
@@ -8,6 +8,7 @@ import { formatUnits, parseAbiItem } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatMoney, formatTxHash } from 'src/utils/formatters'
 import { Skeleton } from '../skeleton/Skeleton'
+import { usePriceStore } from 'src/stores/priceStore'
 
 interface StakingStatsData {
   totalStaked: number
@@ -39,39 +40,9 @@ export const StakingStats: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
   const [loadingRecentActivity, setLoadingRecentActivity] = useState(true)
-  const [btcPrice, setBtcPrice] = useState<number>(0)
-  const [priceLoading, setPriceLoading] = useState(true)
+  const { btcPrice, isLoading: priceLoading } = usePriceStore()
 
   const bitlazerClient = usePublicClient({ chainId: mainnet.id })
-
-  // Price cache management
-  const priceCache = useRef<{ price: number; timestamp: number } | null>(null)
-  const PRICE_CACHE_TTL = 30000 // 30 seconds
-
-  const fetchBTCPrice = async () => {
-    // Check cache first
-    if (priceCache.current && Date.now() - priceCache.current.timestamp < PRICE_CACHE_TTL) {
-      setBtcPrice(priceCache.current.price)
-      setPriceLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
-      )
-      const data = await response.json()
-      const price = data['wrapped-bitcoin']?.usd || 0
-
-      // Update cache
-      priceCache.current = { price, timestamp: Date.now() }
-      setBtcPrice(price)
-    } catch (error) {
-      console.error('Error fetching BTC price:', error)
-    } finally {
-      setPriceLoading(false)
-    }
-  }
 
   const { data: totalStaked } = useReadContract({
     address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
@@ -266,14 +237,11 @@ export const StakingStats: React.FC = () => {
     }
 
     fetchStakingStats()
-    fetchBTCPrice()
     const mainStatsInterval = setInterval(fetchStakingStats, 90000)
     const recentActivityInterval = setInterval(fetchRecentActivity, 90000)
-    const priceInterval = setInterval(fetchBTCPrice, 30000)
     return () => {
       clearInterval(mainStatsInterval)
       clearInterval(recentActivityInterval)
-      clearInterval(priceInterval)
     }
   }, [totalStaked, apy, targetApyBps, bitlazerClient])
 

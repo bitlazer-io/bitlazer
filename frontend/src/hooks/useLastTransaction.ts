@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { createPublicClient, http, parseAbiItem, parseEventLogs } from 'viem'
+import { createPublicClient, http, parseAbiItem } from 'viem'
 import { arbitrum } from 'wagmi/chains'
 import { mainnet, SUPPORTED_CHAINS } from '../web3/chains'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER } from '../web3/contracts'
@@ -20,7 +20,6 @@ const bitlazerClient = createPublicClient({
 const STORAGE_KEY = 'bitlazer_pending_transactions'
 const MAX_TRANSACTION_AGE = 24 * 60 * 60 * 1000 // 24 hours
 const ARBITRUM_BLOCKS_TO_SEARCH = 3000000n
-const BITLAZER_BLOCKS_TO_SEARCH = 3000000n
 
 export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'bitlazer-to-arbitrum') => {
   const { address } = useAccount()
@@ -240,8 +239,6 @@ export const useLastTransaction = (bridgeDirection?: 'arbitrum-to-bitlazer' | 'b
 
             const arbFromBlock =
               arbCurrentBlock > ARBITRUM_BLOCKS_TO_SEARCH ? arbCurrentBlock - ARBITRUM_BLOCKS_TO_SEARCH : 0n
-            const l3FromBlock =
-              l3CurrentBlock > BITLAZER_BLOCKS_TO_SEARCH ? l3CurrentBlock - BITLAZER_BLOCKS_TO_SEARCH : 0n
 
             const allTransactions: PendingTransaction[] = []
 

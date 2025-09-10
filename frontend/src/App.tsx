@@ -5,6 +5,7 @@ import { router } from './router'
 import '@locales/index'
 import i18n from '@locales/index'
 import 'react-toastify/dist/ReactToastify.css'
+import { PriceProvider } from './providers/PriceProvider'
 
 // Web3
 import { WagmiProvider } from 'wagmi'
@@ -21,24 +22,26 @@ function App() {
     <I18nextProvider i18n={i18n}>
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
+          <PriceProvider>
+            <RouterProvider router={router} />
 
-          <ToastContainer
-            autoClose={false}
-            position={'top-right'}
-            theme="dark"
-            hideProgressBar={true}
-            newestOnTop={false}
-            closeOnClick={false}
-            closeButton={true}
-            style={{
-              zIndex: 9999,
-              top: '1rem',
-              right: '1rem',
-              width: 'auto',
-              maxWidth: 'calc(100vw - 2rem)',
-            }}
-          />
+            <ToastContainer
+              autoClose={false}
+              position={'top-right'}
+              theme="dark"
+              hideProgressBar={true}
+              newestOnTop={false}
+              closeOnClick={false}
+              closeButton={true}
+              style={{
+                zIndex: 9999,
+                top: '1rem',
+                right: '1rem',
+                width: 'auto',
+                maxWidth: 'calc(100vw - 2rem)',
+              }}
+            />
+          </PriceProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </I18nextProvider>

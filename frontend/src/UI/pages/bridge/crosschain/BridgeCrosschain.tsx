@@ -1,7 +1,6 @@
 import { Button, TXToast, TokenCard, TransactionStatusCard } from '@components/index'
 import { Skeleton } from '@components/skeleton/Skeleton'
 import Loading from '@components/loading/Loading'
-import { fmtHash } from 'src/utils/fmt'
 import React, { FC, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ERC20_CONTRACT_ADDRESS, L2_GATEWAY_ROUTER, L2_GATEWAY_ROUTER_BACK } from '../../../../web3/contracts'
@@ -17,7 +16,7 @@ import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
-import { fetchWithCache, debouncedFetch, CACHE_KEYS, CACHE_TTL } from 'src/utils/cache'
+import { usePriceStore } from 'src/stores/priceStore'
 import { calculatePercentageAmount } from 'src/utils/formatters'
 import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
 import { useLastTransaction } from 'src/hooks/useLastTransaction'
@@ -29,16 +28,17 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   const [isBridgeMode, setIsBridgeMode] = useState(true)
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
-  const [btcPrice, setBtcPrice] = useState<number>(0)
   const [minimumAmount, setMinimumAmount] = useState(0.00000001) // Default fallback
   const [minimumAmountFormatted, setMinimumAmountFormatted] = useState('Amount must be greater than 0.00000001')
+
+  // Get prices from global store
+  const { btcPrice } = usePriceStore()
 
   // Dynamic bridge details
   const bridgeDetails = useBridgeDetails(isBridgeMode)
 
   // Transaction tracking
   const {
-    getLatestTransactionByType,
     getLatestBridgeTransaction,
     addPendingTransaction,
     updateTransactionStage,
@@ -83,43 +83,15 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     mode: 'onChange',
   })
 
-  // Fetch BTC price
+  // Calculate minimum amount when BTC price changes
   useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        const btcData = await fetchWithCache(
-          CACHE_KEYS.BTC_PRICE,
-          async () => {
-            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
-              const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd',
-              )
-              if (!response.ok) throw new Error('Failed to fetch BTC price')
-              return response.json()
-            })
-          },
-          { ttl: CACHE_TTL.PRICE },
-        )
-
-        const wbtcPrice = btcData['wrapped-bitcoin']?.usd || 0
-        setBtcPrice(wbtcPrice)
-
-        // Calculate minimum amount equivalent to $0.01
-        if (wbtcPrice > 0) {
-          const minAmount = 0.01 / wbtcPrice
-          const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
-          setMinimumAmount(roundedMinAmount)
-          setMinimumAmountFormatted('Amount must be greater than $0.01')
-        }
-      } catch (error) {
-        console.error('Error fetching prices:', error)
-      }
+    if (btcPrice > 0) {
+      const minAmount = 0.01 / btcPrice
+      const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
+      setMinimumAmount(roundedMinAmount)
+      setMinimumAmountFormatted('Amount must be greater than $0.01')
     }
-
-    fetchPrices()
-    const interval = setInterval(fetchPrices, 30000)
-    return () => clearInterval(interval)
-  }, [])
+  }, [btcPrice])
 
   // Monitor pending bridge transaction status (only for actual pending transactions)
   useEffect(() => {
@@ -177,8 +149,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
   const [isBridging, setIsBridging] = useState(false)
   const [isBridgingReverse, setIsBridgingReverse] = useState(false)
   const [refreshApproval, setRefreshApproval] = useState(false)
-  const [bridgeSuccessInfo, setBridgeSuccessInfo] = useState<{ txHash: string } | null>(null)
-  const [bridgeReverseSuccessInfo, setBridgeReverseSuccessInfo] = useState<{ txHash: string } | null>(null)
 
   const { data: approvalData } = useReadContract({
     address: ERC20_CONTRACT_ADDRESS['lzrBTC'],
@@ -319,7 +289,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           setValue('amount', '')
           trigger('amount')
           setApproval(false)
-          setBridgeSuccessInfo({ txHash })
           // Redirect to stake page after successful bridge to Bitlazer
           setTimeout(() => {
             navigate('/bridge/stake')
@@ -327,7 +296,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         } else {
           setValueReverse('amount', '')
           triggerReverse('amount')
-          setBridgeReverseSuccessInfo({ txHash })
         }
 
         setRefreshApproval((prev) => !prev)

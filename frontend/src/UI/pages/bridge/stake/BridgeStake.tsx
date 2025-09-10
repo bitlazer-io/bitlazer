@@ -1,6 +1,6 @@
 import { Button, TXToast } from '@components/index'
 import Loading from '@components/loading/Loading'
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { toast } from 'react-toastify'
 import { useBalance, useAccount, useReadContract } from 'wagmi'
@@ -13,8 +13,7 @@ import { config } from 'src/web3/config'
 import { STAKING_CONTRACTS } from 'src/web3/contracts'
 import { parseUnits } from 'viem'
 import clsx from 'clsx'
-import { useEffect } from 'react'
-import { fetchWithCache, CACHE_KEYS, CACHE_TTL, debouncedFetch } from 'src/utils/cache'
+import { usePriceStore } from 'src/stores/priceStore'
 import { calculatePercentageAmount } from 'src/utils/formatters'
 import LZRStake from './LZRStake'
 
@@ -31,6 +30,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [minimumAmount, setMinimumAmount] = useState(0.00000001) // Default fallback
   const [minimumAmountFormatted, setMinimumAmountFormatted] = useState('Amount must be greater than 0.00000001')
+
+  // Get prices from global store
+  const { btcPrice } = usePriceStore()
 
   // Get user's wallet balance (native lzrBTC on Bitlazer)
   const { data: walletBalance, refetch: refetchWalletBalance } = useBalance({
@@ -104,42 +106,15 @@ const BridgeStake: FC<IBridgeStake> = () => {
     mode: 'onChange',
   })
 
-  // Fetch BTC price and calculate minimum amount
+  // Calculate minimum amount when BTC price changes
   useEffect(() => {
-    const fetchBTCPrice = async () => {
-      try {
-        const data = await fetchWithCache(
-          CACHE_KEYS.BTC_PRICE,
-          async () => {
-            return debouncedFetch(CACHE_KEYS.BTC_PRICE, async () => {
-              const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
-              )
-              if (!response.ok) throw new Error('Failed to fetch price')
-              return response.json()
-            })
-          },
-          { ttl: CACHE_TTL.PRICE },
-        )
-
-        const wbtcPrice = data['wrapped-bitcoin']?.usd || 0
-
-        // Calculate minimum amount equivalent to $0.01
-        if (wbtcPrice > 0) {
-          const minAmount = 0.01 / wbtcPrice
-          const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
-          setMinimumAmount(roundedMinAmount)
-          setMinimumAmountFormatted('Amount must be greater than $0.01')
-        }
-      } catch (error) {
-        console.error('Error fetching BTC price:', error)
-      }
+    if (btcPrice > 0) {
+      const minAmount = 0.01 / btcPrice
+      const roundedMinAmount = Math.ceil(minAmount * 100000000) / 100000000 // Round up to 8 decimals
+      setMinimumAmount(roundedMinAmount)
+      setMinimumAmountFormatted('Amount must be greater than $0.01')
     }
-
-    fetchBTCPrice()
-    const interval = setInterval(fetchBTCPrice, 30000) // Update every 30s
-    return () => clearInterval(interval)
-  }, [])
+  }, [btcPrice])
 
   const onStakeSubmit = async (data: any) => {
     setIsStaking(true)
