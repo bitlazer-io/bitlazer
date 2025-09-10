@@ -7,6 +7,7 @@ import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'
 import { Skeleton } from '../skeleton/Skeleton'
 import { lzrBTC_abi } from 'src/assets/abi/lzrBTC'
+import { fetchRecentWrapActivity } from '../../pages/stats/services/recentActivityService'
 
 interface WrapStatsData {
   totalWrapped: number
@@ -16,6 +17,8 @@ interface WrapStatsData {
     amount: string
     timestamp: number
     txHash: string
+    asset: string
+    type: 'wrap' | 'unwrap'
   }>
 }
 
@@ -39,56 +42,28 @@ export const WrapStats: React.FC = () => {
     chainId: arbitrum.id,
   })
 
-  // Separate function for fetching recent activity
+  // Separate function for fetching recent activity from API
   const fetchRecentActivity = async () => {
-    if (!publicClient) return
-
     try {
       setLoadingRecentActivity(true)
-      const currentBlock = await publicClient.getBlockNumber()
-      const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
+      const activity = await fetchRecentWrapActivity(5)
 
-      // Wrapping = minting = Transfer from 0x0 to user
-      const transferLogs = await publicClient.getLogs({
-        address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-        event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-        fromBlock,
-        toBlock: currentBlock,
-      })
-
-      // Separate wrap (mint) events
-      const wrapLogs = transferLogs.filter(
-        (log) => log.args && 'from' in log.args && log.args.from === '0x0000000000000000000000000000000000000000',
-      )
-
-      const recentTransactions: typeof stats.recentWraps = []
-
-      for (const log of wrapLogs) {
-        if (log.args && 'to' in log.args && 'value' in log.args) {
-          const block = await publicClient.getBlock({ blockHash: log.blockHash! })
-          recentTransactions.push({
-            amount: formatUnits(log.args.value as bigint, 18),
-            timestamp: Number(block.timestamp),
-            txHash: log.transactionHash!,
-          })
-        }
-      }
-
-      recentTransactions.sort((a, b) => b.timestamp - a.timestamp)
-
-      // Remove duplicates based on txHash
-      const uniqueWraps = recentTransactions.filter(
-        (wrap, index, self) => index === self.findIndex((w) => w.txHash === wrap.txHash),
-      )
+      const recentWraps = activity.map((item) => ({
+        amount: item.amount,
+        timestamp: item.timestamp,
+        txHash: item.txHash,
+        asset: item.asset,
+        type: item.type,
+      }))
 
       // Update only the recent wraps without affecting main stats
       setStats((prevStats) => ({
         ...prevStats,
-        recentWraps: uniqueWraps.slice(0, 5),
+        recentWraps: recentWraps,
       }))
       setLoadingRecentActivity(false)
-    } catch (eventError) {
-      console.error('Error fetching wrap events:', eventError)
+    } catch (error) {
+      console.error('Error fetching wrap activity from API:', error)
       setLoadingRecentActivity(false)
     }
   }
@@ -262,7 +237,14 @@ export const WrapStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(wrap.amount))} BTC
+                          {formatAmount(Number(wrap.amount))} {wrap.asset}
+                        </span>
+                        <span
+                          className={`text-sm md:text-base font-ocrx uppercase ${
+                            wrap.type === 'wrap' ? 'text-yellow-400' : 'text-yellow-400'
+                          }`}
+                        >
+                          {wrap.type === 'wrap' ? '↑ WRAP' : '↓ UNWRAP'}
                         </span>
                         <a
                           href={`https://arbiscan.io/tx/${wrap.txHash}`}
