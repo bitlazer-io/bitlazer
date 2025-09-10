@@ -24,55 +24,46 @@ const Explorer: FC<IExplorer> = () => {
   const [nextRefreshIn, setNextRefreshIn] = useState(30)
   const itemsPerPage = 20
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const lastFetchRef = useRef<number>(0)
+  const isInitialLoadComplete = useRef<boolean>(false)
 
-  // Cache-free auto-refresh function that fetches fresh data directly
+  // Auto-refresh: check for new txs and update recent ones
   const refreshRecentTransactions = async () => {
-    const now = Date.now()
-
-    console.log('Auto-refresh: Fetching fresh data from last 1 hour (no cache)...')
+    if (!isInitialLoadComplete.current) return
 
     try {
-      // Initialize API clients fresh (no cache)
       const arbiscanAPI = new ArbiscanAPI()
       const bitlazerAPI = new BitlazerAPI()
 
-      // Fetch minimal data - only very recent transactions
-      const [freshArbTransactions, freshBitlazerTransactions] = await Promise.all([
+      // Fetch recent transactions (last ~24h worth)
+      const [arbTxs, bitlazerTxs] = await Promise.all([
         arbiscanAPI.fetchTokenTransfers({
           contractAddress: '0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df',
-          offset: 10, // Very small - only last 10 transactions
+          offset: 10000, // 10k transactions from Arbitrum (high activity)
           sort: 'desc',
         }),
-        // Normal fetch but with very small block range for low-volume chain
-        bitlazerAPI.fetchAllTransactions(5), // Only last 5 blocks - sufficient for low-volume Bitlazer
+        bitlazerAPI.fetchAllTransactions(10), // 10 blocks from Bitlazer L3 (low activity)
       ])
 
-      // Combine fresh transactions
-      const allFreshTransactions = [...freshArbTransactions, ...freshBitlazerTransactions]
+      // Combine and filter
+      const fresh = [...arbTxs, ...bitlazerTxs].filter((tx) => tx.type !== TransactionType.TRANSFER)
 
-      // Remove duplicates and filter out TRANSFER type
-      const uniqueFresh = Array.from(new Map(allFreshTransactions.map((tx) => [tx.hash, tx])).values()).filter(
-        (tx) => tx.type !== TransactionType.TRANSFER,
-      )
+      // Create map of current transactions
+      const txMap = new Map(allTransactions.map((tx) => [tx.hash, tx]))
 
-      // Find NEW transactions that don't exist in current list
-      const existingTxHashes = new Set(allTransactions.map((tx) => tx.hash))
-      const newTransactions = uniqueFresh.filter((tx) => !existingTxHashes.has(tx.hash))
+      // Update existing or add new
+      fresh.forEach((tx) => {
+        txMap.set(tx.hash, tx)
+      })
 
-      console.log(
-        `Found ${newTransactions.length} NEW transactions, adding to existing ${allTransactions.length} cached transactions`,
-      )
+      // Sort and update state
+      const updated = Array.from(txMap.values()).sort((a, b) => b.timestamp - a.timestamp)
 
-      // Simply add new transactions to existing cached list
-      const combined = [...newTransactions, ...allTransactions]
-      const sorted = combined.sort((a, b) => b.timestamp - a.timestamp)
+      setAllTransactions(updated)
 
-      setAllTransactions(sorted)
+      // Update cache
+      cache.set('explorer_all_transactions_v5', updated, 12 * 60 * 60 * 1000)
 
-      // Update the main cache to include new transactions found during auto-refresh
-      cache.set('explorer_all_transactions_12h', sorted, 12 * 60 * 60 * 1000)
-      console.log('Auto-refresh completed - merged fresh 1-hour data with older cached data and updated cache')
+      console.log(`Auto-refresh: checked ${fresh.length} recent txs, total: ${updated.length}`)
     } catch (error) {
       console.error('Auto-refresh failed:', error)
     }
@@ -80,7 +71,7 @@ const Explorer: FC<IExplorer> = () => {
 
   // Initial load on mount
   useEffect(() => {
-    loadAllTransactions(false)
+    loadAllTransactions()
   }, [])
 
   // Set up auto-refresh countdown (30 seconds)
@@ -107,7 +98,7 @@ const Explorer: FC<IExplorer> = () => {
         clearInterval(countdownIntervalRef.current)
       }
     }
-  }, [])
+  }, []) // Empty dependency is OK here since refreshRecentTransactions uses ref
 
   // Apply filters when search/filter criteria change
   useEffect(() => {
@@ -126,52 +117,37 @@ const Explorer: FC<IExplorer> = () => {
     setHasMore(end < filteredTransactions.length)
   }, [page, filteredTransactions])
 
-  const loadAllTransactions = async (refreshRecentOnly = false) => {
-    const CACHE_KEY = 'explorer_all_transactions_12h'
+  const loadAllTransactions = async () => {
+    const CACHE_KEY = 'explorer_all_transactions_v5'
     const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
-    const now = Date.now()
 
-    // Prevent API spam - minimum 25 seconds between fetches
-    if (refreshRecentOnly && now - lastFetchRef.current < 25000) {
-      console.log('Skipping refresh - too soon since last fetch')
+    // Try cache first
+    const cachedData = cache.get<Transaction[]>(CACHE_KEY)
+    if (cachedData && cachedData.length > 0) {
+      console.log(`Initial load: Using ${cachedData.length} cached transactions`)
+      setAllTransactions(cachedData)
+      setLoading(false)
+      isInitialLoadComplete.current = true
       return
     }
 
-    // For initial load, try cache first
-    if (!refreshRecentOnly) {
-      const cachedData = cache.get<Transaction[]>(CACHE_KEY)
-      if (cachedData && cachedData.length > 0) {
-        setAllTransactions(cachedData)
-        setLoading(false)
-        return
-      }
-    }
-
-    // Don't show loading spinner on auto-refresh
-    if (!refreshRecentOnly) {
-      setLoading(true)
-    }
+    // No cache, fetch all from API
+    setLoading(true)
 
     try {
-      lastFetchRef.current = now
+      const data = await fetchTransactions({
+        page: 1,
+        limit: 5000, // Get all transactions
+        forceRefresh: false,
+      })
 
-      if (refreshRecentOnly) {
-        // This path is no longer used since we have refreshRecentTransactions()
-        console.log('Skipping old refresh logic - using new cache-free refresh')
-        return
-      } else {
-        // Initial load: fetch all and cache
-        const data = await fetchTransactions({
-          page: 1,
-          limit: 1000,
-          forceRefresh: false,
-        })
-
-        setAllTransactions(data.transactions)
-        cache.set(CACHE_KEY, data.transactions, CACHE_TTL)
-      }
+      console.log(`Initial load: Fetched ${data.transactions.length} transactions from API`)
+      setAllTransactions(data.transactions)
+      cache.set(CACHE_KEY, data.transactions, CACHE_TTL)
+      isInitialLoadComplete.current = true
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
+      isInitialLoadComplete.current = true // Allow auto-refresh even on error
     } finally {
       setLoading(false)
     }
