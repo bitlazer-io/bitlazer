@@ -75,7 +75,13 @@ export class BitlazerAPI {
         const response = await fetch(url)
         const data = await response.json()
 
-        if (data.status === '0' && data.message !== 'No transactions found' && data.message !== 'OK') {
+        // Don't throw error for "No logs found" - it's a valid response
+        if (
+          data.status === '0' &&
+          data.message !== 'No transactions found' &&
+          data.message !== 'No logs found' &&
+          data.message !== 'OK'
+        ) {
           throw new Error(data.message || 'API request failed')
         }
 
@@ -455,16 +461,24 @@ export class BitlazerAPI {
         }),
       })
       const rpcData = await rpcResponse.json()
-      const currentBlock = parseInt(rpcData.result, 16) || 1000
-      const fromBlock = Math.max(0, currentBlock - maxBlocks)
+      const currentBlock = parseInt(rpcData.result, 16)
 
-      console.log(`Fetching Bitlazer transactions (lightweight) from block ${fromBlock} to ${currentBlock}`)
+      // Handle case where chain is new or has few blocks
+      let fromBlock: number
+      if (!currentBlock || currentBlock < 1000) {
+        fromBlock = 0
+        console.log(`Bitlazer chain has low block number: ${currentBlock}, fetching all blocks from genesis`)
+      } else {
+        fromBlock = Math.max(0, currentBlock - maxBlocks)
+      }
+
+      console.log(`Fetching Bitlazer transactions (lightweight) from block ${fromBlock} to ${currentBlock || 'latest'}`)
 
       // Fetch all event types in parallel but use lightweight parsing
       const [transfers, stakingEvents, bridgeEvents] = await Promise.all([
-        this.fetchTransferEventsLightweight(fromBlock, currentBlock),
-        this.fetchStakingEvents(fromBlock, currentBlock), // This one is already optimized
-        this.fetchBridgeEventsLightweight(fromBlock, currentBlock),
+        this.fetchTransferEventsLightweight(fromBlock, currentBlock || 'latest'),
+        this.fetchStakingEvents(fromBlock, currentBlock || 'latest'), // This one is already optimized
+        this.fetchBridgeEventsLightweight(fromBlock, currentBlock || 'latest'),
       ])
 
       // Combine and deduplicate
@@ -496,16 +510,25 @@ export class BitlazerAPI {
         }),
       })
       const rpcData = await rpcResponse.json()
-      const currentBlock = parseInt(rpcData.result, 16) || 1000
-      const fromBlock = Math.max(0, currentBlock - maxBlocks)
+      const currentBlock = parseInt(rpcData.result, 16)
 
-      console.log(`Fetching Bitlazer transactions from block ${fromBlock} to ${currentBlock}`)
+      // Handle case where chain is new or has few blocks
+      let fromBlock: number
+      if (!currentBlock || currentBlock < 1000) {
+        // If chain has less than 1000 blocks, fetch all
+        fromBlock = 0
+        console.log(`Bitlazer chain has low block number: ${currentBlock}, fetching all blocks from genesis`)
+      } else {
+        fromBlock = Math.max(0, currentBlock - maxBlocks)
+      }
+
+      console.log(`Fetching Bitlazer transactions from block ${fromBlock} to ${currentBlock || 'latest'}`)
 
       // Fetch all event types in parallel
       const [transfers, stakingEvents, bridgeEvents] = await Promise.all([
-        this.fetchTransferEvents(fromBlock, currentBlock),
-        this.fetchStakingEvents(fromBlock, currentBlock),
-        this.fetchBridgeEvents(fromBlock, currentBlock),
+        this.fetchTransferEvents(fromBlock, currentBlock || 'latest'),
+        this.fetchStakingEvents(fromBlock, currentBlock || 'latest'),
+        this.fetchBridgeEvents(fromBlock, currentBlock || 'latest'),
       ])
 
       // Combine and deduplicate
