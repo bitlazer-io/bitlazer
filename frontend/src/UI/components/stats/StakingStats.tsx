@@ -9,6 +9,7 @@ import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatMoney, formatTxHash } from 'src/utils/formatters'
 import { Skeleton } from '../skeleton/Skeleton'
 import { usePriceStore } from 'src/stores/priceStore'
+import { fetchRecentStakingActivity } from '../../pages/stats/services/recentActivityService'
 
 interface StakingStatsData {
   totalStaked: number
@@ -23,6 +24,7 @@ interface StakingStatsData {
     action: 'stake' | 'unstake'
     txHash: string
     timestamp: number
+    asset: string
   }>
 }
 
@@ -65,79 +67,28 @@ export const StakingStats: React.FC = () => {
     chainId: mainnet.id,
   })
 
-  // Separate function for fetching recent activity
+  // Separate function for fetching recent activity from API
   const fetchRecentActivity = async () => {
-    if (!bitlazerClient) return
-
     try {
       setLoadingRecentActivity(true)
-      const currentBlock = await bitlazerClient.getBlockNumber()
-      const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
+      const activity = await fetchRecentStakingActivity(5)
 
-      const recentStakes: typeof stats.recentStakes = []
-
-      // Fetch Staked events
-      const stakedLogs = await bitlazerClient.getLogs({
-        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-        event: parseAbiItem('event Staked(address indexed user, uint256 amount)'),
-        fromBlock,
-        toBlock: currentBlock,
-      })
-
-      // Fetch Transfer events for unstaking (stake tokens burned)
-      const transferLogs = await bitlazerClient.getLogs({
-        address: STAKING_CONTRACTS.T3RNStakingAdapter as `0x${string}`,
-        event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-        fromBlock,
-        toBlock: currentBlock,
-      })
-
-      // Process staked events
-      for (const log of stakedLogs) {
-        if (log.args && 'user' in log.args && 'amount' in log.args) {
-          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          recentStakes.push({
-            amount: formatUnits(log.args.amount as bigint, 18),
-            action: 'stake' as const,
-            txHash: log.transactionHash!,
-            timestamp: Number(block.timestamp),
-          })
-        }
-      }
-
-      // Process unstaking events (burns = transfers to 0x0)
-      const unstakeLogs = transferLogs.filter(
-        (log) => log.args && 'to' in log.args && log.args.to === '0x0000000000000000000000000000000000000000',
-      )
-
-      for (const log of unstakeLogs) {
-        if (log.args && 'value' in log.args) {
-          const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-          recentStakes.push({
-            amount: formatUnits(log.args.value as bigint, 18),
-            action: 'unstake' as const,
-            txHash: log.transactionHash!,
-            timestamp: Number(block.timestamp),
-          })
-        }
-      }
-
-      // Sort by timestamp (most recent first)
-      recentStakes.sort((a, b) => b.timestamp - a.timestamp)
-
-      // Remove duplicates based on txHash
-      const uniqueStakes = recentStakes.filter(
-        (stake, index, self) => index === self.findIndex((s) => s.txHash === stake.txHash),
-      )
+      const recentStakes = activity.map((item) => ({
+        amount: item.amount,
+        action: item.action,
+        txHash: item.txHash,
+        timestamp: item.timestamp,
+        asset: item.asset,
+      }))
 
       // Update only the recent stakes without affecting main stats
       setStats((prevStats) => ({
         ...prevStats,
-        recentStakes: uniqueStakes,
+        recentStakes: recentStakes,
       }))
       setLoadingRecentActivity(false)
-    } catch (eventError) {
-      console.error('Error fetching staking events:', eventError)
+    } catch (error) {
+      console.error('Error fetching staking activity from API:', error)
       setLoadingRecentActivity(false)
     }
   }
@@ -415,14 +366,14 @@ export const StakingStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(stake.amount))} BTC
+                          {formatAmount(Number(stake.amount))} {stake.asset}
                         </span>
                         <span
                           className={`text-sm md:text-base font-ocrx uppercase ${
                             stake.action === 'stake' ? 'text-lightgreen-100' : 'text-fuchsia'
                           }`}
                         >
-                          {stake.action === 'stake' ? '↑ STAKED' : '↓ UNSTAKED'}
+                          {stake.action === 'stake' ? '↑ STAKE' : '↓ UNSTAKE'}
                         </span>
                         <a
                           href={`https://bitlazer.calderaexplorer.xyz/tx/${stake.txHash}`}

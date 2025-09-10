@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { formatUnits } from 'viem'
 import { useReadContract } from 'wagmi'
 import { arbitrum } from 'wagmi/chains'
@@ -8,9 +8,7 @@ import { USDollar, formatCompactNumber, formatPercentage } from 'src/utils/forma
 import { usePriceStore } from 'src/stores/priceStore'
 
 export const PriceHeader: React.FC = () => {
-  const { btcPrice, isLoading } = usePriceStore()
-  const [priceChange24h, setPriceChange24h] = useState(0)
-  const [fetchingChange, setFetchingChange] = useState(true)
+  const { btcPrice, isLoading, btc24hChange } = usePriceStore()
 
   const { data: totalSupply } = useReadContract({
     address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
@@ -18,29 +16,6 @@ export const PriceHeader: React.FC = () => {
     functionName: 'totalSupply',
     chainId: arbitrum.id,
   })
-
-  // Fetch 24h price change separately (not needed in global state)
-  useEffect(() => {
-    const fetchPriceChange = async () => {
-      try {
-        const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd&include_24hr_change=true',
-        )
-        if (response.ok) {
-          const data = await response.json()
-          setPriceChange24h(data['wrapped-bitcoin']?.usd_24h_change || 0)
-        }
-      } catch (error) {
-        console.error('Error fetching price change:', error)
-      } finally {
-        setFetchingChange(false)
-      }
-    }
-
-    fetchPriceChange()
-    const interval = setInterval(fetchPriceChange, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   const supply = totalSupply ? Number(formatUnits(totalSupply as bigint, 18)) : 0
   const marketCap = supply * btcPrice
@@ -76,12 +51,12 @@ export const PriceHeader: React.FC = () => {
               <div className="text-lg md:text-2xl lg:text-3xl font-bold text-lightgreen-100 font-maison-neue mb-1">
                 {isLoading ? <div className="h-7 w-24 bg-gray-300/10 animate-pulse rounded" /> : formatPrice(btcPrice)}
               </div>
-              {!fetchingChange && (
+              {btc24hChange !== null && (
                 <div
-                  className={`text-sm md:text-base font-ocrx flex items-center gap-1 ${priceChange24h >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
+                  className={`text-sm md:text-base font-ocrx flex items-center gap-1 ${btc24hChange >= 0 ? 'text-lightgreen-100' : 'text-fuchsia'}`}
                 >
-                  <span className="text-lg leading-none">{priceChange24h >= 0 ? '↑' : '↓'}</span>
-                  <span>{formatPercentage(Math.abs(priceChange24h))}</span>
+                  <span className="text-lg leading-none">{btc24hChange >= 0 ? '↑' : '↓'}</span>
+                  <span>{formatPercentage(Math.abs(btc24hChange))}</span>
                 </div>
               )}
             </div>

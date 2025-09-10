@@ -8,6 +8,7 @@ import { formatUnits, parseAbiItem } from 'viem'
 import { PrimaryLabel, SecondaryLabel } from './StatsLabels'
 import { formatTokenAmount, formatTxHash } from 'src/utils/formatters'
 import { Skeleton } from '../skeleton/Skeleton'
+import { fetchRecentBridgeActivity } from '../../pages/stats/services/recentActivityService'
 
 interface BridgeStatsData {
   totalBridgedToL3: number
@@ -21,6 +22,7 @@ interface BridgeStatsData {
     to: string
     txHash: string
     timestamp: number
+    asset: string
   }>
 }
 
@@ -49,87 +51,29 @@ export const BridgeStats: React.FC = () => {
   // Track L3 total supply separately since it's native token there
   const [l3TotalSupply, setL3TotalSupply] = useState<number>(0)
 
-  // Separate function for fetching recent activity
+  // Separate function for fetching recent activity from API
   const fetchRecentActivity = async () => {
     try {
       setLoadingRecentActivity(true)
-      const recentBridges: typeof stats.recentBridges = []
+      const activity = await fetchRecentBridgeActivity(5)
 
-      if (arbitrumClient && bitlazerClient) {
-        // Fetch transfers to bridge contract (Arbitrum -> L3)
-        const currentBlock = await arbitrumClient.getBlockNumber()
-        const fromBlock = currentBlock > 1000000n ? currentBlock - 1000000n : 0n
-
-        const arbToBridgeLogs = await arbitrumClient.getLogs({
-          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-          args: {
-            to: L2_GATEWAY_ROUTER as `0x${string}`,
-          },
-          fromBlock,
-          toBlock: currentBlock,
-        })
-
-        // Process Arbitrum to L3 bridges
-        for (const log of arbToBridgeLogs) {
-          if (log.args && 'value' in log.args) {
-            const block = await arbitrumClient.getBlock({ blockHash: log.blockHash! })
-            recentBridges.push({
-              amount: formatUnits(log.args.value as bigint, 18),
-              from: SUPPORTED_CHAINS.arbitrumOne.name,
-              to: SUPPORTED_CHAINS.bitlazerL3.name,
-              txHash: log.transactionHash!,
-              timestamp: Number(block.timestamp),
-            })
-          }
-        }
-
-        // Fetch L3 to Arbitrum bridges (look for withdrawals on L3)
-        const l3CurrentBlock = await bitlazerClient.getBlockNumber()
-        const l3FromBlock = l3CurrentBlock > 1000000n ? l3CurrentBlock - 1000000n : 0n
-
-        // Look for burns on L3 (withdrawals)
-        const l3WithdrawalLogs = await bitlazerClient.getLogs({
-          address: ERC20_CONTRACT_ADDRESS.lzrBTC as `0x${string}`,
-          event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)'),
-          args: {
-            to: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-          },
-          fromBlock: l3FromBlock,
-          toBlock: l3CurrentBlock,
-        })
-
-        // Process L3 to Arbitrum bridges
-        for (const log of l3WithdrawalLogs) {
-          if (log.args && 'value' in log.args) {
-            const block = await bitlazerClient.getBlock({ blockHash: log.blockHash! })
-            recentBridges.push({
-              amount: formatUnits(log.args.value as bigint, 18),
-              from: SUPPORTED_CHAINS.bitlazerL3.name,
-              to: SUPPORTED_CHAINS.arbitrumOne.name,
-              txHash: log.transactionHash!,
-              timestamp: Number(block.timestamp),
-            })
-          }
-        }
-
-        // Sort by timestamp (most recent first)
-        recentBridges.sort((a, b) => b.timestamp - a.timestamp)
-      }
-
-      // Remove duplicates based on txHash
-      const uniqueBridges = recentBridges.filter(
-        (bridge, index, self) => index === self.findIndex((b) => b.txHash === bridge.txHash),
-      )
+      const recentBridges = activity.map((item) => ({
+        amount: item.amount,
+        from: item.from,
+        to: item.to,
+        txHash: item.txHash,
+        timestamp: item.timestamp,
+        asset: item.asset,
+      }))
 
       // Update only the recent bridges without affecting main stats
       setStats((prevStats) => ({
         ...prevStats,
-        recentBridges: uniqueBridges,
+        recentBridges: recentBridges,
       }))
       setLoadingRecentActivity(false)
-    } catch (eventError) {
-      console.error('Error fetching bridge events:', eventError)
+    } catch (error) {
+      console.error('Error fetching bridge activity from API:', error)
       setLoadingRecentActivity(false)
     }
   }
@@ -372,7 +316,7 @@ export const BridgeStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(bridge.amount))} BTC
+                          {formatAmount(Number(bridge.amount))} {bridge.asset}
                         </span>
                         <span className="text-sm md:text-base text-white/70 font-ocrx">
                           {bridge.from} → {bridge.to}
@@ -385,7 +329,7 @@ export const BridgeStats: React.FC = () => {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm md:text-base text-fuchsia hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
+                          className="text-sm md:text-base text-blue-400 hover:text-lightgreen-100 font-ocrx transition-all hover:underline decoration-2 underline-offset-2"
                         >
                           {formatTxHash(bridge.txHash)}
                         </a>
