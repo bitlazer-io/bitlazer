@@ -171,10 +171,6 @@ export const BridgeStats: React.FC = () => {
     }
   }, [arbitrumBalance, arbitrumClient, bitlazerClient])
 
-  const formatAmount = (amount: number) => {
-    return formatTokenAmount(amount)
-  }
-
   const formatTime = (timestamp: number) => {
     const now = Date.now() / 1000
     const diff = now - timestamp
@@ -216,7 +212,7 @@ export const BridgeStats: React.FC = () => {
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatAmount(stats.totalBridgedToL3)}</>
+                <>{formatTokenAmount(stats.totalBridgedToL3)}</>
               )}
             </div>
             <SecondaryLabel className="mt-1">NATIVE lzrBTC</SecondaryLabel>
@@ -228,7 +224,7 @@ export const BridgeStats: React.FC = () => {
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatAmount(stats.totalBridgedToArbitrum)}</>
+                <>{formatTokenAmount(stats.totalBridgedToArbitrum)}</>
               )}
             </div>
             <SecondaryLabel className="mt-1">ERC-20 lzrBTC</SecondaryLabel>
@@ -262,7 +258,7 @@ export const BridgeStats: React.FC = () => {
               {loading ? (
                 <div className="h-5 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
-                <>{formatAmount(stats.bridgeVolume24h)}</>
+                <>{formatTokenAmount(stats.bridgeVolume24h)}</>
               )}
             </div>
             <SecondaryLabel>lzrBTC BRIDGED</SecondaryLabel>
@@ -273,7 +269,7 @@ export const BridgeStats: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <PrimaryLabel>DISTRIBUTION</PrimaryLabel>
             <span className="text-sm md:text-base text-lightgreen-100 font-ocrx">
-              {formatAmount(totalLzrBTC)} TOTAL
+              {formatTokenAmount(totalLzrBTC)} TOTAL
             </span>
           </div>
 
@@ -316,7 +312,7 @@ export const BridgeStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(bridge.amount))} {bridge.asset}
+                          {formatTokenAmount(Number(bridge.amount))} {bridge.asset}
                         </span>
                         <span className="text-sm md:text-base text-white/70 font-ocrx">
                           {bridge.from} → {bridge.to}

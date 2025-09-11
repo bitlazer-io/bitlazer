@@ -15,7 +15,6 @@ import Cookies from 'universal-cookie'
 import { SUPPORTED_CHAINS } from 'src/web3/chains'
 import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
-import { useNavigate } from 'react-router-dom'
 import { usePriceStore } from 'src/stores/priceStore'
 import { calculatePercentageAmount } from 'src/utils/formatters'
 import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
@@ -24,7 +23,6 @@ import { useLastTransactionAPI } from 'src/hooks/useLastTransactionAPI'
 interface IBridgeCrosschain {}
 
 const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
-  const navigate = useNavigate()
   const [isBridgeMode, setIsBridgeMode] = useState(true)
   const [isInputFocused, setIsInputFocused] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -299,10 +297,6 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
           setValue('amount', '')
           trigger('amount')
           setApproval(false)
-          // Redirect to stake page after successful bridge to Bitlazer
-          setTimeout(() => {
-            navigate('/bridge/stake')
-          }, 1500)
         } else {
           setValueReverse('amount', '')
           triggerReverse('amount')

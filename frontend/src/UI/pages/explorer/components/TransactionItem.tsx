@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
 import clsx from 'clsx'
 import { Transaction, TransactionType, TransactionStatus, NetworkType } from '../types'
-import { formatTxHash, formatAddress } from 'src/utils/formatters'
+import { formatTxHash, formatAddress, formatTokenAmount } from 'src/utils/formatters'
 import { SUPPORTED_CHAINS } from 'src/web3/chains'
 
 interface TransactionItemProps {
@@ -36,14 +36,6 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
       default:
         return 'text-white'
     }
-  }
-
-  const formatAmount = (amount: string, asset: string) => {
-    const num = parseFloat(amount)
-    if (num < 0.0001) return `<0.0001 ${asset}`
-    if (num < 1) return `${num.toFixed(6)} ${asset}`
-    if (num < 1000) return `${num.toFixed(4)} ${asset}`
-    return `${num.toFixed(2)} ${asset}`
   }
 
   const formatTime = (timestamp: number) => {
@@ -117,7 +109,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
         {/* Amount */}
         <div className="col-span-2">
           <span className="text-white font-maison-neue text-base font-semibold whitespace-nowrap">
-            {formatAmount(transaction.amount, transaction.asset)}
+            {formatTokenAmount(transaction.amount, transaction.asset)}
           </span>
         </div>
 
@@ -188,7 +180,7 @@ export const TransactionItem: FC<TransactionItemProps> = ({ transaction }) => {
 
         <div className="border-t border-lightgreen-100/20 pt-2">
           <div className="text-white font-maison-neue text-sm font-semibold mb-1">
-            {formatAmount(transaction.amount, transaction.asset)}
+            {formatTokenAmount(transaction.amount, transaction.asset)}
           </div>
           <div className="flex items-center text-white/70 font-maison-neue text-sm">
             {getNetworkIcon(transaction.sourceNetwork)}

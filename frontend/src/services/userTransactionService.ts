@@ -58,9 +58,14 @@ class UserTransactionService {
 
         if (transaction.timestamp) {
           const ageInMs = Date.now() - transaction.timestamp * 1000
+          const fiveMinutesInMs = 5 * 60 * 1000
           const oneHourInMs = 60 * 60 * 1000
 
-          if (ageInMs > oneHourInMs) {
+          if (ageInMs < fiveMinutesInMs) {
+            ttl = 10 * 1000 // 10 seconds for very recent transactions
+          } else if (ageInMs < oneHourInMs) {
+            ttl = CACHE_TTL.USER_TX // 1 minute for recent transactions
+          } else {
             ttl = 10 * 60 * 1000 // 10 minutes for transactions older than 1 hour
           }
         }
@@ -473,10 +478,18 @@ class UserTransactionService {
       }
 
       // Cache the result with appropriate TTL based on transaction age
-      // For old transactions (>1 hour), use 10 minute cache
       const transactionAge = Date.now() - (result.timestamp || Date.now())
+      const fiveMinutesInMs = 5 * 60 * 1000
       const oneHourInMs = 60 * 60 * 1000
-      const ttl = transactionAge > oneHourInMs ? 10 * 60 * 1000 : CACHE_TTL.USER_TX
+
+      let ttl = CACHE_TTL.USER_TX // Default 1 minute
+      if (transactionAge < fiveMinutesInMs) {
+        ttl = 10 * 1000 // 10 seconds for very recent transactions
+      } else if (transactionAge < oneHourInMs) {
+        ttl = CACHE_TTL.USER_TX // 1 minute for recent transactions
+      } else {
+        ttl = 10 * 60 * 1000 // 10 minutes for transactions older than 1 hour
+      }
 
       cache.set(cacheKey, result, ttl)
 
