@@ -225,6 +225,8 @@ export const CACHE_KEYS = {
   WRAP_STATS: 'wrap_stats',
   BRIDGE_STATS: 'bridge_stats',
   BRIDGE_TRANSACTIONS: 'bridge_transactions',
+  USER_LAST_TX: 'user_last_tx',
+  USER_TXS: 'user_txs',
 } as const
 
 /**
@@ -236,4 +238,5 @@ export const CACHE_TTL = {
   STATS: 2 * 60 * 1000, // 2 minutes for general stats
   NETWORK: 15 * 1000, // 15 seconds for network data
   LONG: 5 * 60 * 1000, // 5 minutes for rarely changing data
+  USER_TX: 60 * 1000, // 1 minute for user transaction data
 } as const

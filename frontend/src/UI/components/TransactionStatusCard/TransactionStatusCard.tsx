@@ -4,6 +4,7 @@ import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transacti
 import TransactionDetailsModal from '../TransactionDetailsModal/TransactionDetailsModal'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
+import { SUPPORTED_CHAINS, getChainByName } from '../../../web3/chains'
 
 interface TransactionStatusCardProps {
   transaction: PendingTransaction
@@ -29,21 +30,23 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, cl
   }, [transaction.timestamp])
 
   const getActionLabel = () => {
+    const isCompleted = transaction.status === 'completed' || transaction.stage === 'completed'
+
     switch (transaction.type) {
       case 'bridge':
-        return `Bridging to ${transaction.toChain}`
+        return isCompleted ? `Bridged to ${transaction.toChain}` : `Bridging to ${transaction.toChain}`
       case 'bridge-reverse':
-        return `Withdrawing to ${transaction.toChain}`
+        return isCompleted ? `Withdrew to ${transaction.toChain}` : `Withdrawing to ${transaction.toChain}`
       case 'wrap':
-        return 'Wrapping'
+        return isCompleted ? 'Wrapped' : 'Wrapping'
       case 'unwrap':
-        return 'Unwrapping'
+        return isCompleted ? 'Unwrapped' : 'Unwrapping'
       case 'stake':
-        return 'Staking'
+        return isCompleted ? 'Staked' : 'Staking'
       case 'unstake':
-        return 'Unstaking'
+        return isCompleted ? 'Unstaked' : 'Unstaking'
       default:
-        return 'Processing'
+        return isCompleted ? 'Completed' : 'Processing'
     }
   }
 
@@ -66,7 +69,11 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, cl
             {/* Row 1: Title with icon and Time */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
-                <img src="/icons/crypto/arbitrum-color.svg" alt="Arbitrum" className="w-5 h-5 flex-shrink-0" />
+                {(() => {
+                  const chain = getChainByName(transaction.toChain)
+                  const chainIcon = chain?.icon || SUPPORTED_CHAINS.bitlazerL3.icon
+                  return <img src={chainIcon} alt={transaction.toChain} className="w-5 h-5 flex-shrink-0" />
+                })()}
                 <span className="text-sm text-white">{getActionLabel()}</span>
               </div>
               <div className="text-xs text-white/60">{formatElapsedTime(timeElapsed)} ago</div>
@@ -92,18 +99,26 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, cl
                   </a>
                 </div>
 
-                {/* Item 2: Value Badge */}
-                <div>
+                {/* Item 2: Value Badges */}
+                <div className="flex items-center gap-1.5">
                   <span className="text-xs px-2.5 py-1 rounded-full bg-lightgreen-100/20 text-white/90 font-mono">
                     {transaction.amount} {transaction.fromToken}
                   </span>
+                  {transaction.amountUSD && (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-lightgreen-100/10 text-white/60 font-mono">
+                      ${transaction.amountUSD.toFixed(2)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Item 3: Compact Timeline with popup styling */}
                 <div className="flex items-center gap-2">
                   {lastTwoStages.map((stage, index) => {
-                    const isCompleted = stages.findIndex((s) => s.stage === stage.stage) < currentStageIndex
-                    const isCurrent = stage.stage === transaction.stage
+                    const stageIndex = stages.findIndex((s) => s.stage === stage.stage)
+                    const isCompleted =
+                      stageIndex < currentStageIndex ||
+                      (transaction.stage === 'completed' && stageIndex === currentStageIndex)
+                    const isCurrent = stage.stage === transaction.stage && transaction.stage !== 'completed'
                     const isPending = !isCompleted && !isCurrent
 
                     return (

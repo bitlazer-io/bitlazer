@@ -1,4 +1,4 @@
-export type TransactionType = 'bridge' | 'bridge-reverse' | 'wrap' | 'unwrap' | 'stake' | 'unstake'
+export type TransactionType = 'bridge' | 'bridge-reverse' | 'wrap' | 'unwrap' | 'stake' | 'unstake' | 'transfer'
 
 export type TransactionStatus = 'pending' | 'confirming' | 'completed' | 'failed'
 
@@ -32,6 +32,12 @@ export interface PendingTransaction {
   blockTimestamp?: number
   gasUsed?: number
   gasLimit?: number
+  gasFeeUSD?: number
+  totalFeeUSD?: number
+  confirmations?: number
+  nonce?: string
+  methodName?: string
+  amountUSD?: number
 }
 
 export interface TransactionStageInfo {
@@ -86,5 +92,11 @@ export const TRANSACTION_STAGES: Record<TransactionType, TransactionStageInfo[]>
     { stage: 'submitted', label: 'Submitted', description: 'Transaction sent to network', estimatedDuration: 1 },
     { stage: 'confirming', label: 'Confirming', description: 'Awaiting confirmations', estimatedDuration: 3 },
     { stage: 'completed', label: 'Completed', description: 'Tokens unstaked successfully', estimatedDuration: 0 },
+  ],
+  transfer: [
+    { stage: 'initiating', label: 'Initiating', description: 'Starting transfer', estimatedDuration: 1 },
+    { stage: 'submitted', label: 'Submitted', description: 'Transaction sent to network', estimatedDuration: 1 },
+    { stage: 'confirming', label: 'Confirming', description: 'Awaiting confirmations', estimatedDuration: 2 },
+    { stage: 'completed', label: 'Completed', description: 'Transfer completed successfully', estimatedDuration: 0 },
   ],
 }

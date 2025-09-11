@@ -5,6 +5,7 @@ import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
 import { SUPPORTED_CHAINS, getChainByName } from 'src/web3/chains'
+import { Skeleton } from '../skeleton/Skeleton'
 
 interface TransactionDetailsModalProps {
   transaction: PendingTransaction
@@ -46,11 +47,24 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
   if (!isOpen) return null
 
   const getActionLabel = () => {
+    const chain = getChainByName(transaction.toChain)
+    const chainIcon = chain?.icon || SUPPORTED_CHAINS.bitlazerL3.icon
+
     switch (transaction.type) {
       case 'bridge':
-        return `Bridging to ${transaction.toChain}`
+        return (
+          <div className="flex items-center gap-2">
+            <img src={chainIcon} alt={transaction.toChain} className="w-5 h-5" />
+            <span>Bridging to {transaction.toChain}</span>
+          </div>
+        )
       case 'bridge-reverse':
-        return `Withdrawing to ${transaction.toChain}`
+        return (
+          <div className="flex items-center gap-2">
+            <img src={chainIcon} alt={transaction.toChain} className="w-5 h-5" />
+            <span>Withdrawing to {transaction.toChain}</span>
+          </div>
+        )
       case 'wrap':
         return 'Wrapping'
       case 'unwrap':
@@ -91,7 +105,7 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
               {/* Transaction Info Card */}
               <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-lightgreen-100 text-lg font-ocrx uppercase">{getActionLabel()}</span>
+                  <div className="text-lightgreen-100 text-lg font-ocrx uppercase">{getActionLabel()}</div>
                   <div className="text-right">
                     <div className="text-lightgreen-100 text-lg font-ocrx">
                       {transaction.amount} {transaction.fromToken}
@@ -166,15 +180,32 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
               </div>
 
               {/* Transaction Details Section */}
-              {(transaction.blockNumber || transaction.gasUsed) && (
+              {(transaction.blockNumber || transaction.gasUsed || transaction.gasFeeUSD) && (
                 <div className="bg-black border-2 border-lightgreen-100 p-3 mb-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white text-sm font-maison-neue">Block Number</span>
-                      <span className="text-lightgreen-100 text-sm font-mono">
-                        #{transaction.blockNumber || 'Unknown'}
-                      </span>
-                    </div>
+                    {transaction.blockNumber !== undefined ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm font-maison-neue">Block Number</span>
+                        {transaction.blockNumber === null ? (
+                          <Skeleton className="h-4 w-24" />
+                        ) : (
+                          <span className="text-lightgreen-100 text-sm font-mono">#{transaction.blockNumber}</span>
+                        )}
+                      </div>
+                    ) : null}
+                    {transaction.confirmations !== undefined && (
+                      <>
+                        <div className="h-px bg-lightgreen-100/20"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-maison-neue">Confirmations</span>
+                          {transaction.confirmations === null ? (
+                            <Skeleton className="h-4 w-16" />
+                          ) : (
+                            <span className="text-lightgreen-100 text-sm font-mono">{transaction.confirmations}</span>
+                          )}
+                        </div>
+                      </>
+                    )}
                     {transaction.blockTimestamp && (
                       <>
                         <div className="h-px bg-lightgreen-100/20"></div>
@@ -198,12 +229,55 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
                         </div>
                       </>
                     )}
+                    {transaction.gasFeeUSD !== undefined && (
+                      <>
+                        <div className="h-px bg-lightgreen-100/20"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-maison-neue">Gas Fee (USD)</span>
+                          {transaction.gasFeeUSD === null ? (
+                            <Skeleton className="h-4 w-16" />
+                          ) : (
+                            <span className="text-lightgreen-100 text-sm font-mono">
+                              ${transaction.gasFeeUSD.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {transaction.amountUSD !== undefined && (
+                      <>
+                        <div className="h-px bg-lightgreen-100/20"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-maison-neue">Value (USD)</span>
+                          {transaction.amountUSD === null ? (
+                            <Skeleton className="h-4 w-16" />
+                          ) : (
+                            <span className="text-lightgreen-100 text-sm font-mono">
+                              ${transaction.amountUSD.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {transaction.methodName && (
+                      <>
+                        <div className="h-px bg-lightgreen-100/20"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-maison-neue">Method</span>
+                          {!transaction.methodName ? (
+                            <Skeleton className="h-4 w-24" />
+                          ) : (
+                            <span className="text-lightgreen-100 text-sm font-mono">{transaction.methodName}</span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Warning for bridge transactions */}
-              {transaction.type.includes('bridge') && (
+              {/* Warning for bridge transactions - only show for withdrawals or incomplete deposits */}
+              {transaction.type === 'bridge-reverse' && (
                 <div className="mt-4 bg-black border-2 border-lightgreen-100 p-3">
                   <div className="flex items-start gap-2">
                     <svg
@@ -218,9 +292,7 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
                       />
                     </svg>
                     <div className="text-white text-sm font-maison-neue">
-                      {transaction.type === 'bridge-reverse'
-                        ? `Withdrawal may take up to 7 days to complete on ${SUPPORTED_CHAINS.arbitrumOne.name} network.`
-                        : 'Bridge transfer may take up to 15 minutes to complete.'}
+                      {`Withdrawal may take up to 7 days to complete on ${SUPPORTED_CHAINS.arbitrumOne.name} network.`}
                       <br />
                       <a
                         href="https://bitlazer.bridge.caldera.xyz/"
