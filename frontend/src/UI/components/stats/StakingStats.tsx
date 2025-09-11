@@ -196,10 +196,6 @@ export const StakingStats: React.FC = () => {
     }
   }, [totalStaked, apy, targetApyBps, bitlazerClient])
 
-  const formatAmount = (amount: number) => {
-    return formatTokenAmount(amount)
-  }
-
   const formatAPR = (apr: number) => {
     // APR is already a percentage value (e.g., 33333 = 33,333%)
     return `${apr.toLocaleString()}%`
@@ -228,7 +224,7 @@ export const StakingStats: React.FC = () => {
               {loading ? (
                 <div className="h-9 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatAmount(stats.totalPoolSize)}</>
+                <>{formatTokenAmount(stats.totalPoolSize)}</>
               )}
             </div>
             <SecondaryLabel>lzrBTC STAKED</SecondaryLabel>
@@ -281,7 +277,7 @@ export const StakingStats: React.FC = () => {
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
-                <>{formatAmount(stats.averageStakeSize)}</>
+                <>{formatTokenAmount(stats.averageStakeSize)}</>
               )}
             </div>
             <SecondaryLabel>lzrBTC PER USER</SecondaryLabel>
@@ -293,7 +289,7 @@ export const StakingStats: React.FC = () => {
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-20" />
               ) : (
-                <>{formatAmount(stats.rewardsDistributed24h)}</>
+                <>{formatTokenAmount(stats.rewardsDistributed24h)}</>
               )}
             </div>
             <SecondaryLabel>lzrBTC DISTRIBUTED</SecondaryLabel>
@@ -305,7 +301,7 @@ export const StakingStats: React.FC = () => {
               {loading ? (
                 <div className="h-6 bg-gray-300/10 animate-pulse rounded w-16" />
               ) : (
-                <>{formatAmount(stats.totalRewards)}</>
+                <>{formatTokenAmount(stats.totalRewards)}</>
               )}
             </div>
             <SecondaryLabel>lzrBTC EARNED</SecondaryLabel>
@@ -366,7 +362,7 @@ export const StakingStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(stake.amount))} {stake.asset}
+                          {formatTokenAmount(Number(stake.amount))} {stake.asset}
                         </span>
                         <span
                           className={`text-sm md:text-base font-ocrx uppercase ${

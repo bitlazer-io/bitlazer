@@ -94,12 +94,17 @@ export function formatCompactNumber(value: number, forceTruncate = false): strin
   return formatPreciseNumber(value)
 }
 
-export function formatTokenAmount(amount: number): string {
-  if (amount === 0) return '0'
-  if (amount < 0.0001) return '<0.0001'
-  if (amount < 1) return amount.toFixed(6)
-  if (amount < 1000) return amount.toFixed(4)
-  return formatCompactNumber(amount)
+export function formatTokenAmount(amount: number | string, asset?: string): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (num === 0) return asset ? `0 ${asset}` : '0'
+
+  let formatted: string
+  if (num < 0.0001) formatted = '<0.0001'
+  else if (num < 1) formatted = num.toFixed(6)
+  else if (num < 1000) formatted = num.toFixed(4)
+  else formatted = formatCompactNumber(num)
+
+  return asset ? `${formatted} ${asset}` : formatted
 }
 
 export function formatPercentage(value: number): string {

@@ -4,6 +4,7 @@ import { PendingTransaction } from '../../../types/transactions'
 import TransactionTimeline from '../TransactionTimeline/TransactionTimeline'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
+import { formatTokenAmount } from '../../../utils/formatters'
 import { SUPPORTED_CHAINS, getChainByName } from 'src/web3/chains'
 import { Skeleton } from '../skeleton/Skeleton'
 
@@ -108,7 +109,7 @@ const TransactionDetailsModal: FC<TransactionDetailsModalProps> = ({ transaction
                   <div className="text-lightgreen-100 text-lg font-ocrx uppercase">{getActionLabel()}</div>
                   <div className="text-right">
                     <div className="text-lightgreen-100 text-lg font-ocrx">
-                      {transaction.amount} {transaction.fromToken}
+                      {formatTokenAmount(transaction.amount, transaction.fromToken)}
                     </div>
                     <div className="text-white text-sm font-mono mt-1">{formatElapsedTime(timeElapsed)} ago</div>
                   </div>

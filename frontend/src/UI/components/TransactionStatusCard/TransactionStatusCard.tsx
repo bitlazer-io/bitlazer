@@ -4,6 +4,7 @@ import { PendingTransaction, TRANSACTION_STAGES } from '../../../types/transacti
 import TransactionDetailsModal from '../TransactionDetailsModal/TransactionDetailsModal'
 import { fmtHash } from '../../../utils/fmt'
 import { formatElapsedTime } from '../../../utils/time'
+import { formatTokenAmount } from '../../../utils/formatters'
 import { SUPPORTED_CHAINS, getChainByName } from '../../../web3/chains'
 
 interface TransactionStatusCardProps {
@@ -102,7 +103,7 @@ const TransactionStatusCard: FC<TransactionStatusCardProps> = ({ transaction, cl
                 {/* Item 2: Value Badges */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs px-2.5 py-1 rounded-full bg-lightgreen-100/20 text-white/90 font-mono">
-                    {transaction.amount} {transaction.fromToken}
+                    {formatTokenAmount(transaction.amount, transaction.fromToken)}
                   </span>
                   {transaction.amountUSD && (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-lightgreen-100/10 text-white/60 font-mono">

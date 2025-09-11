@@ -153,10 +153,6 @@ export const WrapStats: React.FC = () => {
     }
   }, [publicClient, totalSupply])
 
-  const formatAmount = (amount: number) => {
-    return formatTokenAmount(amount)
-  }
-
   const formatTime = (timestamp: number) => {
     const now = Date.now() / 1000
     const diff = now - timestamp
@@ -181,7 +177,7 @@ export const WrapStats: React.FC = () => {
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatAmount(stats.totalWrapped)}</>
+                <>{formatTokenAmount(stats.totalWrapped)}</>
               )}
             </div>
             <SecondaryLabel className="mt-1">WBTC → lzrBTC</SecondaryLabel>
@@ -193,7 +189,7 @@ export const WrapStats: React.FC = () => {
               {loading ? (
                 <div className="h-7 bg-gray-300/10 animate-pulse rounded" />
               ) : (
-                <>{formatAmount(stats.totalUnwrapped)}</>
+                <>{formatTokenAmount(stats.totalUnwrapped)}</>
               )}
             </div>
             <SecondaryLabel className="mt-1">lzrBTC → WBTC</SecondaryLabel>
@@ -237,7 +233,7 @@ export const WrapStats: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-base md:text-lg text-lightgreen-100 font-maison-neue font-bold">
-                          {formatAmount(Number(wrap.amount))} {wrap.asset}
+                          {formatTokenAmount(Number(wrap.amount))} {wrap.asset}
                         </span>
                         <span
                           className={`text-sm md:text-base font-ocrx uppercase ${

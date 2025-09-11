@@ -16,13 +16,10 @@ import { handleChainSwitch } from 'src/web3/functions'
 import clsx from 'clsx'
 import { usePriceStore } from 'src/stores/priceStore'
 import { calculatePercentageAmount } from 'src/utils/formatters'
-import { useNavigate } from 'react-router-dom'
 
 interface IBridgeWrap {}
 
 const BridgeWrap: FC<IBridgeWrap> = () => {
-  const navigate = useNavigate()
-
   // Helper to safely parse amounts with proper decimal truncation
   const safeParseUnits = (amount: string, decimals: number) => {
     const truncatedAmount = parseFloat(amount).toFixed(decimals)
@@ -336,12 +333,6 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
         setApproval(false)
         // Single refresh after successful transaction
         setRefresh((prev) => !prev)
-
-        // Only redirect to crosschain after wrapping WBTC to lzrBTC
-        // This is wrap mode and we just successfully wrapped
-        setTimeout(() => {
-          navigate('/bridge/crosschain')
-        }, 1500)
       } else {
         toast(<TXToast {...{ message: 'Wrap failed' }} />, { autoClose: 7000 })
       }
