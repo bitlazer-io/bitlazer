@@ -274,7 +274,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     }
   }
 
-  const formatStakedAmount = (value: any) => {
+  const formatStakedAmount = (value: any): string => {
     if (!value) return '0'
     try {
       return formatEther(value.toString())
@@ -283,7 +283,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
     }
   }
 
-  const formatRewardAmount = (value: any) => {
+  const formatRewardAmount = (value: any): string => {
     if (!value || value === 0n) return '0'
     try {
       // Format without rounding to show all decimal places
@@ -464,7 +464,9 @@ const BridgeStake: FC<IBridgeStake> = () => {
                       />
                     )}
                   />
-                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">APR: {formatAPR()}</div>
+                  <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
+                    ≈ ${(parseFloat(stakeWatch('stakeAmount') || '0') * btcPrice).toFixed(2)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -506,9 +508,16 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
                   <div className="flex justify-between items-center">
                     <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
-                    <span className="text-white text-xs font-maison-neue">
-                      {formatRewardAmount(pendingRewards)} lzrBTC
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white text-xs font-maison-neue">
+                        {formatRewardAmount(pendingRewards)} lzrBTC
+                      </span>
+                      {pendingRewards && (pendingRewards as bigint) > 0n ? (
+                        <span className="text-lightgreen-100 text-xs font-maison-neue">
+                          (${(parseFloat(formatRewardAmount(pendingRewards) || '0') * btcPrice).toFixed(2)})
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="h-px bg-lightgreen-100/10"></div>
@@ -707,7 +716,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
                     )}
                   />
                   <div className="text-white/40 text-xs mt-1 truncate w-full text-right">
-                    Rewards: {formatRewardAmount(pendingRewards)} lzrBTC
+                    ≈ ${(parseFloat(unstakeWatch('unstakeAmount') || '0') * btcPrice).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -750,9 +759,16 @@ const BridgeStake: FC<IBridgeStake> = () => {
 
                   <div className="flex justify-between items-center">
                     <span className="text-white/50 text-xs font-maison-neue">Pending Rewards</span>
-                    <span className="text-white text-xs font-maison-neue">
-                      {formatRewardAmount(pendingRewards)} lzrBTC
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white text-xs font-maison-neue">
+                        {formatRewardAmount(pendingRewards)} lzrBTC
+                      </span>
+                      {pendingRewards && (pendingRewards as bigint) > 0n ? (
+                        <span className="text-lightgreen-100 text-xs font-maison-neue">
+                          (${(parseFloat(formatRewardAmount(pendingRewards) || '0') * btcPrice).toFixed(2)})
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="h-px bg-lightgreen-100/10"></div>
@@ -806,7 +822,7 @@ const BridgeStake: FC<IBridgeStake> = () => {
           </Button>
         )}
 
-        <p className="text-gray-200 text-sm text-left mt-2">* Unstaking will automatically claim your rewards</p>
+        <p className="text-gray-200 text-xs text-left mt-2">* Unstaking will automatically claim your rewards</p>
       </div>
     </div>
   )
