@@ -1,6 +1,6 @@
 import { EXPLORER_CONFIG } from 'src/config/explorer'
 import { Transaction, TransactionType, TransactionStatus, NetworkType } from '../types'
-import { STAKING_CONTRACTS } from 'src/web3/contracts'
+import { STAKING_CONTRACTS, L2_GATEWAY_ROUTER_BACK } from 'src/web3/contracts'
 
 // Event signatures
 const EVENT_SIGNATURES = {
@@ -37,6 +37,7 @@ interface BitlazerTransaction {
   gasUsed: string
   input: string
   isError?: string
+  confirmations?: string
   logs?: Array<{
     address: string
     topics: string[]
@@ -215,7 +216,7 @@ export class BitlazerAPI {
       fromBlock,
       toBlock,
       topic0: EVENT_SIGNATURES.WithdrawalInitiated,
-      address: '0x0000000000000000000000000000000000000064',
+      address: L2_GATEWAY_ROUTER_BACK,
     })
 
     try {
@@ -378,7 +379,7 @@ export class BitlazerAPI {
         type: TransactionType.BRIDGE,
         status: TransactionStatus.PENDING,
         from: txDetails.from,
-        to: '0x0000000000000000000000000000000000000064',
+        to: L2_GATEWAY_ROUTER_BACK,
         amount: (Number(txDetails.value) / 1e18).toString(),
         asset: 'lzrBTC',
         sourceNetwork: NetworkType.BITLAZER,
@@ -585,7 +586,7 @@ export class BitlazerAPI {
       fromBlock,
       toBlock,
       topic0: EVENT_SIGNATURES.WithdrawalInitiated,
-      address: '0x0000000000000000000000000000000000000064',
+      address: L2_GATEWAY_ROUTER_BACK,
     })
 
     try {
@@ -664,7 +665,7 @@ export class BitlazerAPI {
         type: TransactionType.BRIDGE,
         status: TransactionStatus.PENDING,
         from: '0x' + log.topics[1]?.slice(26) || '0x0', // Extract from topics
-        to: '0x0000000000000000000000000000000000000064',
+        to: L2_GATEWAY_ROUTER_BACK,
         amount: '0.00000001', // Placeholder - will be updated on full page refresh
         asset: 'lzrBTC',
         sourceNetwork: NetworkType.BITLAZER,

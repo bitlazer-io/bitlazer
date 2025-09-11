@@ -26,15 +26,18 @@ const TransactionTimeline: FC<TransactionTimelineProps> = ({ type, currentStage,
             style={{
               width:
                 stages.length > 1
-                  ? `calc(${(currentStageIndex / (stages.length - 1)) * 100}% * (100% - 48px) / 100%)`
+                  ? currentStage === 'completed'
+                    ? 'calc(100% - 48px)'
+                    : `calc(${(currentStageIndex / (stages.length - 1)) * 100}% * (100% - 48px) / 100%)`
                   : '0%',
             }}
           />
 
           {/* Stage Circles */}
           {stages.map((stageInfo, index) => {
-            const isCompleted = index < currentStageIndex
-            const isCurrent = index === currentStageIndex
+            const isCompleted =
+              index < currentStageIndex || (currentStage === 'completed' && index === currentStageIndex)
+            const isCurrent = index === currentStageIndex && currentStage !== 'completed'
             const isPending = index > currentStageIndex
 
             return (

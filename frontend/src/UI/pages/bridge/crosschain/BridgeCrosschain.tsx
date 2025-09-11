@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePriceStore } from 'src/stores/priceStore'
 import { calculatePercentageAmount } from 'src/utils/formatters'
 import { useBridgeDetails } from 'src/hooks/useBridgeDetails'
-import { useLastTransaction } from 'src/hooks/useLastTransaction'
+import { useLastTransactionAPI } from 'src/hooks/useLastTransactionAPI'
 
 interface IBridgeCrosschain {}
 
@@ -46,7 +46,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     checkTransactionStatus,
     determineTransactionStage,
     isLoading: isLoadingTransactions,
-  } = useLastTransaction(isBridgeMode ? 'arbitrum-to-bitlazer' : 'bitlazer-to-arbitrum')
+  } = useLastTransactionAPI(isBridgeMode ? 'arbitrum-to-bitlazer' : 'bitlazer-to-arbitrum')
 
   // Get latest bridge transaction for display (only bridge types)
   const latestBridgeTransaction = getLatestBridgeTransaction()
@@ -127,8 +127,18 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
 
   // Add enhanced details to historical transactions (one-time check)
   useEffect(() => {
-    if (!latestBridgeTransaction || isPendingTransaction || latestBridgeTransaction.blockNumber) {
-      return // Skip if no transaction, it's pending, or already has enhanced details
+    // Skip if:
+    // - No transaction
+    // - It's a pending transaction (handled by the other useEffect)
+    // - Already has enhanced details (blockNumber, confirmations, gasFeeUSD)
+    if (
+      !latestBridgeTransaction ||
+      isPendingTransaction ||
+      (latestBridgeTransaction.blockNumber &&
+        latestBridgeTransaction.confirmations !== undefined &&
+        latestBridgeTransaction.gasFeeUSD !== undefined)
+    ) {
+      return
     }
 
     const addEnhancedDetails = async () => {
@@ -140,7 +150,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
     }
 
     addEnhancedDetails()
-  }, [latestBridgeTransaction?.txHash, latestBridgeTransaction?.blockNumber])
+  }, [latestBridgeTransaction?.txHash])
 
   const { address, chainId } = useAccount()
   const [isWaitingForBridgeTx, setIsWaitingForBridgeTx] = useState(false)
@@ -425,7 +435,7 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
       {/* Transaction Status Card - Show latest transaction (pending or recent) */}
       {(latestBridgeTransaction || isLoadingTransactions) && (
         <div className="mb-6">
-          {isLoadingTransactions && !latestBridgeTransaction ? (
+          {isLoadingTransactions ? (
             <div className="w-full">
               <div className="relative overflow-hidden rounded-[.115rem] border transition-all duration-300 bg-gradient-to-r from-darkslategray-200/95 to-darkslategray-200/80 backdrop-blur-sm border-lightgreen-100/30">
                 <div className="p-3">
