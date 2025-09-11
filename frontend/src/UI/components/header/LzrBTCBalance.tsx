@@ -60,8 +60,8 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
   }, [arbitrumBalance, bitlazerBalance, stakedBalance])
 
   const totalUSDValue = useMemo(() => {
-    return balances.total * btcPrice
-  }, [balances.total, btcPrice])
+    return balances.totalWithStaking * btcPrice
+  }, [balances.totalWithStaking, btcPrice])
 
   // Refresh balances when popup opens
   const handlePopupToggle = () => {
@@ -122,9 +122,11 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-lightgreen-100 text-lg font-ocrx uppercase">Total Balance</span>
                       <div className="text-right">
-                        <div className="text-lightgreen-100 text-lg font-ocrx">{balances.total.toFixed(6)} lzrBTC</div>
+                        <div className="text-lightgreen-100 text-lg font-ocrx">
+                          {balances.totalWithStaking.toFixed(6)} lzrBTC
+                        </div>
                         <div className="text-white text-sm font-mono mt-1">
-                          {USDollar.format(balances.total * btcPrice)}
+                          {USDollar.format(balances.totalWithStaking * btcPrice)}
                         </div>
                       </div>
                     </div>
@@ -196,7 +198,7 @@ export const LzrBTCBalance: React.FC<LzrBTCBalanceProps> = () => {
                     }}
                   >
                     <span className="flex items-center justify-center gap-2 text-2xl">
-                      Get lzrBTC
+                      Bridge lzrBTC
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
                           strokeLinecap="round"
