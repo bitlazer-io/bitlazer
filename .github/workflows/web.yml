@@ -4,9 +4,43 @@ on:
   push:
 
 jobs:
+  test:
+    name: Run full test suite
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 9
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install root dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Compile and test contracts
+      run: |
+        pnpm contracts:compile
+        pnpm contracts:test
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: pnpm install --frozen-lockfile
+
+    - name: Run frontend tests
+      working-directory: ./frontend
+      run: pnpm test
+
   deploy-main:
     name: Main Web
     runs-on: ubuntu-latest
+    needs: [test]
     steps:
     - uses: actions/checkout@v4
 
