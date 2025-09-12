@@ -19,7 +19,9 @@ const badResponse = (status = 500, statusText = 'ERR') =>
 describe('priceService', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.restoreAllMocks()
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   afterEach(() => {
