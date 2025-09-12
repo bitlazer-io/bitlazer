@@ -12,6 +12,7 @@ interface TransactionListProps {
   onSearch?: (query: string) => void
   searchQuery?: string
   nextRefreshIn?: number
+  isRefreshing?: boolean
 }
 
 export const TransactionList: FC<TransactionListProps> = ({
@@ -22,6 +23,7 @@ export const TransactionList: FC<TransactionListProps> = ({
   onSearch,
   searchQuery = '',
   nextRefreshIn,
+  isRefreshing = false,
 }) => {
   const [localSearchQuery, setLocalSearchQuery] = React.useState(searchQuery)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
@@ -162,7 +164,9 @@ export const TransactionList: FC<TransactionListProps> = ({
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase">Status</div>
               <div className="col-span-1 font-ocrx text-lightgreen-100 text-base uppercase text-right flex items-center justify-end gap-2">
                 <span>Time</span>
-                {nextRefreshIn !== undefined && (
+                {isRefreshing ? (
+                  <Skeleton className="h-4 w-8" />
+                ) : nextRefreshIn !== undefined ? (
                   <div className="flex items-center gap-1">
                     <svg className="w-3 h-3 -rotate-90 text-white/50" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="6" opacity="0.25" />
@@ -182,7 +186,7 @@ export const TransactionList: FC<TransactionListProps> = ({
                     </svg>
                     <span className="text-xs font-maison-neue font-bold normal-case">{nextRefreshIn}s</span>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
 

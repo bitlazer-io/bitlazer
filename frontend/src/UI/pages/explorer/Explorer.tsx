@@ -22,6 +22,7 @@ const Explorer: FC<IExplorer> = () => {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [nextRefreshIn, setNextRefreshIn] = useState(30)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const itemsPerPage = 20
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isInitialLoadComplete = useRef<boolean>(false)
@@ -30,6 +31,7 @@ const Explorer: FC<IExplorer> = () => {
   const refreshRecentTransactions = async () => {
     if (!isInitialLoadComplete.current) return
 
+    setIsRefreshing(true)
     try {
       const arbiscanAPI = new ArbiscanAPI()
       const bitlazerAPI = new BitlazerAPI()
@@ -66,6 +68,8 @@ const Explorer: FC<IExplorer> = () => {
       console.log(`Auto-refresh: checked ${fresh.length} recent txs, total: ${updated.length}`)
     } catch (error) {
       console.error('Auto-refresh failed:', error)
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -80,10 +84,16 @@ const Explorer: FC<IExplorer> = () => {
       clearInterval(countdownIntervalRef.current)
     }
 
+    // Don't start timer if we're refreshing (e.g., initial refresh after loading cached data)
+    if (isRefreshing) return
+
     let countdown = 30 // 30 seconds
     setNextRefreshIn(countdown)
 
     countdownIntervalRef.current = setInterval(() => {
+      // Don't count down while refreshing
+      if (isRefreshing) return
+
       countdown -= 1
       if (countdown <= 0) {
         countdown = 30
@@ -98,7 +108,7 @@ const Explorer: FC<IExplorer> = () => {
         clearInterval(countdownIntervalRef.current)
       }
     }
-  }, []) // Empty dependency is OK here since refreshRecentTransactions uses ref
+  }, [isRefreshing]) // Include isRefreshing in dependency array
 
   // Apply filters when search/filter criteria change
   useEffect(() => {
@@ -128,6 +138,10 @@ const Explorer: FC<IExplorer> = () => {
       setAllTransactions(cachedData)
       setLoading(false)
       isInitialLoadComplete.current = true
+
+      // Trigger immediate auto-refresh to get latest data
+      console.log('Triggering immediate refresh for fresh data...')
+      refreshRecentTransactions()
       return
     }
 
@@ -256,6 +270,7 @@ const Explorer: FC<IExplorer> = () => {
             onSearch={handleSearch}
             searchQuery={searchQuery}
             nextRefreshIn={nextRefreshIn}
+            isRefreshing={isRefreshing}
           />
         </div>
       </div>
