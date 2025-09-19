@@ -66,7 +66,8 @@ For more information, please visit our official website or join our community ch
 
 ## arbitrum deployed ERC-20 & bitlazer contracts
 - "WBTC": "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
-- "lzrBTC": "0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df"
+- "lzrBTC": "0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df",
+- "LZR": "0xB80FcFC1488dE673fe4cA1ee0a38FF4Bd85A570e"
 
 
 ## arbitrum sepolia deployed test ERC-20 & bitlazer contracts

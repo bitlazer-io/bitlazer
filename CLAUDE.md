@@ -94,6 +94,7 @@ bitlazer/
 #### Deployed Contracts (Arbitrum Mainnet)
 - WBTC: `0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f`
 - lzrBTC: `0x0c978B2F8F3A0E399DaF5C41e4776757253EE5Df`
+- LZR: `0xB80FcFC1488dE673fe4cA1ee0a38FF4Bd85A570e`
 
 #### Test Contracts (Arbitrum Sepolia)
 - WBTC: `0xa655cc81abD4A475fba7E8Ef4511A9e7bcbd1688`
