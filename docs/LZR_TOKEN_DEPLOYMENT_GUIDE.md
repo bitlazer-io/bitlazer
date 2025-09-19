@@ -27,6 +27,7 @@ The LZR token is the native governance and utility token for the Bitlazer ecosys
 - **Symbol**: LZR
 - **Type**: ERC-20 (Arbitrum One integration)
 - **Network**: Bitlazer L3 (Chain ID: 14235)
+- **Arbitrum One Contract**: `0xB80FcFC1488dE673fe4cA1ee0a38FF4Bd85A570e`
 - **Bridge Integration**: Works with existing lzrBTC staking mechanism
 - **Total Supply**: 1,000,000,000 LZR (aligned with roadmap)
 - **Use Cases**: Governance, Dual Yield Staking, Bridge Fees, Developer Grants
