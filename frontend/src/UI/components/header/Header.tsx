@@ -126,15 +126,6 @@ const Header: FC<IHeader> = () => {
                         [EXPLORER]
                       </Link>
                     </li>
-                    <li>
-                      <Link
-                        to="/ecosystem"
-                        className={`text-lightgreen-100 inline-block hover:scale-105 hover:line-through ${location.pathname === '/ecosystem' ? 'line-through pointer-events-none' : ''}`}
-                        onClick={closeMenu}
-                      >
-                        [ECOSYSTEM]
-                      </Link>
-                    </li>
                     <li className="relative" ref={dropdownRef}>
                       <button
                         className={clsx(
