@@ -597,15 +597,13 @@ const BridgeCrosschain: FC<IBridgeCrosschain> = () => {
         ) : (
           <Button
             type="submit"
+            disabled={true}
             onClick={(e) => {
               e.preventDefault()
               handleChainSwitch(requiredChainId === SUPPORTED_CHAINS.bitlazerL3.id)
             }}
           >
-            SWITCH TO{' '}
-            {requiredChainId === SUPPORTED_CHAINS.bitlazerL3.id
-              ? SUPPORTED_CHAINS.bitlazerL3.name.toUpperCase()
-              : SUPPORTED_CHAINS.arbitrumOne.name.toUpperCase()}
+            COMING SOON
           </Button>
         )}
       </div>
