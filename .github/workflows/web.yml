@@ -8,7 +8,7 @@ jobs:
     name: Run full test suite
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
