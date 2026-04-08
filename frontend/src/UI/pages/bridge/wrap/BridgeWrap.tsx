@@ -609,12 +609,13 @@ const BridgeWrap: FC<IBridgeWrap> = () => {
         ) : (
           <Button
             type="submit"
+            disabled={true}
             onClick={(e) => {
               e.preventDefault()
               handleChainSwitch(false)
             }}
           >
-            SWITCH TO ARBITRUM
+            COMING SOON
           </Button>
         )}
       </div>
