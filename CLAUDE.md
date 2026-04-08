@@ -116,6 +116,11 @@ bitlazer/
 - TypeScript types generated from contract ABIs
 - Responsive design with Tailwind CSS and Material-UI
 
+#### Analytics & Observability
+- **Google Analytics** (G-LKGM995GP6) — user engagement, traffic sources, page views, conversion tracking
+- **Microsoft Clarity** (t4z0hc9si4) — session recordings, user behavior heatmaps, frustration signals
+- Both tracking scripts load asynchronously in `frontend/index.html` for minimal performance impact
+
 #### Development Workflow
 - Husky pre-commit hooks for code quality
 - Prettier and ESLint for consistent code formatting
